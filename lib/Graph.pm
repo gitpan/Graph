@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 require 5.005;
 
@@ -1050,7 +1050,8 @@ sub self_loop_vertices {
 sub add_path {
     my $g = shift;
     my $u = shift;
-    while (defined(my $v = shift)) {
+    while (@_) {
+	my $v = shift;
 	$g->add_edge($u, $v);
 	$u = $v;
     }
@@ -1060,7 +1061,8 @@ sub add_path {
 sub delete_path {
     my $g = shift;
     my $u = shift;
-    while (defined(my $v = shift)) {
+    while (@_) {
+	my $v = shift;
 	$g->delete_edge($u, $v);
 	$u = $v;
     }
@@ -1070,7 +1072,8 @@ sub delete_path {
 sub has_path {
     my $g = shift;
     my $u = shift;
-    while (defined(my $v = shift)) {
+    while (@_) {
+	my $v = shift;
 	return 0 unless $g->has_edge($u, $v);
 	$u = $v;
     }
@@ -2391,130 +2394,6 @@ sub directed_copy {
 }
 
 *directed_copy_graph = \&directed_copy;
-
-###
-# Adding and deleting graphs.
-#
-
-sub add_graph {
-    my ($g, $h, %opt) = @_;
-    my ($r, $c);
-    my ($vertices, $edges);
-    if (exists $opt{resolve}) {
-	$r = $opt{resolve};
-	delete $opt{resolve};
-	$c = ref $r eq 'CODE';
-    }
-    if (exists $opt{vertices}) {
-	$vertices = $opt{vertices};
-	delete $opt{vertices};
-    }
-    $vertices = 1 unless defined $vertices;
-    if (exists $opt{edges}) {
-	$edges = $opt{edges};
-	delete $opt{edges};
-    }
-    $edges = 1 unless defined $edges;
-    _opt_unknown(\%opt);
-    if (defined $r) {
-	if ($vertices) {
-	    for my $v ($h->vertices) {
-		if ($g->has_vertex($v)) {
-		    if ($c) {
-			$g->add_vertex($v) if $r->($g, $h, $v);
-		    } elsif ($r) {
-			$g->add_vertex($v);
-		    }
-		}
-	    }
-	}
-	if ($edges) {
-	    for my $e ($h->edges) {
-		my ($u, $v) = @$e;
-		if ($g->has_edge($u, $v)) {
-		    if ($c) {
-			$g->add_edge($u, $v) if $r->($g, $h, $u, $v);
-		    } elsif ($r) {
-			$g->add_edge($u, $v);
-		    }
-		}
-	    }
-	}
-    } else {
-	if ($vertices) {
-	    for my $v ($h->vertices) {
-		$g->add_vertex($v);
-	    }
-	}
-	if ($edges) {
-	    for my $e ($h->edges) {
-		my ($u, $v) = @$e;
-		$g->add_edge($u, $v);
-	    }
-	}
-    }
-    return $g;
-}
-
-sub delete_graph {
-    my ($g, $h, %opt) = @_;
-    my ($r, $c);
-    my ($vertices, $edges);
-    if (exists $opt{resolve}) {
-	$r = $opt{resolve};
-	delete $opt{resolve};
-	$c = ref $r eq 'CODE';
-    }
-    if (exists $opt{vertices}) {
-	$vertices = $opt{vertices};
-	delete $opt{vertices};
-    }
-    $vertices = 1 unless defined $vertices;
-    if (exists $opt{edges}) {
-	$edges = $opt{edges};
-	delete $opt{edges};
-    }
-    $edges = 1 unless defined $edges;
-    _opt_unknown(\%opt);
-    if (defined $r) {
-	if ($vertices) {
-	    for my $v ($h->vertices) {
-		if ($g->has_vertex($v)) {
-		    if ($c) {
-			$g->delete_vertex($v) if $r->($g, $h, $v);
-		    } elsif ($r) {
-			$g->delete_vertex($v);
-		    }
-		}
-	    }
-	}
-	if ($edges) {
-	    for my $e ($h->edges) {
-		my ($u, $v) = @$e;
-		if ($g->has_edge($u, $v)) {
-		    if ($c) {
-			$g->delete_edge($u, $v) if $r->($g, $h, $u, $v);
-		    } elsif ($r) {
-			$g->delete_edge($u, $v);
-		    }
-		}
-	    }
-	}
-    } else {
-	if ($vertices) {
-	    for my $v ($h->vertices) {
-		$g->delete_vertex($v);
-	    }
-	}
-	if ($edges) {
-	    for my $e ($h->edges) {
-		my ($u, $v) = @$e;
-		$g->delete_edge($u, $v);
-	    }
-	}
-    }
-    return $g;
-}
 
 ###
 # Connected components.

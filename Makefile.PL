@@ -6,8 +6,7 @@ use Getopt::Long;
 
 my $renum;
 
-die "$0: Usage: $0 [--renum]\n"
-    unless (GetOptions('renumber' => \$renum) && @ARGV == 0);
+GetOptions('renumber' => \$renum);
 
 do 'util/renum.pl' if $renum;
 

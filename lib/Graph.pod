@@ -199,9 +199,10 @@ A complete graph has an edge (v,u) for every original edge (u,v).
     $g->add_graph($h, resolve => ...)
 
 Add the vertices and edges of the graph I<$h> to the graph I<$g>.
-The graph I<$h> is not affected.  By default duplicate vertices
-and edges are ignored, to change this behaviour use the C<resolve>
-option: it can be a code reference called with either
+The graph I<$h> is not affected.  By default already existing vertices
+and edges are silently accepted, to change this behaviour use the
+C<resolve> option: it can be a code reference that gets called
+(when there a corresponding edge or vertex already exists) with either
 
     $g, $h, $v      # for vertices
 
@@ -209,7 +210,7 @@ or
 
     $g, $h, $u, $v  # for edges
 
-or a boolean value.  The return value is tested: if it
+or a boolean value.  The return value of C<resolve> is tested: if it
 is true, the vertex or the edge is added, if false, not.
 
 If you want to add only the vertices or the edges,
@@ -225,9 +226,10 @@ use the C<vertices> and C<edges> options:
     $g->delete_graph($h, resolve => ...)
 
 Delete the vertices and edges of the graph I<$h> from the graph I<$g>.
-The graph I<$h> is not affected.  By default missing vertices
-and edges are ignored, to change this behaviour use the C<resolve>
-option: it can be a code reference called with either
+The graph I<$h> is not affected.  By default already missing vertices
+and edges are silently accepted, to change this behaviour use the
+C<resolve> option: it can be a code reference that gets called (when
+there is no corresponding edge or vertex to delete) with either
 
     $g, $h, $v      # for vertices
 
@@ -235,7 +237,7 @@ or
 
     $g, $h, $u, $v  # for edges
 
-or a boolean value.  The return value is tested: if it
+or a boolean value.  The return value of C<resolve> is tested: if it
 is true, the vertex or the edge is deleted, if false, not.
 
 If you want to delete only the vertices or the edges,
@@ -441,6 +443,11 @@ Returns true if the graph has a cycle, false if not.
 Returns a cycle if the graph has one (as a list of vertices), an empty
 list if no cycle can be found.
 
+Note that this just returns the vertices of I<a cycle>: not any
+particular cycle, just the first one it finds.  A repeated call
+might find the same cycle, or it might find a different one, and
+you cannot call this repeatedly to find all the cycles.
+
 =back
 
 =head2 Graph Types
@@ -491,22 +498,7 @@ Return true if the graph is acyclic (does not contain any cycles).
 
 =back
 
-To find a cycle, use the
-
-=over 4
-
-=item find_a_cycle
-
-    @v = $g->find_a_cycle
-
-Return the vertices of a cycle.
-
-Note that this just returns the vertices of I<a cycle>: not any
-particular cycle, just the first one it finds.  A repeated call
-might find the same cycle, or it might find a different one, and
-you cannot call this repeatedly to find all the cycles.
-
-=back
+To find a cycle, use L<find_a_cycle>.
 
 =head2 Transitivity
 
@@ -2289,7 +2281,7 @@ on the number of arguments.  Use ..._graph_attribute(),
 
 =back
 
-B<In future releases of Graph (any release after 0.50) the 0.2xxx
+B<In future releases of Graph (any release after 0.50) the 0.2xxxx
 compatibility will be removed.  Upgrade your code now.>
 
 If you want to continue using these (mis)features you can use the
@@ -2430,6 +2422,16 @@ Graph::add_edge: graph is not hyperedged ...
 
 Maybe you used add_weighted_edge() with only the two vertex arguments.
 
+=item *
+
+Not an ARRAY reference at lib/Graph.pm ...
+
+Maybe you have code based on Graph 0.2xxxx that assumes Graphs being
+blessed hash references, possibly also assuming that certain hash keys
+are available to use for your own purposes.  In Graph 0.50 none of this
+is true.  Please do not expect any particular internal implementation
+of Graphs.  Use inheritance and graph attributes.
+
 =back
 
 =head2 POSSIBLE FUTURES
@@ -2439,15 +2441,15 @@ this may very possibly mean breaking or limiting some of the APIs or
 behaviour as compared with this release of the module.
 
 What definitely won't happen in future releases is carrying over
-the Graph 0.2xxx backward compatibility API.
+the Graph 0.2xxxx backward compatibility API.
 
 =head1 ACKNOWLEDGEMENTS
 
 All bad terminology, bugs, and inefficiencies are naturally mine, all
 mine, and not the fault of the below.
 
-Thanks to Nathan Goodman and Andras Solomon for bravely betatesting my
-0.5xxx code.  If they missed something, that was only because of my
+Thanks to Nathan Goodman and Andras Salamon for bravely betatesting my
+pre-0.50 code.  If they missed something, that was only because of my
 fiendish code.
 
 The following literature for algorithm descriptions and some test cases:

@@ -392,7 +392,7 @@ __END__
 
 =head1 NAME
 
-Graph::AdjacencyMap::Base - create and a map of graph vertices or edges
+Graph::AdjacencyMap - create and a map of graph vertices or edges
 
 =head1 SYNOPSIS
 

@@ -1,3 +1,29 @@
+2005-01-09  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Allow calling Makefile.PL with arguments other than --renum
+	  (which is for internal use only, and therefore undocumented).
+	  [rt.cpan.org #9481]
+
+	* Remove the add_graph() and delete_graph() interfaces, sorry
+	  if you were using them, but the current interface was very
+	  poor and the concept ill-planned.  If you want to merge or
+	  remove edges and vertices between your graph, you can probably
+	  implement the exactly right things to do.
+	  [rt.cpan.org #9493]
+
+	* Document that one cannot assume Graphs are blessed hash references
+	  (and the likely error message one will get if one so assumes).
+	  [rt.cpan.org #9505]
+
+	* Fix Andras' last name (sorry).
+
+	* Merge duplicate documentation of find_a_cycle(). 
+
+	* Graph::AdjacencyMap::Base does not exist, fix Graph/AdjacencyMap.pm
+	  pod to comply.
+
+	* Release as 0.50.
+
 2005-01-01  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* The 0.50.
