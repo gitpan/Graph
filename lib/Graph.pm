@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.56';
+$VERSION = '0.57';
 
 require 5.005;
 
@@ -664,6 +664,7 @@ sub get_multiedge_ids {
 sub vertices_at {
     my $g = shift;
     my $V = $g->[ _V ];
+    return @_ unless ($V->[ _f ] & _HYPER);
     my %v;
     my @i;
     for my $v ( @_ ) {
@@ -695,16 +696,24 @@ sub _edges_at {
     my $V = $g->[ _V ];
     my $E = $g->[ _E ];
     my @e;
+    my $en = 0;
     for my $v ( $g->vertices_at( @_ ) ) {
 	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	next unless defined $vi;
 	my $Ei = $E->_ids;
 	while (my ($ei, $ev) = each %{ $Ei }) {
-	    for my $j (@$ev) {
-		push @e, [ $ei, $ev ] if $j == $vi;
-	    }
+	    if (wantarray) {
+		for my $j (@$ev) {
+		    push @e, [ $ei, $ev ] if $j == $vi;
+		}
+	    } else {
+		for my $j (@$ev) {
+		    $en++ if $j == $vi;
+		}
+	    }		    
 	}
     }
-    return @e;
+    return wantarray ? @e : $en;
 }
 
 sub _edges_from {
@@ -713,15 +722,34 @@ sub _edges_from {
     my $E = $g->[ _E ];
     my @e;
     my $o = $g->omniedged;
+    my $en = 0;
     for my $v ( $g->vertices_at( @_ ) ) {
 	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	next unless defined $vi;
 	my $Ei = $E->_ids;
-	while (my ($ei, $ev) = each %{ $Ei }) {
-	    push @e, [ $ei, $ev ]
-		if $ev->[0] == $vi || ($o && $ev->[-1] == $vi);
+	if (wantarray) {
+	    if ($o) {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    push @e, [ $ei, $ev ] if $ev->[0] == $vi || $ev->[-1] == $vi;
+		}
+	    } else {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    push @e, [ $ei, $ev ] if $ev->[0] == $vi;
+		}
+	    }
+	} else {
+	    if ($o) {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    $en++ if $ev->[0] == $vi || $ev->[-1] == $vi;
+		}
+	    } else {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    $en++ if $ev->[0] == $vi;
+		}
+	    }
 	}
     }
-    if ($g->is_undirected) {
+    if (wantarray && $g->is_undirected) {
 	my @i = map { $V->_get_path_id( $_ ) } @_;
 	for my $e ( @e ) {
 	    unless ( $e->[ 1 ]->[ 0 ] == $i[ 0 ] ) { # @todo
@@ -729,7 +757,7 @@ sub _edges_from {
 	    }
 	}
     }
-    return @e;
+    return wantarray ? @e : $en;
 }
 
 sub _edges_to {
@@ -738,16 +766,35 @@ sub _edges_to {
     my $E = $g->[ _E ];
     my @e;
     my $o = $g->omniedged;
+    my $en = 0;
     for my $v ( $g->vertices_at( @_ ) ) {
 	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	next unless defined $vi;
 	my $Ei = $E->_ids;
-	while (my ($ei, $ev) = each %{ $Ei }) {
-	    push @e, [ $ei, $ev ]
-		if $ev->[-1] == $vi || ($o && $ev->[0] == $vi);
+	if (wantarray) {
+	    if ($o) {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    push @e, [ $ei, $ev ]
+			if $ev->[-1] == $vi || $ev->[0] == $vi;
+		}
+	    } else {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    push @e, [ $ei, $ev ] if $ev->[-1] == $vi;
+		}
+	    }
+	} else {
+	    if ($o) {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    $en++ if $ev->[-1] == $vi || $ev->[0] == $vi;
+		}
+	    } else {
+		while (my ($ei, $ev) = each %{ $Ei }) {
+		    $en++ if $ev->[-1] == $vi;
+		}
+	    }
 	}
     }
-    if ($g->is_undirected) {
-	my $V = $g->[ _V ];
+    if (wantarray && $g->is_undirected) {
 	my @i = map { $V->_get_path_id( $_ ) } @_;
 	for my $e ( @e ) {
 	    unless ( $e->[ 1 ]->[ -1 ] == $i[ -1 ] ) { # @todo
@@ -755,7 +802,7 @@ sub _edges_to {
 	    }
 	}
     }
-    return @e;
+    return wantarray ? @e : $en;
 }
 
 sub _edges_id_path {

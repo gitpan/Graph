@@ -1,10 +1,20 @@
 2005-02-12
 
+	* Further 10% speedup on 'make test' on top of 0.56 by inlining
+	  various code paths related to finding edges, now 'make test'
+	  is cumulatively about 15% faster than the 0.55 release.
+	  The test case of rt.cpan.org #11465 is about 10 times faster.
+
+	* Release as 0.57.
+
+2005-02-12
+
 	* Rewrite edges finding code (like edges_at()) to avoid a
 	  quadratic algorithm.  Shame on me.  Luckily this extremely
 	  slow path was not touched that often, but rt.cpan.or #11465
-	  shows one known bad case, source_vertices().  The removal of
-	  the slow path sped up 'make test' by about 5-10%.
+	  shows one known bad case, source_vertices() for compat02
+	  graphs.  The removal of the slow path sped up 'make test'
+	  by about 5-10%.
 
 	* Remove a voodoo keys() from vertices_at().
 

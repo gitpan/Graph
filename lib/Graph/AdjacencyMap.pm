@@ -382,10 +382,14 @@ sub _successors {
 sub _predecessors {
     my $E = shift;
     my $g = shift;
-    my $V = $g->[ Graph::_V() ];
-    map { my @v = @{ $_->[ 1 ] };
-	  pop @v;
-	  map { $V->_get_id_path($_) } @v } $g->_edges_to( @_ );
+    my $V = $g->[ _V ];
+    if (wantarray) {
+	map { my @v = @{ $_->[ 1 ] };
+	      pop @v;
+	      map { $V->_get_id_path($_) } @v } $g->_edges_to( @_ );
+    } else {
+	return $g->_edges_to( @_ );
+    }
 }
 
 1;
