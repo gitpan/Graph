@@ -164,7 +164,10 @@ sub __successors {
     my $V = $g->[ _V ];
     return wantarray ? () : 0 unless defined $V && defined $V->[ _s ];
     # my $i = $V->_get_path_id( $_[0] );
-    my $i = $V->[ _s ]->{ $_[0] };
+    my $i =
+	($V->[ _f ] & _LIGHT) ?
+	    $V->[ _s ]->{ $_[0] } :
+	    $V->_get_path_id( $_[0] );
     return wantarray ? () : 0 unless defined $i && defined $E->[ _s ]->{ $i };
     return keys %{ $E->[ _s ]->{ $i } };
 }
@@ -217,12 +220,12 @@ sub __attr {
     my @E = $g->edges; # TODO: Both these (ZZZ) lines are mysteriously needed!
     # ZZZ: an example of failing tests is t/51_edge_attributes.t.
     if (ref $v) { # Edges, then.
-	# "Reedging."
+	# print "Reedging\n.";
 	@E = $g->edges; # TODO: Both these (ZZZ) lines are mysteriously needed!
 	$g->[ _E ] = $m = Graph::AdjacencyMap::Heavy->_new($f, 2);
 	$g->add_edges( @E );
     } else {
-	# "Revertexing".
+	# print "Revertexing.\n";
 	$m = Graph::AdjacencyMap::Vertex->_new(($f & ~_LIGHT), 1);
 	$m->[ _n ] = $V[ _n ];
 	$m->[ _i ] = $V[ _i ];

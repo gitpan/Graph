@@ -1,3 +1,11 @@
+2005-01-14  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* The #9461 was still there.
+	  But now we have a simple test case from Sebastian Nagel.
+	  The real culprit seemed to be a misapplied optimisation.
+
+	* Release as 0.53.
+
 2005-01-12  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Fix set_graph_attribute() documentation not to talk about $u, $v

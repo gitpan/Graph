@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.52';
+$VERSION = '0.53';
 
 require 5.005;
 
