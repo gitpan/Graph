@@ -23,6 +23,7 @@ Graph::Traversal - graph traversal
 =cut
 
 =pod
+
 =item new
 
 	$s = Graph::Traversal->new($G, %param)
@@ -40,6 +41,7 @@ breadth-first searching:
 I<%param documentation to be written>
 
 =cut
+
 sub new {
     my $class  = shift;
     my $G      = shift;
@@ -54,6 +56,7 @@ sub new {
 }
 
 =pod
+
 =item reset
 
 	$S->reset
@@ -61,6 +64,7 @@ sub new {
 Resets a graph search object $S to its initial state.
 
 =cut
+
 sub reset {
     my $S = shift;
     my $G = $S->{ G };
@@ -228,6 +232,7 @@ sub _next_state {
 }
 
 =pod
+
 =item next_preorder
 
 	$v = $s->next_preorder
@@ -236,6 +241,7 @@ Returns the next vertex in preorder of the graph
 encapsulated within the search object $s.
 
 =cut
+
 sub next_preorder {
     my $S = shift;
 
@@ -243,6 +249,7 @@ sub next_preorder {
 }
 
 =cut
+
 =item next_postorder
 
 	$v = $S->next_postorder
@@ -251,6 +258,7 @@ Returns the next vertex in postorder of the graph
 encapsulated within the search object $S.
 
 =cut
+
 sub next_postorder {
     my $S = shift;
 
@@ -258,6 +266,7 @@ sub next_postorder {
 }
 
 =pod
+
 =item next_edge
 
 	($u, $v) = $s->next_edge
@@ -266,6 +275,7 @@ Returns the vertices of the next edge of the graph
 encapsulated within the search object $s.
 
 =cut
+
 sub next_edge {
     my $S = shift;
 
@@ -273,6 +283,7 @@ sub next_edge {
 }
 
 =pod
+
 =item preorder
 
 	@V = $S->preorder
@@ -281,6 +292,7 @@ Returns all the vertices in preorder of the graph
 encapsulated within the search object $S.
 
 =cut
+
 sub preorder {
     my $S = shift;
 
@@ -290,6 +302,7 @@ sub preorder {
 }
 
 =pod
+
 =item postorder
 
 	@V = $S->postorder
@@ -298,6 +311,7 @@ Returns all the vertices in postorder of the graph
 encapsulated within the search object $S.
 
 =cut
+
 sub postorder {
     my $S = shift;
 
@@ -307,6 +321,7 @@ sub postorder {
 }
 
 =pod
+
 =item edges
 
 	@V = $S->edges
@@ -315,6 +330,7 @@ Returns all the edges of the graph
 encapsulated within the search object $S.
 
 =cut
+
 sub edges {
     my $S = shift;
     my (@E, $u, $v);
@@ -325,6 +341,7 @@ sub edges {
 }
 
 =pod
+
 =item roots
 
 	@R = $S->roots
@@ -337,6 +354,7 @@ on the $s are returned; or a preorder search is done
 and the roots of this search are returned.
 
 =cut
+
 sub roots {
     my $S = shift;
 
@@ -348,18 +366,22 @@ sub roots {
 }
 
 =pod
-=item vertex_roots
 
-	%R = $S->vertex_roots
+=item _vertex_roots
 
-Returns as a hash of ($vertex, $root) pairs all the vertices
-and the root vertices of their search trees of the graph
-encapsulated within the search object $S.
-"The root vertices" is ambiguous; see the documentation of
-the roots() method for more details.
+	%R = $S->_vertex_roots
+
+Returns as a hash of ($vertex, index) pairs where index is an index
+into the vertex_root list of the traversal.
+
+"The root vertices" is ambiguous; see the documentation of the roots()
+method for more details.
+
+(This is the old vertex_roots().)
 
 =cut
-sub vertex_roots {
+
+sub _vertex_roots {
     my $S = shift;
     my $G = $S->{ G };
 
@@ -369,6 +391,36 @@ sub vertex_roots {
 
     return 
 	map { ( $_, $S->{ vertex_root }->{ $_ } ) } $G->vertices;
+}
+
+=pod
+
+=item vertex_roots
+
+	%R = $S->vertex_roots
+
+Returns as a hash of ($vertex, $root) pairs all the vertices
+and the root vertices of their search trees of the graph
+encapsulated within the search object $S.
+
+"The root vertices" is ambiguous; see the documentation of
+the roots() method for more details.
+
+(See also _vertex_roots()).
+
+=cut
+
+sub vertex_roots {
+    my $S = shift;
+    my $G = $S->{ G };
+
+    $S->preorder
+        unless exists $S->{ preorder_list } and
+	       @{ $S->{ preorder_list } } == $G->vertices;
+
+    return 
+        map { ( $_, $S->{root_list}[$S->{ vertex_root }->{ $_ }] ) }
+            $G->vertices;
 }
 
 # DELETE
@@ -383,6 +435,8 @@ sub DELETE {
 }
 
 =pod
+
+=back
 
 =head1 COPYRIGHT
 

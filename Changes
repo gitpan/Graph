@@ -1,3 +1,15 @@
+2004-04-05  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Release 0.20102:
+	  Since my work on the "Graph NG" is progressing painfully slowly,
+	  I'm releasing this as a stopgap measure, but the DISCLAIMER still
+	  is applicable.
+
+	  Various bug fixes, especially for the strongly connected components.
+	  Contributors, either of fixes or test cases, in no particular order:
+	  Tom Anderson, frederik, Alex Harper, David Sanders, ethani, nadav,
+	  Heikki Lehväslaiho, Bob Mathews.
+
 2002-10-10  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Release 0.20101: Add the DISCLAIMER.  Sorry, no bug fixes.

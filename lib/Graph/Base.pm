@@ -33,6 +33,7 @@ require Exporter;
 @ISA = qw(Exporter);
 
 =pod
+
 =item new
 
 	$G = Graph->new(@V)
@@ -40,6 +41,7 @@ require Exporter;
 Returns a new graph $G with the optional vertices @V.
 
 =cut
+
 sub new {
    my $class = shift;
 
@@ -53,6 +55,7 @@ sub new {
 }
 
 =pod
+
 =item add_vertices
 
 	$G = $G->add_vertices(@v)
@@ -60,6 +63,7 @@ sub new {
 Adds the vertices to the graph $G, returns the graph.
 
 =cut
+
 sub add_vertices {
     my ($G, @v) = @_;
 
@@ -69,6 +73,7 @@ sub add_vertices {
 }
 
 =pod
+
 =item add_vertex
 
 	$G = $G->add_vertex($v)
@@ -76,6 +81,7 @@ sub add_vertices {
 Adds the vertex $v to the graph $G, returns the graph.
 
 =cut
+
 sub add_vertex {
     my ($G, $v) = @_;
 
@@ -83,6 +89,7 @@ sub add_vertex {
 }
 
 =pod
+
 =item vertices
 
 	@V = $G->vertices
@@ -91,6 +98,7 @@ In list context returns the vertices @V of the graph $G.
 In scalar context returns the number of the vertices.
 
 =cut
+
 sub vertices {
     my $G = shift;
     my @V = exists $G->{ V } ? sort values %{ $G->{ V } } : ();
@@ -99,6 +107,7 @@ sub vertices {
 }
 
 =pod
+
 =item has_vertices
 
 	$G->has_vertices(@v)
@@ -109,6 +118,7 @@ and undef if it doesn't.  In scalar context returns the
 number of the existing vertices.
 
 =cut
+
 sub has_vertices {
     my $G = shift;
 
@@ -118,6 +128,7 @@ sub has_vertices {
 }
 
 =pod
+
 =item has_vertex
 
 	$b = $G->has_vertex($v)
@@ -126,13 +137,15 @@ Returns true if the vertex $v exists in
 the graph $G and false if it doesn't.
 
 =cut
+
 sub has_vertex {
     my ($G, $v) = @_;
 
-    return exists $G->{V}->{ $v };
+    return defined $v && exists $G->{ V } && exists $G->{ V }->{ $v };
 }
 
 =pod
+
 =item vertex
 
 	$v = $G->has_vertex($v)
@@ -141,13 +154,15 @@ Returns the vertex $v if the vertex exists in the graph $G
 or undef if it doesn't.
 
 =cut
+
 sub vertex {
     my ($G, $v) = @_;
 
-    return $G->{ V }->{ $v };
+    return defined $v && $G->{ V }->{ $v };
 }
 
 =pod
+
 =item directed
 
 	$b = $G->directed($d)
@@ -156,6 +171,7 @@ Set the directedness of the graph $G to $d or return the
 current directedness.  Directedness defaults to true.
 
 =cut
+
 sub directed {
     my ($G, $d) = @_;
 
@@ -182,6 +198,7 @@ sub directed {
 }
 
 =pod
+
 =item undirected
 
 	$b = $G->undirected($d)
@@ -190,6 +207,7 @@ Set the undirectedness of the graph $G to $u or return the
 current undirectedness.  Undirectedness defaults to false.
 
 =cut
+
 sub undirected {
     my ($G, $u) = @_;
 
@@ -221,6 +239,7 @@ sub undirected {
 }
 
 =pod
+
 =item has_edge
 
 	$b = $G->has_edge($u, $v)
@@ -229,6 +248,7 @@ Return true if the graph $G has the edge between
 the vertices $u, $v.
 
 =cut
+
 sub has_edge {
     my ($G, $u, $v) = @_;
 
@@ -237,6 +257,7 @@ sub has_edge {
 }
 
 =pod
+
 =item has_edges
 
 	$G->has_edges($u1, $v1, $u2, $v2, ...)
@@ -247,6 +268,7 @@ and false for each non-existing edge.  In scalar context
 returns the number of the existing edges.
 
 =cut
+
 sub has_edges {
     my $G = shift;
     my @e;
@@ -259,6 +281,7 @@ sub has_edges {
 }
 
 =pod
+
 =item has_path
 
 	$G->has_path($u, $v, ...)
@@ -267,6 +290,7 @@ Return true if the graph $G has the cycle defined by
 the vertices $u, $v, ..., false otherwise.
 
 =cut
+
 sub has_path {
     my $G = shift;
     my $u = shift;
@@ -280,6 +304,7 @@ sub has_path {
 }
 
 =pod
+
 =item has_cycle
 
 	$G->has_cycle($u, $v, ...)
@@ -288,6 +313,7 @@ Return true if the graph $G has the cycle defined by
 the vertices $u, $v, ...,false otherwise.
 
 =cut
+
 sub has_cycle {
     my $G = shift;
 
@@ -306,9 +332,12 @@ sub _union_vertex_set {
 
     my $su = $G->vertex_set( $u );
     my $sv = $G->vertex_set( $v );
+
+    return if $su eq $sv;
+
     my $ru = $G->{ VertexSetRank }->{ $su };
     my $rv = $G->{ VertexSetRank }->{ $sv };
-
+    
     if ( $ru < $rv ) {	# Union by rank (weight balancing).
 	$G->{ VertexSetParent }->{ $su } = $sv;
     } else {
@@ -318,6 +347,7 @@ sub _union_vertex_set {
 }
 
 =pod
+
 =item vertex_set
 
 	$s = $G->vertex_set($v)
@@ -326,6 +356,7 @@ Returns the vertex set of the vertex $v in the graph $G.
 A "vertex set" is represented by its parent vertex.
 
 =cut
+
 sub vertex_set {
     my ($G, $v) = @_;
 
@@ -343,6 +374,7 @@ sub vertex_set {
 }
 
 =pod
+
 =item add_edge
 
 	$G = $G->add_edge($u, $v)
@@ -351,6 +383,7 @@ Adds the edge defined by the vertices $u, $v, to the graph $G.
 Also implicitly adds the vertices.  Returns the graph.
 
 =cut
+
 sub add_edge {
     my ($G, $u, $v) = @_;
 
@@ -364,6 +397,7 @@ sub add_edge {
 }
 
 =pod
+
 =item add_edges
 
 	$G = $G->add_edges($u1, $v1, $u2, $v2, ...)
@@ -373,6 +407,7 @@ to the graph $G.  Also implicitly adds the vertices.
 Returns the graph.
 
 =cut
+
 sub add_edges {
     my $G = shift;
 
@@ -384,6 +419,7 @@ sub add_edges {
 }
 
 =pod
+
 =item add_path
 
 	$G->add_path($u, $v, ...)
@@ -393,6 +429,7 @@ to the graph $G.   Also implicitly adds the vertices.
 Returns the graph.
 
 =cut
+
 sub add_path {
     my $G = shift;
     my $u = shift;
@@ -406,6 +443,7 @@ sub add_path {
 }
 
 =pod
+
 =item add_cycle
 
 	$G = $G->add_cycle($u, $v, ...)
@@ -415,12 +453,12 @@ to the graph $G.  Also implicitly adds the vertices.
 Returns the graph.
 
 =cut
+
 sub add_cycle {
     my $G = shift;
 
     $G->add_path(@_, $_[0]); # Just wrap around.
 }
-
 
 # _successors
 #
@@ -463,6 +501,7 @@ sub _predecessors {
 }
 
 =pod
+
 =item neighbors
 
 	@n = $G->neighbors($v)
@@ -471,6 +510,7 @@ Returns the neighbor vertices of the vertex in the graph.
 (Also 'neighbours' works.)
 
 =cut
+
 sub neighbors {
     my ($G, $v) = @_;
 
@@ -483,6 +523,7 @@ use vars '*neighbours';
 *neighbours = \&neighbors; # Keep both sides of the Atlantic happy.
 
 =pod
+
 =item successors
 
 	@s = $G->successors($v)
@@ -490,6 +531,7 @@ use vars '*neighbours';
 Returns the successor vertices of the vertex in the graph.
 
 =cut
+
 sub successors {
     my ($G, $v) = @_;
 
@@ -497,6 +539,7 @@ sub successors {
 }
 
 =pod
+
 =item predecessors
 
 	@p = $G->predecessors($v)
@@ -504,6 +547,7 @@ sub successors {
 Returns the predecessor vertices of the vertex in the graph.
 
 =cut
+
 sub predecessors {
     my ($G, $v) = @_;
 
@@ -511,6 +555,7 @@ sub predecessors {
 }
 
 =pod
+
 =item out_edges
 
 	@e = $G->out_edges($v)
@@ -520,6 +565,7 @@ In list context returns the edges as ($start_vertex, $end_vertex)
 pairs.  In scalar context returns the number of the edges.
 
 =cut
+
 sub out_edges {
     my ($G, $v) = @_;
 
@@ -531,6 +577,7 @@ sub out_edges {
 }
 
 =pod
+
 =item in_edges
 
 	@e = $G->in_edges($v)
@@ -540,6 +587,7 @@ In list context returns the edges as ($start_vertex, $end_vertex)
 pairs; in scalar context returns the number of the edges.
 
 =cut
+
 sub in_edges {
     my ($G, $v) = @_;
 
@@ -551,6 +599,7 @@ sub in_edges {
 }
 
 =pod
+
 =item edges
 
 	@e = $G->edges($u, $v)
@@ -563,6 +612,7 @@ $start_vertex, $end_vertex pairs; in scalar context
 returns the number of the edges.
 
 =cut
+
 sub edges {
     my ($G, $u, $v) = @_;
 
@@ -579,6 +629,7 @@ sub edges {
 }
 
 =pod
+
 =item delete_edge
 
 	$G = $G->delete_edge($u, $v)
@@ -588,6 +639,7 @@ Note that the edge need not actually exist.
 Returns the graph.
 
 =cut
+
 sub delete_edge {
     my ($G, $u, $v) = @_;
 
@@ -608,6 +660,7 @@ sub delete_edge {
 }
 
 =pod
+
 =item delete_edges
 
 	$G = $G->delete_edges($u1, $v1, $u2, $v2, ..)
@@ -618,6 +671,7 @@ Note that the edges need not actually exist.
 Returns the graph.
 
 =cut
+
 sub delete_edges {
     my $G = shift;
 
@@ -637,6 +691,7 @@ sub delete_edges {
 }
 
 =pod
+
 =item delete_path
 
 	$G = $G->delete_path($u, $v, ...)
@@ -645,6 +700,7 @@ Deletes a path defined by the vertices $u, $v, ..., from the graph $G.
 Note that the path need not actually exist. Returns the graph.
 
 =cut
+
 sub delete_path {
     my $G = shift;
     my $u = shift;
@@ -658,6 +714,7 @@ sub delete_path {
 }
 
 =pod
+
 =item delete_cycle
 
 	$G = $G->delete_cycle($u, $v, ...)
@@ -666,6 +723,7 @@ Deletes a cycle defined by the vertices $u, $v, ..., from the graph $G.
 Note that the cycle need not actually exist. Returns the graph.
 
 =cut
+
 sub delete_cycle {
     my $G = shift;
 
@@ -673,6 +731,7 @@ sub delete_cycle {
 }
 
 =pod
+
 =item delete_vertex
 
 	$G = $G->delete_vertex($v)
@@ -682,6 +741,7 @@ Note that the vertex need not actually exist.
 Returns the graph.
 
 =cut
+
 sub delete_vertex {
     my ($G, $v) = @_;
 
@@ -693,6 +753,7 @@ sub delete_vertex {
 }
 
 =pod
+
 =item delete_vertices
 
 	$G = $G->delete_vertices(@v)
@@ -702,6 +763,7 @@ Note that the vertices need not actually exist.
 Returns the graph.
 
 =cut
+
 sub delete_vertices {
     my $G = shift;
 
@@ -713,6 +775,7 @@ sub delete_vertices {
 }
 
 =pod
+
 =item in_degree
 
 	$d = $G->in_degree($v)
@@ -723,6 +786,7 @@ vertices of the graph, or undef if the vertex doesn't
 exist in the graph.
 
 =cut
+
 sub in_degree {
     my ($G, $v) = @_;
 
@@ -746,6 +810,7 @@ sub in_degree {
 }
 
 =pod
+
 =item out_degree
 
 	$d = $G->out_degree($v)
@@ -756,6 +821,7 @@ vertices of the graph, of undef if the vertex doesn't
 exist in the graph.
 
 =cut
+
 sub out_degree {
     my ($G, $v) = @_;
 
@@ -779,6 +845,7 @@ sub out_degree {
 }
 
 =pod
+
 =item degree
 
 	$d = $G->degree($v)
@@ -789,6 +856,7 @@ vertices of the graph, or undef if the vertex $v
 doesn't exist in the graph.
 
 =cut
+
 sub degree {
     my ($G, $v) = @_;
 
@@ -816,6 +884,7 @@ sub degree {
 }
 
 =pod
+
 =item average_degree
 
 	$d = $G->average_degree
@@ -823,6 +892,7 @@ sub degree {
 Returns the average degree of the vertices of the graph $G.
 
 =cut
+
 sub average_degree {
     my $G = shift;
     my $V = $G->vertices;
@@ -831,6 +901,7 @@ sub average_degree {
 }
 
 =pod
+
 =item is_source_vertex
 
 	$b = $G->is_source_vertex($v)
@@ -838,6 +909,7 @@ sub average_degree {
 Returns true if the vertex $v is a source vertex of the graph $G.
 
 =cut
+
 sub is_source_vertex {
     my ($G, $v) = @_;
 
@@ -845,6 +917,7 @@ sub is_source_vertex {
 }
 
 =pod
+
 =item is_sink_vertex
 
 	$b = $G->is_sink_vertex($v)
@@ -852,6 +925,7 @@ sub is_source_vertex {
 Returns true if the vertex $v is a sink vertex of the graph $G.
 
 =cut
+
 sub is_sink_vertex {
     my ($G, $v) = @_;
 
@@ -859,6 +933,7 @@ sub is_sink_vertex {
 }
 
 =pod
+
 =item is_isolated_vertex
 
 	$b = $G->is_isolated_vertex($v)
@@ -866,6 +941,7 @@ sub is_sink_vertex {
 Returns true if the vertex $v is a isolated vertex of the graph $G.
 
 =cut
+
 sub is_isolated_vertex {
     my ($G, $v) = @_;
 
@@ -873,6 +949,7 @@ sub is_isolated_vertex {
 }
 
 =pod
+
 =item is_exterior_vertex
 
 	$b = $G->is_exterior_vertex($v)
@@ -880,6 +957,7 @@ sub is_isolated_vertex {
 Returns true if the vertex $v is a exterior vertex of the graph $G.
 
 =cut
+
 sub is_exterior_vertex {
     my ($G, $v) = @_;
 
@@ -887,6 +965,7 @@ sub is_exterior_vertex {
 }
 
 =pod
+
 =item is_interior_vertex
 
 	$b = $G->is_interior_vertex($v)
@@ -894,6 +973,7 @@ sub is_exterior_vertex {
 Returns true if the vertex $v is a interior vertex of the graph $G.
 
 =cut
+
 sub is_interior_vertex {
     my ($G, $v) = @_;
 
@@ -901,6 +981,7 @@ sub is_interior_vertex {
 }
 
 =pod
+
 =item is_self_loop_vertex
 
 	$b = $G->is_self_loop_vertex($v)
@@ -908,6 +989,7 @@ sub is_interior_vertex {
 Returns true if the vertex $v is a self-loop vertex of the graph $G.
 
 =cut
+
 sub is_self_loop_vertex {
     my ($G, $v) = @_;
 
@@ -915,6 +997,7 @@ sub is_self_loop_vertex {
 }
 
 =pod
+
 =item source_vertices
 
 	@s = $G->source_vertices
@@ -922,6 +1005,7 @@ sub is_self_loop_vertex {
 Returns the source vertices @s of the graph $G.
 
 =cut
+
 sub source_vertices {
     my $G = shift;
 
@@ -929,6 +1013,7 @@ sub source_vertices {
 }
 
 =pod
+
 =item sink_vertices
 
 	@s = $G->sink_vertices
@@ -936,6 +1021,7 @@ sub source_vertices {
 Returns the sink vertices @s of the graph $G.
 
 =cut
+
 sub sink_vertices {
     my $G = shift;
 
@@ -943,6 +1029,7 @@ sub sink_vertices {
 }
 
 =pod
+
 =item isolated_vertices
 
 	@i = $G->isolated_vertices
@@ -950,6 +1037,7 @@ sub sink_vertices {
 Returns the isolated vertices @i of the graph $G.
 
 =cut
+
 sub isolated_vertices {
     my $G = shift;
 
@@ -957,6 +1045,7 @@ sub isolated_vertices {
 }
 
 =pod
+
 =item exterior_vertices
 
 	@e = $G->exterior_vertices
@@ -964,6 +1053,7 @@ sub isolated_vertices {
 Returns the exterior vertices @e of the graph $G.
 
 =cut
+
 sub exterior_vertices {
     my $G = shift;
 
@@ -971,6 +1061,7 @@ sub exterior_vertices {
 }
 
 =pod
+
 =item interior_vertices
 
 	@i = $G->interior_vertices
@@ -978,6 +1069,7 @@ sub exterior_vertices {
 Returns the interior vertices @i of the graph $G.
 
 =cut
+
 sub interior_vertices {
     my $G = shift;
 
@@ -985,6 +1077,7 @@ sub interior_vertices {
 }
 
 =pod
+
 =item self_loop_vertices
 
 	@s = $G->self_loop_vertices
@@ -992,6 +1085,7 @@ sub interior_vertices {
 Returns the self-loop vertices @s of the graph $G.
 
 =cut
+
 sub self_loop_vertices {
     my $G = shift;
 
@@ -999,6 +1093,7 @@ sub self_loop_vertices {
 }
 
 =pod
+
 =item density_limits
 
 	($sparse, $dense, $complete) = $G->density_limits
@@ -1012,6 +1107,7 @@ limit of dense is more than 3/4 of the edges of the
 complete graph.
 
 =cut
+
 sub density_limits {
     my $G = shift;
 
@@ -1024,6 +1120,7 @@ sub density_limits {
 }
 
 =pod
+
 =item density
 
 	$d = $G->density
@@ -1031,6 +1128,7 @@ sub density_limits {
 Returns the density $d of the graph $G.
 
 =cut
+
 sub density {
     my $G = shift;
     my ($sparse, $dense, $complete) = $G->density_limits;
@@ -1039,6 +1137,7 @@ sub density {
 }
 
 =pod
+
 =item is_sparse
 
 	$d = $G->is_sparse
@@ -1046,6 +1145,7 @@ sub density {
 Returns true if the graph $G is sparse.
 
 =cut
+
 sub is_sparse {
     my $G = shift;
     my ($sparse, $dense, $complete) = $G->density_limits;
@@ -1054,6 +1154,7 @@ sub is_sparse {
 }
 
 =pod
+
 =item is_dense
 
 	$d = $G->is_dense
@@ -1061,6 +1162,7 @@ sub is_sparse {
 Returns true if the graph $G is dense.
 
 =cut
+
 sub is_dense {
     my $G = shift;
     my ($sparse, $dense, $complete) = $G->density_limits;
@@ -1069,6 +1171,7 @@ sub is_dense {
 }
 
 =pod
+
 =item complete
 
 	$C = $G->complete;
@@ -1076,6 +1179,7 @@ sub is_dense {
 Returns a new complete graph $C corresponding to the graph $G.
 
 =cut
+
 sub complete {
     my $G = shift;
     my $C = (ref $G)->new;
@@ -1106,6 +1210,7 @@ sub complete {
 }
 
 =pod
+
 =item complement
 
 	$C = $G->complement;
@@ -1113,6 +1218,7 @@ sub complete {
 Returns a new complement graph $C corresponding to the graph $G.
 
 =cut
+
 sub complement {
     my $G = shift;
     my $C = $G->complete;
@@ -1127,6 +1233,7 @@ sub complement {
 }
 
 =pod
+
 =item copy
 
 	$C = $G->copy;
@@ -1134,6 +1241,7 @@ sub complement {
 Returns a new graph $C corresponding to the graph $G.
 
 =cut
+
 sub copy {
     my $G = shift;
     my $C = (ref $G)->new($G->vertices);
@@ -1150,6 +1258,7 @@ sub copy {
 }
 
 =pod
+
 =item transpose
 
 	$T = $G->transpose;
@@ -1157,6 +1266,7 @@ sub copy {
 Returns a new transpose graph $T corresponding to the graph $G.
 
 =cut
+
 sub transpose {
     my $G = shift;
 
@@ -1199,6 +1309,7 @@ sub _stringify {
 }
 
 =pod
+
 =item set_attribute
 
 	$G->set_attribute($attribute, $value)
@@ -1210,6 +1321,7 @@ but only if the vertex/edge already exists.  Returns
 true if the attribute is set successfully, false if not.
 
 =cut
+
 sub set_attribute {
     my $G         = shift;
     my $attribute = shift;
@@ -1234,6 +1346,7 @@ sub set_attribute {
 }
 
 =pod
+
 =item get_attribute
 
 	$value = $G->get_attribute($attribute)
@@ -1243,6 +1356,7 @@ sub set_attribute {
 Returns the $value of $attribute of graph/vertex/edge.
 
 =cut
+
 sub get_attribute {
     my $G         = shift;
     my $attribute = shift;
@@ -1275,6 +1389,7 @@ sub get_attribute {
 }
 
 =pod
+
 =item has_attribute
 
 	$value = $G->has_attribute($attribute)
@@ -1284,6 +1399,7 @@ sub get_attribute {
 Returns the $value of $attribute of graph/vertex/edge.
 
 =cut
+
 sub has_attribute {
     my $G         = shift;
     my $attribute = shift;
@@ -1306,11 +1422,13 @@ sub has_attribute {
 	    exists $G->{ Attr }->{ V }->{ $u }->{ $attribute };
 	}
     } else {
-	exists $G->{ Attr }->{ G }->{ $attribute };
+	exists $G->{ Attr } &&
+	    exists $G->{ Attr }->{ G }->{ $attribute };
     }
 }
 
 =pod
+
 =item get_attributes
 
 	%attributes = $G->get_attributes()
@@ -1321,6 +1439,7 @@ Returns as a hash all the attribute names and values
 of graph/vertex/edge.
 
 =cut
+
 sub get_attributes {
     my $G       = shift;
     my ($u, $v) = @_;
@@ -1345,6 +1464,7 @@ sub get_attributes {
 }
 
 =pod
+
 =item delete_attribute
 
 	$G->delete_attribute($attribute)
@@ -1354,6 +1474,7 @@ sub get_attributes {
 Deletes the $attribute of graph/vertex/edge.
 
 =cut
+
 sub delete_attribute {
     my $G         = shift;
     my $attribute = shift;
@@ -1381,6 +1502,7 @@ sub delete_attribute {
 }
 
 =pod
+
 =item delete_attributes
 
 	$G->delete_attributes()
@@ -1390,6 +1512,7 @@ sub delete_attribute {
 Deletes all the attributes of graph/vertex/edge.
 
 =cut
+
 sub delete_attributes {
     my $G       = shift;
     my ($u, $v) = @_;
@@ -1406,6 +1529,7 @@ sub delete_attributes {
 }
 
 =pod
+
 =item add_weighted_edge
 
 	$G->add_weighted_edge($u, $w, $v, $a)
@@ -1414,6 +1538,7 @@ Adds in the graph $G an edge from vertex $u to vertex $v
 and the edge attribute 'weight' set to $w.
 
 =cut
+
 sub add_weighted_edge {
     my ($G, $u, $w, $v, $a) = @_;
 
@@ -1422,6 +1547,7 @@ sub add_weighted_edge {
 }
 
 =pod
+
 =item add_weighted_edges
 
 	$G->add_weighted_edges($u1, $w1, $v1, $u2, $w2, $v2, ...)
@@ -1429,6 +1555,7 @@ sub add_weighted_edge {
 Adds in the graph $G the weighted edges.
 
 =cut
+
 sub add_weighted_edges {
     my $G = shift;
 
@@ -1438,6 +1565,7 @@ sub add_weighted_edges {
 }
 
 =pod
+
 =item add_weighted_path
 
 	$G->add_weighted_path($v1, $w1, $v2, $w2, ..., $wnm1, $vn)
@@ -1446,6 +1574,7 @@ Adds in the graph $G the n edges defined by the path $v1 ... $vn
 with the n-1 'weight' attributes $w1 ... $wnm1
 
 =cut
+
 sub add_weighted_path {
     my $G = shift;
     my $u = shift;
@@ -1457,6 +1586,7 @@ sub add_weighted_path {
 }
 
 =pod
+
 =item MST_Kruskal
 
 	$MST = $G->MST_Kruskal;
@@ -1466,6 +1596,7 @@ the graph $G based on the 'weight' attributes of the edges.
 (Needs the ->vertex_set() method.)
 
 =cut
+
 sub MST_Kruskal {
     my $G   = shift;
     my $MST = (ref $G)->new;
@@ -1491,6 +1622,7 @@ sub MST_Kruskal {
 }
 
 =pod
+
 =item edge_classify
 
 	@C = $G->edge_classify(%param)
@@ -1501,6 +1633,7 @@ of an edge and $class being the class.  The %param can be
 used to control the search.
 
 =cut
+
 sub edge_classify {
     my $G = shift;
 
@@ -1549,6 +1682,7 @@ sub edge_classify {
 }
 
 =pod
+
 =item toposort
 
 	@toposort = $G->toposort
@@ -1556,6 +1690,7 @@ sub edge_classify {
 Returns the vertices of the graph $G sorted topologically.
 
 =cut
+
 sub toposort {
     my $G = shift;
     my $d = Graph::DFS->new($G);
@@ -1578,7 +1713,7 @@ sub _strongly_connected {
     Graph::DFS->
 	new($T,
 	    # Pick the potential roots in their DFS postorder.
-	    strong_root_order => [ Graph::DFS->new($T)->postorder ],
+	    strong_root_order => [ reverse Graph::DFS->new($G)->postorder ],
 	    get_next_root     =>
 	        sub {
 		    my ($T, %param) = @_;
@@ -1592,6 +1727,7 @@ sub _strongly_connected {
 }
 
 =pod
+
 =item strongly_connected_components
 
 	@S = $G->strongly_connected_components
@@ -1602,19 +1738,21 @@ containing the vertices belonging to one strongly connected
 component.
 
 =cut
+
 sub strongly_connected_components {
     my $G = shift;
     my $T = $G->_strongly_connected;
-    my %R = $T->vertex_roots;
+    my %R = $T->_vertex_roots;
     my @C;
 
     # Clump together vertices having identical root vertices.
-    while (my ($v, $r) = each %R) { push @{ $C[$r] }, $v }
+    while (my ($v, $r) = each %R) { push @{ $C[ $r ] }, $v }
 
     return @C;
 }
 
 =pod
+
 =item strongly_connected_graph
 
 	$T = $G->strongly_connected_graph
@@ -1625,11 +1763,12 @@ formed from their constituent vertices by concatenating
 their names by '+'-characters: "a" and "b" --> "a+b".
 
 =cut
+
 sub strongly_connected_graph {
     my $G = shift;
     my $C = (ref $G)->new;
     my $T = $G->_strongly_connected;
-    my %R = $T->vertex_roots;
+    my %R = $T->_vertex_roots;
     my @C; # We're not calling the strongly_connected_components()
            # method because we will need also the %R.
 
@@ -1642,15 +1781,25 @@ sub strongly_connected_graph {
     my @E = $G->edges;
 
     # Copy the edges between strongly connected components.
+    my $edge_cnt = 0;
+    my %n;
     while (my ($u, $v) = splice(@E, 0, 2)) {
-	$C->add_edge( $C[ $R{ $u } ], $C[ $R{ $v } ] )
-	    unless $R{ $u } == $R{ $v };
+	if ($R{ $u } != $R{ $v }) {
+	    $C->add_edge( $C[ $R{ $u } ], $C[ $R{ $v } ] );
+	    $edge_cnt++;
+	} elsif ($edge_cnt == 0) {
+	    $n{ $u } = '';
+	}
+    }
+    if ($edge_cnt == 0) {
+	$C->add_vertex(join("+", keys %n));
     }
 
     return $C;
 }
 
 =pod
+
 =item APSP_Floyd_Warshall
 
 	$APSP = $G->APSP_Floyd_Warshall
@@ -1663,6 +1812,7 @@ An edge has attributes "weight" and "path"; for the length of
 the shortest path and for the path (an anonymous list) itself.
 
 =cut
+
 sub APSP_Floyd_Warshall {
     my $G = shift;
 
@@ -1760,6 +1910,7 @@ sub APSP_Floyd_Warshall {
 }
 
 =pod
+
 =item TransitiveClosure_Floyd_Warshall
 
 	$TransitiveClosure = $G->TransitiveClosure_Floyd_Warshall
@@ -1770,6 +1921,7 @@ The resulting graph has an edge between each *ordered* pair of
 vertices in which the second vertex is reachable from the first.
 
 =cut
+
 sub TransitiveClosure_Floyd_Warshall {
     my $G = shift;
 
@@ -1824,6 +1976,7 @@ sub TransitiveClosure_Floyd_Warshall {
 }
 
 =pod
+
 =item articulation points
 
 	@A = $G->articulation_points(%param)
@@ -1832,6 +1985,7 @@ Returns the articulation points (vertices) @A of the graph $G.
 The %param can be used to control the search.
 
 =cut
+
 sub articulation_points {
     my $G = shift;
     my $articulate =
@@ -1902,6 +2056,7 @@ sub articulation_points {
 }
 
 =pod
+
 =item is_biconnected
 
 	$b = $G->is_biconnected
@@ -1910,6 +2065,7 @@ Returns true is the graph $G is biconnected
 (has no articulation points), false otherwise.
 
 =cut
+
 sub is_biconnected {
     my $G = shift;
 
@@ -1917,6 +2073,7 @@ sub is_biconnected {
 }
 
 =pod
+
 =item largest_out_degree
 
 	$v = $G->largest_out_degree( @V )
@@ -1924,17 +2081,22 @@ sub is_biconnected {
 Selects the vertex $v from the vertices @V having
 the largest out degree in the graph $G.
 
-
 =cut
+
 sub largest_out_degree {
     my $G = shift;
+    my $L = shift;
+    my $O = $G->out_degree($L);
 
-    my @R = map { $_->[ 0 ] } # A Schwartzian Transform.
-	        sort { $b->[ 1 ] <=> $a->[ 1 ] || $a cmp $b }
-		     map { [ $_, $G->out_degree($_) ] }
-			 @_;
+    for my $e (@_) {
+	my $o = $G->out_degree($e);
+	if ($o > $O) {
+	    $L = $e;
+	    $O = $o;
+	}
+    }
 
-    return $R[ 0 ];
+    return $L;
 }
 
 # _heap_init
@@ -1961,6 +2123,7 @@ sub _heap_init {
 }
 
 =pod
+
 =item MST_Prim
 
 	$MST = $G->MST_Prim($u)
@@ -1971,6 +2134,7 @@ The optional start vertex is $u, if none is given, a hopefully
 good one (a vertex with a large out degree) is chosen.
 
 =cut
+
 sub MST_Prim {
     my ( $G, $u ) = @_;
     my $MST       = (ref $G)->new;
@@ -2036,11 +2200,13 @@ sub _SSSP_construct {
 
 	my @path = ( $u );
 	if ( defined $P->{ $u } ) {
+	    $SSSP->add_edge($P->{ $u }, $u );
+	    $SSSP->set_attribute( "weight", $P->{ $u }, $u, $G->get_attribute("weight",$P->{ $u }, $u) || 0 );
 	    push @path, $P->{ $u };
 	    if ( $P->{ $u } ne $s ) {
 		my $v = $P->{ $u };
 
-		while ( $v ne $s ) {
+		while ( defined $v && exists $P->{ $v } && $v ne $s ) {
 		    push @path, $P->{ $v };
 		    $v = $P->{ $v };
 		}
@@ -2053,6 +2219,7 @@ sub _SSSP_construct {
 }
 
 =pod
+
 =item SSSP_Dijkstra
 
 	$SSSP = $G->SSSP_Dijkstra($s)
@@ -2062,6 +2229,7 @@ of the graph $G starting from the vertex $s using Dijktra's
 SSSP algorithm.
 
 =cut
+
 sub SSSP_Dijkstra {
     my ( $G, $s ) = @_;
 
@@ -2104,6 +2272,7 @@ sub SSSP_Dijkstra {
 }
 
 =pod
+
 =item SSSP_Bellman_Ford
 
 	$SSSP = $G->SSSP_Bellman_Ford($s)
@@ -2114,6 +2283,7 @@ SSSP algorithm.  If there are one or more negatively weighted
 cycles, returns undef.
 
 =cut
+
 sub SSSP_Bellman_Ford {
     my ( $G, $s ) = @_;
     my ( %weight, %parent );
@@ -2158,6 +2328,7 @@ sub SSSP_Bellman_Ford {
 }
 
 =pod
+
 =item SSSP_DAG
 
 	$SSSP = $G->SSSP_DAG($s)
@@ -2166,6 +2337,7 @@ Returns the Single-source Shortest Paths (as a graph)
 of the DAG $G starting from vertex $s.
 
 =cut
+
 sub SSSP_DAG {
     my ( $G, $s ) = @_;
     my $SSSP      = (ref $G)->new;
@@ -2195,6 +2367,7 @@ sub SSSP_DAG {
 }
 
 =pod
+
 =item add_capacity_edge
 
 	$G->add_capacity_edge($u, $w, $v, $a)
@@ -2203,6 +2376,7 @@ Adds in the graph $G an edge from vertex $u to vertex $v
 and the edge attribute 'capacity' set to $w.
 
 =cut
+
 sub add_capacity_edge {
     my ($G, $u, $w, $v, $a) = @_;
 
@@ -2211,6 +2385,7 @@ sub add_capacity_edge {
 }
 
 =pod
+
 =item add_capacity_edges
 
 	$G->add_capacity_edges($u1, $w1, $v1, $u2, $w2, $v2, ...)
@@ -2218,6 +2393,7 @@ sub add_capacity_edge {
 Adds in the graph $G the capacity edges.
 
 =cut
+
 sub add_capacity_edges {
     my $G = shift;
 
@@ -2227,6 +2403,7 @@ sub add_capacity_edges {
 }
 
 =pod
+
 =item add_capacity_path
 
 	$G->add_capacity_path($v1, $w1, $v2, $w2, ..., $wnm1, $vn)
@@ -2235,6 +2412,7 @@ Adds in the graph $G the n edges defined by the path $v1 ... $vn
 with the n-1 'capacity' attributes $w1 ... $wnm1
 
 =cut
+
 sub add_capacity_path {
     my $G = shift;
     my $u = shift;
@@ -2246,6 +2424,7 @@ sub add_capacity_path {
 }
 
 =pod
+
 =item Flow_Ford_Fulkerson
 
 	$F = $G->Flow_Ford_Fulkerson($S)
@@ -2262,6 +2441,7 @@ The result graph $F will have 'flow' and (residual) 'capacity'
 attributes on its edges.
 
 =cut
+
 sub Flow_Ford_Fulkerson {
     my ( $G, $S ) = @_;
 
@@ -2307,6 +2487,7 @@ sub Flow_Ford_Fulkerson {
 }
 
 =pod
+
 =item Flow_Edmonds_Karp
 
 	$F = $G->Flow_Edmonds_Karp($source, $sink)
@@ -2318,6 +2499,7 @@ its edges; resulting flow graph will have 'capacity' and 'flow'
 attributes on its edges.
 
 =cut
+
 sub Flow_Edmonds_Karp {
     my ( $G, $source, $sink ) = @_;
 
@@ -2365,6 +2547,7 @@ sub Flow_Edmonds_Karp {
 use overload 'eq' => \&eq;
 
 =pod
+
 =item eq
 
 	$G->eq($H)
@@ -2375,6 +2558,7 @@ vertex names and identical edges between the vertices, and they must
 be similarly directed.  (Just isomorphism isn't enough.)
 
 =cut
+
 sub eq {
     my ($G, $H) = @_;
 
@@ -2382,6 +2566,7 @@ sub eq {
 }
 
 =pod
+
 =back
 
 =head1 COPYRIGHT

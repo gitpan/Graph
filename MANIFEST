@@ -20,3 +20,6 @@ t/05copy.t
 t/06transpose.t
 t/07complete.t
 t/08complement.t
+t/09scc.t
+t/10sssp.t
+META.yml                                 Module meta-data (added by MakeMaker)

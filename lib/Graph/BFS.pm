@@ -23,6 +23,7 @@ Graph::BFS - graph breadth-first search
 =cut
 
 =pod
+
 =item new
 
 	$bfs = Graph::BFS->new($G, %param)
@@ -31,6 +32,7 @@ Returns a new breadth-first search object for the graph $G
 and the (optional) parameters %param.
 
 =cut
+
 sub new {
     my $class = shift;
     my $graph = shift;

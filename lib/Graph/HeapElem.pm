@@ -14,8 +14,6 @@ $VERSION = 0.01;
 
 Graph::HeapElem - internal use only
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
 
 B<INTERNAL USE ONLY> for the Graph module

@@ -23,6 +23,7 @@ B<see description>
 =cut
 
 =pod
+
 =item new
 
 	$dfs = Graph::DFS->new($G, %param)
@@ -31,6 +32,7 @@ B<see description>
 	and the (optional) parameters %param.
 
 =cut
+
 sub new {
     my $class = shift;
     my $graph = shift;
