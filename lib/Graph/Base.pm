@@ -214,15 +214,16 @@ sub directed {
 	    my $o = $G->{ D }; # Old directedness.
 
 	    $G->{ D } = $d;
-	    if (not $o) {
+	    if (defined $o and not $o) {
 		my @E = $G->edges;
 
 		while (my ($u, $v) = splice(@E, 0, 2)) {
 		    $G->add_edge($v, $u);
 		}
+		return bless $G, 'Graph::Directed'; # Re-bless.
 	    }
 
-	    return bless $G, 'Graph::Directed'; # Re-bless.
+	    return $G; # Don't re-bless unless needed.
 	} else {
 	    return $G->undirected(not $d);
 	}
