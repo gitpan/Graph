@@ -97,11 +97,29 @@ sub add_vertex {
 In list context returns the vertices @V of the graph $G.
 In scalar context returns the number of the vertices.
 
+By default this sorts the vertices.  To avoid this extra
+overhead, use
+
+	@V = $G->vertices_unsorted
+
+or do
+
+	use Graph vertices_unsorted => 1;
+
+which will make vertices() to return unsorted results.
+
 =cut
 
 sub vertices {
     my $G = shift;
     my @V = exists $G->{ V } ? sort values %{ $G->{ V } } : ();
+
+    return @V;
+}
+
+sub vertices_unsorted {
+    my $G = shift;
+    my @V = exists $G->{ V } ? values %{ $G->{ V } } : ();
 
     return @V;
 }
@@ -908,12 +926,16 @@ sub average_degree {
 
 Returns true if the vertex $v is a source vertex of the graph $G.
 
+A source vertex means that there are only outgoing egdes, and at
+least one of them (so that isolated vertices are not source vertices).
+If you want to test for no predecessors, use is_precessorless_vertex().
+
 =cut
 
 sub is_source_vertex {
     my ($G, $v) = @_;
 
-    $G->in_degree($v) == 0 && $G->out_degree($v) >  0;
+    $G->in_degree($v) == 0 && $G->out_degree($v) > 0;
 }
 
 =pod
@@ -924,12 +946,52 @@ sub is_source_vertex {
 
 Returns true if the vertex $v is a sink vertex of the graph $G.
 
+A sink vertex means that there are only incoming egdes, and at
+least one of them (so that isolated vertices are not sink vertices).
+If you want to test for no successors, use is_successorless_vertex().
+
 =cut
 
 sub is_sink_vertex {
     my ($G, $v) = @_;
 
-    $G->in_degree($v) >  0 && $G->out_degree($v) == 0;
+    $G->out_degree($v) == 0 && $G->in_degree($v) > 0;
+}
+
+=pod
+
+=item is_predecessorless_vertex
+
+	$b = $G->is_predecessorless_vertex($v)
+
+Returns true if the vertex $v is a predecessorless vertex of the graph $G.
+
+If you want to test for source vertices, use is_source_vertex().
+
+=cut
+
+sub is_predecessorless_vertex {
+    my ($G, $v) = @_;
+
+    $G->in_degree($v) == 0;
+}
+
+=pod
+
+=item is_successorless_vertex
+
+	$b = $G->is_successorless_vertex($v)
+
+Returns true if the vertex $v is a successorless vertex of the graph $G.
+
+If you want to test for sink vertices, use is_sink_vertex().
+
+=cut
+
+sub is_successorless_vertex {
+    my ($G, $v) = @_;
+
+    $G->out_degree($v) == 0;
 }
 
 =pod
@@ -1026,6 +1088,36 @@ sub sink_vertices {
     my $G = shift;
 
     return grep { $G->is_sink_vertex($_) } $G->vertices;
+}
+
+=pod
+
+=item successorless_vertices
+
+	@s = $G->successorless_vertices
+
+Returns the successorless vertices @s of the graph $G.
+
+=cut
+
+sub successorless_vertices {
+    my $G = shift;
+
+    return grep { $G->is_successorless_vertex($_) } $G->vertices;
+}
+
+=item predecessorless_vertices
+
+	@s = $G->predecessorless_vertices
+
+Returns the predecessorless vertices @s of the graph $G.
+
+=cut
+
+sub predecessorless_vertices {
+    my $G = shift;
+
+    return grep { $G->is_predecessorless_vertex($_) } $G->vertices;
 }
 
 =pod
@@ -1777,22 +1869,18 @@ sub strongly_connected_graph {
     foreach my $c (@C)            { $c = join("+", @$c)  }
 
     $C->directed( $G->directed );
+    foreach my $c ( @C )          { $C->add_vertex( $c ) }
 
     my @E = $G->edges;
 
     # Copy the edges between strongly connected components.
     my $edge_cnt = 0;
-    my %n;
     while (my ($u, $v) = splice(@E, 0, 2)) {
 	if ($R{ $u } != $R{ $v }) {
-	    $C->add_edge( $C[ $R{ $u } ], $C[ $R{ $v } ] );
+	    ($u, $v) = ( $C[ $R{ $u } ], $C[ $R{ $v } ] );
+	    $C->add_edge($u, $v) unless $C->has_edge($u, $v);
 	    $edge_cnt++;
-	} elsif ($edge_cnt == 0) {
-	    $n{ $u } = '';
 	}
-    }
-    if ($edge_cnt == 0) {
-	$C->add_vertex(join("+", keys %n));
     }
 
     return $C;

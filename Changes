@@ -1,3 +1,23 @@
+2004-05-03  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Release 0.20103:
+
+	  Further strongly connected component fixes from Andras Solomon.
+
+	  Add vertices_unsorted() that avoids the slowness
+	  (unnecessary sort()) of vertices().  To replace vertices()
+	  with vertices_unsorted() do
+
+	      use Graph vertices_unsorted => 1;
+
+	  Add new methods: is_predecessorless_vertex(),
+	  is_successorless_vertex(), predecessorless_vertices(),
+	  successorless_vertices(), cousins of is_source_vertex(),
+	  is_sink_vertex(), source_vertices(), sink_vertices().
+
+	* "Graph NG" about 75% done, for those who care.
+	  (Does anyone read these notes?)
+
 2004-04-05  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Release 0.20102:

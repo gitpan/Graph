@@ -6,6 +6,7 @@ actually fix any bugs in this old Graph 0.2* series.  Yes, there are
 known bugs.
 
 Especially known to be broken is the code for detecting strong elements.
+(Mostly fixed, hopefully, by May 2004.)
 
 I'm very sorry for this long and no doubt uncomfortable delay, but I
 have been otherwise very busy during the last few years, and still am.
