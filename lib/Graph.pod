@@ -1914,7 +1914,7 @@ For graph attributes:
 
 =item set_graph_attribute
 
-    $g->set_graph_attribute($u, $v, $name, $value)
+    $g->set_graph_attribute($name, $value)
 
 Set the named graph attribute.
 

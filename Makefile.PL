@@ -21,3 +21,12 @@ WriteMakefile(
 		    'Test::More'	=> 0,
 		},
 	      );
+
+# Some Debian distributions have a broken List::Util (see rt.cpan.org #9568)
+eval 'require Scalar::Util; import Scalar::Util qw(weaken)';
+if ($@) {
+    die <<__EOF__;
+$@
+You do not have Scalar::Util::weaken, cannot continue, aborting.
+__EOF__
+}

@@ -1,3 +1,21 @@
+2005-01-12  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Fix set_graph_attribute() documentation not to talk about $u, $v
+	  (noticed by Kurt Jaeger).
+
+	* A mysterious failure fixed by a mysterious fix: under some
+	  circumstances it seems that an each() doesn't walk through
+	  all the key-value pairs, the workaround is to reset the
+	  each() iterator by a keys() call.  Not simple test code,
+	  sadly, since the existing test code (see the case) is 13 kB
+	  and non-trivial.
+	  [rt.cpan.org #9461]
+
+	* Add a safety guard against a missing Scalar::Util::weaken
+	  [rt.cpan.org #9481]
+
+	* Release as 0.52.
+
 2005-01-09  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Allow calling Makefile.PL with arguments other than --renum
@@ -5,10 +23,10 @@
 	  [rt.cpan.org #9481]
 
 	* Remove the add_graph() and delete_graph() interfaces, sorry
-	  if you were using them, but the current interface was very
-	  poor and the concept ill-planned.  If you want to merge or
+	  if you were already using them, but the current interface was
+	  very poor and the concept ill-planned.  If you want to merge or
 	  remove edges and vertices between your graph, you can probably
-	  implement the exactly right things to do.
+	  yourself implement the exactly right things to do.
 	  [rt.cpan.org #9493]
 
 	* Document that one cannot assume Graphs are blessed hash references
@@ -22,7 +40,7 @@
 	* Graph::AdjacencyMap::Base does not exist, fix Graph/AdjacencyMap.pm
 	  pod to comply.
 
-	* Release as 0.50.
+	* Release as 0.51.
 
 2005-01-01  Jarkko Hietaniemi  <jhi@iki.fi>
 

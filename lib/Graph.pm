@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.51';
+$VERSION = '0.52';
 
 require 5.005;
 
@@ -669,10 +669,10 @@ sub vertices_at {
     return if grep { ! defined $_ } @i;
     my $I = $V->_ids;
     my @v;
+    scalar keys %{ $I }; # Sometimes the iterator is not properly reset.
     while (my ($i, $v) = each %{ $I }) {
 	my %i;
 	@i{ @i } = @i if @i; # @todo: nonuniq hyper vertices?
-    LOOP:
 	for my $u (ref $v ? @$v : $v) {
 	    my $j =
 		exists $v{ $u } ?
