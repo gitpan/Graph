@@ -1,449 +1,707 @@
 package Graph::Traversal;
 
 use strict;
-local $^W = 1;
 
-use Graph::Base;
+# $SIG{__DIE__ } = sub { use Carp; confess };
+# $SIG{__WARN__} = sub { use Carp; confess };
 
-use vars qw(@ISA);
-@ISA = qw(Graph::Base);
+sub DEBUG () { 0 }
+
+sub reset {
+    my $self = shift;
+    $self->{ unseen } = { map { $_ => $_ } $self->{ graph }->vertices };
+    $self->{ seen   } = { };
+    $self->{ order     } = [ ];
+    $self->{ preorder  } = [ ];
+    $self->{ postorder } = [ ];
+    $self->{ roots     } = [ ];
+    $self->{ tree      } =
+	Graph->new( directed => $self->{ graph }->directed );
+    delete $self->{ terminate };
+}
+
+my $see = sub {
+    my $self = shift;
+    $self->see;
+};
+
+my $see_active = sub {
+    my $self = shift;
+    delete @{ $self->{ active } }{ $self->see };
+};
+
+sub has_a_cycle {
+    my ($u, $v, $t, $s) = @_;
+    $s->{ has_a_cycle } = 1;
+    $t->terminate;
+}
+
+sub find_a_cycle {
+    my ($u, $v, $t, $s) = @_;
+    my @cycle = ( $u );
+    push @cycle, $v unless $u eq $v;
+    my $path  = $t->{ order };
+    if (@$path) {
+	my $i = $#$path;
+	while ($i >= 0 && $path->[ $i ] ne $v) { $i-- }
+	if ($i >= 0) {
+	    unshift @cycle, @{ $path }[ $i+1 .. $#$path ];
+	}
+    }
+    $s->{ a_cycle } = \@cycle;
+    $t->terminate;
+}
+
+sub configure {
+    my ($self, %attr) = @_;
+    $self->{ pre  } = $attr{ pre }  if exists $attr{ pre  };
+    $self->{ post } = $attr{ post } if exists $attr{ post };
+    $self->{ pre_vertex  } = $attr{ pre_vertex }  if exists $attr{ pre_vertex  };
+    $self->{ post_vertex } = $attr{ post_vertex } if exists $attr{ post_vertex };
+    $self->{ pre_edge  } = $attr{ pre_edge  } if exists $attr{ pre_edge  };
+    $self->{ post_edge } = $attr{ post_edge } if exists $attr{ post_edge };
+    if (exists $attr{ successor }) { # Graph 0.201 compatibility.
+	$self->{ tree_edge } = $self->{ non_tree_edge } = $attr{ successor };
+    }
+    if (exists $attr{ unseen_successor }) {
+	if (exists $self->{ tree_edge }) { # Graph 0.201 compatibility.
+	    my $old_tree_edge = $self->{ tree_edge };
+	    $self->{ tree_edge } = sub {
+		$old_tree_edge->( @_ );
+		$attr{ unseen_successor }->( @_ );
+	    };
+	} else {
+	    $self->{ tree_edge } = $attr{ unseen_successor };
+	}
+    }
+    if ($self->graph->multiedged || $self->graph->countedged) {
+	$self->{ seen_edge } = $attr{ seen_edge } if exists $attr{ seen_edge };
+	if (exists $attr{ seen_successor }) { # Graph 0.201 compatibility.
+	    $self->{ seen_edge } = $attr{ seen_edge };
+	}
+    }
+    $self->{ non_tree_edge } = $attr{ non_tree_edge } if exists $attr{ non_tree_edge };
+    $self->{ pre_edge  } = $attr{ tree_edge } if exists $attr{ tree_edge };
+    $self->{ back_edge } = $attr{ back_edge } if exists $attr{ back_edge };
+    $self->{ down_edge } = $attr{ down_edge } if exists $attr{ down_edge };
+    $self->{ cross_edge } = $attr{ cross_edge } if exists $attr{ cross_edge };
+    if (exists $attr{ start }) {
+	$attr{ first_root } = $attr{ start };
+	$attr{ next_root  } = undef;
+    }
+    if (exists $attr{ get_next_root }) {
+	$attr{ next_root  } = $attr{ get_next_root }; # Graph 0.201 compat.
+    }
+    $self->{ next_root } =
+	exists $attr{ next_root } ?
+	    $attr{ next_root } :
+		$attr{ next_alphabetic } ?
+		    \&Graph::_next_alphabetic :
+			$attr{ next_numeric } ?
+			    \&Graph::_next_numeric :
+				\&Graph::_next_random;
+    $self->{ first_root } =
+	exists $attr{ first_root } ?
+	    $attr{ first_root } :
+		exists $attr{ next_root } ?
+		    $attr{ next_root } :
+			$attr{ next_alphabetic } ?
+			    \&Graph::_next_alphabetic :
+				$attr{ next_numeric } ?
+				    \&Graph::_next_numeric :
+					\&Graph::_next_random;
+    $self->{ next_successor } =
+	exists $attr{ next_successor } ?
+	    $attr{ next_successor } :
+		$attr{ next_alphabetic } ?
+		    \&Graph::_next_alphabetic :
+			$attr{ next_numeric } ?
+			    \&Graph::_next_numeric :
+				\&Graph::_next_random;
+    if (exists $attr{ has_a_cycle }) {
+	my $has_a_cycle =
+	    ref $attr{ has_a_cycle } eq 'CODE' ?
+		$attr{ has_a_cycle } : \&has_a_cycle;
+	$self->{ back_edge } = $has_a_cycle;
+	if ($self->{ graph }->is_undirected) {
+	    $self->{ down_edge } = $has_a_cycle;
+	}
+    }
+    if (exists $attr{ find_a_cycle }) {
+	my $find_a_cycle =
+	    ref $attr{ find_a_cycle } eq 'CODE' ?
+		$attr{ find_a_cycle } : \&find_a_cycle;
+	$self->{ back_edge } = $find_a_cycle;
+	if ($self->{ graph }->is_undirected) {
+	    $self->{ down_edge } = $find_a_cycle;
+	}
+    }
+    $self->{ add } = \&add_order;
+    $self->{ see } = $see;
+    delete @attr{ qw(
+		     pre post pre_edge post_edge
+		     successor unseen_successor seen_successor
+		     tree_edge non_tree_edge
+		     back_edge down_edge cross_edge seen_edge
+		     start get_next_root
+		     next_root next_alphabetic next_numeric next_random
+		     first_root
+		     has_a_cycle find_a_cycle
+		    ) };
+    if (keys %attr) {
+	require Carp;
+	my @attr = sort keys %attr;
+	Carp::croak(sprintf "Graph::Traversal: unknown attribute%s @{[map { qq['$_'] } @attr]}\n", @attr == 1 ? '' : 's');
+    }
+}
+
+sub new {
+    my $class = shift;
+    my $g = shift;
+    unless (ref $g && $g->isa('Graph')) {
+	require Carp;
+	Carp::croak("Graph::Traversal: first argument is not a Graph");
+    }
+    my $self = { graph => $g, state => { } };
+    bless $self, $class;
+    $self->reset;
+    $self->configure( @_ );
+    return $self;
+}
+
+sub terminate {
+    my $self = shift;
+    $self->{ terminate } = 1;
+}
+
+sub add_order {
+    my ($self, @next) = @_;
+    push @{ $self->{ order } }, @next;
+}
+
+sub visit {
+    my ($self, @next) = @_;
+    delete @{ $self->{ unseen } }{ @next };
+    print "unseen = @{[sort keys %{$self->{unseen}}]}\n" if DEBUG;
+    @{ $self->{ seen } }{ @next } = @next;
+    print "seen = @{[sort keys %{$self->{seen}}]}\n" if DEBUG;
+    $self->{ add }->( $self, @next );
+    print "order = @{$self->{order}}\n" if DEBUG;
+    if (exists $self->{ pre }) {
+	my $p = $self->{ pre };
+	for my $v (@next) {
+	    $p->( $v, $self );
+	}
+    }
+}
+
+sub visit_preorder {
+    my ($self, @next) = @_;
+    push @{ $self->{ preorder } }, @next;
+    for my $v (@next) {
+	$self->{ preordern }->{ $v } = $self->{ preorderi }++;
+    }
+    print "preorder = @{$self->{preorder}}\n" if DEBUG;
+    $self->visit( @next );
+}
+
+sub visit_postorder {
+    my ($self) = @_;
+    my @post = reverse $self->{ see }->( $self );
+    push @{ $self->{ postorder } }, @post;
+    for my $v (@post) {
+	$self->{ postordern }->{ $v } = $self->{ postorderi }++;
+    }
+    print "postorder = @{$self->{postorder}}\n" if DEBUG;
+    if (exists $self->{ post }) {
+	my $p = $self->{ post };
+	for my $v (@post) {
+	    $p->( $v, $self ) ;
+	}
+    }
+    if (exists $self->{ post_edge }) {
+	my $p = $self->{ post_edge };
+	my $u = $self->current;
+	if (defined $u) {
+	    for my $v (@post) {
+		$p->( $u, $v, $self, $self->{ state });
+	    }
+	}
+    }
+}
+
+sub _callbacks {
+    my ($self, $current, @all) = @_;
+    return unless @all;
+    my $nontree  = $self->{ non_tree_edge };
+    my $back     = $self->{ back_edge };
+    my $down     = $self->{ down_edge };
+    my $cross    = $self->{ cross_edge };
+    my $seen     = $self->{ seen_edge };
+    my $bdc = defined $back || defined $down || defined $cross;
+    if (defined $nontree || $bdc || defined $seen) {
+	my $u = $current;
+	my $preu  = $self->{ preordern  }->{ $u };
+	my $postu = $self->{ postordern }->{ $u };
+	for my $v ( @all ) {
+	    my $e = $self->{ tree }->has_edge( $u, $v );
+	    if ( !$e && (defined $nontree || $bdc) ) {
+		if ( exists $self->{ seen }->{ $v }) {
+		    $nontree->( $u, $v, $self, $self->{ state })
+			if $nontree;
+		    if ($bdc) {
+			my $postv = $self->{ postordern }->{ $v };
+			if ($back &&
+			    (!defined $postv || $postv >= $postu)) {
+			    $back ->( $u, $v, $self, $self->{ state });
+			} else {
+			    my $prev = $self->{ preordern }->{ $v };
+			    if ($down && $prev > $preu) {
+				$down ->( $u, $v, $self, $self->{ state });
+			    } elsif ($cross && $prev < $preu) {
+				$cross->( $u, $v, $self, $self->{ state });
+			    }
+			}
+		    }
+		}
+	    }
+	    if ($seen) {
+		my $c = $self->graph->get_edge_count($u, $v);
+		while ($c-- > 1) {
+		    $seen->( $u, $v, $self, $self->{ state } );
+		}
+	    }
+	}
+    }
+}
+
+sub next {
+    my $self = shift;
+    return undef if $self->{ terminate };
+    my @next;
+    while ($self->seeing) {
+	my $current = $self->current;
+	print "current = $current\n" if DEBUG;
+	@next = $self->{ graph }->successors( $current );
+	print "next.0 - @next\n" if DEBUG;
+	my %next; @next{ @next } = @next;
+#	delete $next{ $current };
+	print "next.1 - @next\n" if DEBUG;
+	@next = keys %next;
+	my @all = @next;
+	print "all = @all\n" if DEBUG;
+	delete @next{ $self->seen };
+	@next = keys %next;
+	print "next.2 - @next\n" if DEBUG;
+	if (@next) {
+	    @next = $self->{ next_successor }->( $self, \%next );
+	    print "next.3 - @next\n" if DEBUG;
+	    for my $v (@next) {
+		$self->{ tree }->add_edge( $current, $v );
+	    }
+	    if (exists $self->{ pre_edge }) {
+		my $p = $self->{ pre_edge };
+		my $u = $self->current;
+		for my $v (@next) {
+		    $p->( $u, $v, $self, $self->{ state });
+		}
+	    }
+	    last;
+	} else {
+	    $self->visit_postorder;
+	}
+	return undef if $self->{ terminate };
+	$self->_callbacks($current, @all);
+#	delete $next{ $current };
+    }
+    print "next.4 - @next\n" if DEBUG;
+    unless (@next) {
+	unless ( @{ $self->{ roots } } ) {
+	    my $first = $self->{ first_root };
+	    if (defined $first) {
+		@next =
+		    ref $first eq 'CODE' ? 
+			$self->{ first_root }->( $self, $self->{ unseen } ) :
+			$first;
+		return unless @next;
+	    }
+	}
+	unless (@next) {
+	    return unless defined $self->{ next_root };
+	    return unless @next =
+		$self->{ next_root }->( $self, $self->{ unseen } );
+	}
+	return if exists $self->{ seen }->{ $next[0] }; # Sanity check.
+	print "next.5 - @next\n" if DEBUG;
+	push @{ $self->{ roots } }, $next[0];
+    }
+    print "next.6 - @next\n" if DEBUG;
+    if (@next) {
+	$self->visit_preorder( @next );
+    }
+    return $next[0];
+}
+
+sub _order {
+    my ($self, $order) = @_;
+    1 while defined $self->next;
+    my $wantarray = wantarray;
+    if ($wantarray) {
+	@{ $self->{ $order } };
+    } elsif (defined $wantarray) {
+	shift @{ $self->{ $order } };
+    }
+}
+
+sub preorder {
+    my $self = shift;
+    $self->_order( 'preorder' );
+}
+
+sub postorder {
+    my $self = shift;
+    $self->_order( 'postorder' );
+}
+
+sub unseen {
+    my $self = shift;
+    keys %{ $self->{ unseen } };
+}
+
+sub seen {
+    my $self = shift;
+    keys %{ $self->{ seen } };
+}
+
+sub seeing {
+    my $self = shift;
+    @{ $self->{ order } };
+}
+
+sub roots {
+    my $self = shift;
+    @{ $self->{ roots } };
+}
+
+sub is_root {
+    my ($self, $v) = @_;
+    for my $u (@{ $self->{ roots } }) {
+	return 1 if $u eq $v;
+    }
+    return 0;
+}
+
+sub tree {
+    my $self = shift;
+    $self->{ tree };
+}
+
+sub graph {
+    my $self = shift;
+    $self->{ graph };
+}
+
+sub vertex_by_postorder {
+    my ($self, $i) = @_;
+    exists $self->{ postorder } && $self->{ postorder }->[ $i ];
+}
+
+sub postorder_by_vertex {
+    my ($self, $v) = @_;
+    exists $self->{ postordern } && $self->{ postordern }->{ $v };
+}
+
+sub postorder_vertices {
+    my ($self, $v) = @_;
+    exists $self->{ postordern } ? %{ $self->{ postordern } } : ();
+}
+
+sub vertex_by_preorder {
+    my ($self, $i) = @_;
+    exists $self->{ preorder } && $self->{ preorder }->[ $i ];
+}
+
+sub preorder_by_vertex {
+    my ($self, $v) = @_;
+    exists $self->{ preordern } && $self->{ preordern }->{ $v };
+}
+
+sub preorder_vertices {
+    my ($self, $v) = @_;
+    exists $self->{ preordern } ? %{ $self->{ preordern } } : ();
+}
+
+sub has_state {
+    my ($self, $var) = @_;
+    exists $self->{ state } && exists $self->{ state }->{ $var };
+}
+
+sub get_state {
+    my ($self, $var) = @_;
+    exists $self->{ state } ? $self->{ state }->{ $var } : undef;
+}
+
+sub set_state {
+    my ($self, $var, $val) = @_;
+    $self->{ state }->{ $var } = $val;
+    return 1;
+}
+
+sub delete_state {
+    my ($self, $var) = @_;
+    delete $self->{ state }->{ $var };
+    delete $self->{ state } unless keys %{ $self->{ state } };
+    return 1;
+}
+
+1;
+__END__
+=pod
 
 =head1 NAME
 
-Graph::Traversal - graph traversal
+Graph::Traversal - traverse graphs
 
 =head1 SYNOPSIS
 
-    use Graph::Traversal;
+Don't use Graph::Traversal directly, use Graph::Traversal::DFS
+or Graph::Traversal::BFS instead.
+
+    use Graph;
+    my $g = Graph->new;
+    $g->add_edge(...);
+    use Graph::Traversal::...;
+    my $t = Graph::Traversal::...->new(%opt);
+    $t->...
 
 =head1 DESCRIPTION
 
+You can control how the graph is traversed by the various callback
+parameters in the C<%opt>.  In the parameters descriptions below the
+$u and $v are vertices, and the $self is the traversal object itself.
+
+=head2 Callback parameters
+
+The following callback parameters are available:
+
 =over 4
 
-=cut
-
-=pod
-
-=item new
-
-	$s = Graph::Traversal->new($G, %param)
-
-Returns a new graph search object for the graph $G
-and the parameters %param.
-
-Usually not used directly but instead via frontends like
-Graph::DFS for depth-first searching and Graph::BFS for
-breadth-first searching:
-
-	$dfs = Graph::DFS->new($G, %param)
-	$bfs = Graph::BFS->new($G, %param)
-
-I<%param documentation to be written>
-
-=cut
-
-sub new {
-    my $class  = shift;
-    my $G      = shift;
-
-    my $S = { G => $G };
-
-    bless $S, $class;
-
-    $S->reset(@_);
-
-    return $S;
-}
-
-=pod
-
-=item reset
-
-	$S->reset
-
-Resets a graph search object $S to its initial state.
-
-=cut
-
-sub reset {
-    my $S = shift;
-    my $G = $S->{ G };
-
-    @{ $S->{ pool } }{ $G->vertices } = ( );
-    $S->{ active_list       }         = [ ];
-    $S->{ root_list         }         = [ ];
-    $S->{ preorder_list     }         = [ ];
-    $S->{ postorder_list    }         = [ ];
-    $S->{ active_pool       }         = { };
-    $S->{ vertex_found      }         = { };
-    $S->{ vertex_root       }         = { };
-    $S->{ vertex_successors }         = { };
-    $S->{ param             }         = { @_ };
-    $S->{ when              }         = 0;
-}
-
-# _get_next_root_vertex
-#
-#	$o = $S->_get_next_root_vertex(\%param)
-#
-#	(INTERNAL USE ONLY)
-#	Returns a vertex hopefully suitable as a root vertex of a tree.
-#
-#	If $param->{ get_next_root } exists, it will be used the determine
-#	the root.  If it is a code reference, the result of running it
-#	with parameters ($S, %param) will be the next root.  Otherwise
-#	it is assumed to be the next root vertex as it is.
-#
-#	Otherwise an unseen vertex having the maximal out-degree
-#	will be selected.
-#
-sub _get_next_root_vertex {
-    my $S      = shift;
-    my %param  = ( %{ $S->{ param } }, @_ ? %{ $_[0] } : ( ));
-    my $G      = $S->{ G };
-
-    if ( exists $param{ get_next_root } ) {
-	if ( ref $param{ get_next_root } eq 'CODE' ) {
-	    return $param{ get_next_root }->( $S, %param ); # Dynamic.
-	} else {
-	    my $get_next_root = $param{ get_next_root };	# Static.
-
-	    # Use only once.
-	    delete $S->{ param }->{ get_next_root };
-	    delete $_[0]->{ get_next_root } if @_;
-
-	    return $get_next_root;
-	}
-    } else {
-	return $G->largest_out_degree( keys %{ $S->{ pool } } );
-    }
-}
-
-# _mark_vertex_found
-#
-#	$S->_mark_vertex_found( $u )
-#
-#	(INTERNAL USE ONLY)
-#	Marks the vertex $u as a new vertex in the search object $S.
-#
-sub _mark_vertex_found {
-    my ( $S, $u ) = @_;
-
-    $S->{ vertex_found }->{ $u } = $S->{ when }++;
-    delete $S->{ pool }->{ $u };
-}
-
-# _next_state
-#
-#	$o = $S->_next_state(%param)
-#
-#	(INTERNAL USE ONLY)
-#	Returns a graph search object.
-#
-sub _next_state {
-    my $S = shift;	# The current state.
-
-    my $G = $S->{ G };	# The current graph.
-    my %param = ( %{ $S->{ param } }, @_);
-    my ($u, $v);	# The current vertex and its successor.
-    my $return = 0;	# Return when this becomes true.
-
-    until ( $return ) {
-
-	# Initialize our search when needed.
-	# (Start up a new tree.)
-	unless ( @{ $S->{ active_list } } ) {
-	    do {
-		$u = $S->_get_next_root_vertex(\%param);
-		return wantarray ? ( ) : $u unless defined $u;
-	    } while exists $S->{ vertex_found }->{ $u };
-
-	    # A new root vertex found.
-	    push @{ $S->{ active_list } }, $u;
-	    $S->{ active_pool }->{ $u } = 1;
-	    push @{ $S->{ root_list   } }, $u;
-	    $S->{ vertex_root }->{ $u } = $#{ $S->{ root_list } };
-	}
-
-	# Get the current vertex.
-	$u = $param{ current }->( $S );
-	return wantarray ? () : $u unless defined $u;
-
-	# Record the vertex if necessary.
-	unless ( exists $S->{ vertex_found }->{ $u } ) {
-	    $S->_mark_vertex_found( $u );
-	    push @{ $S->{ preorder_list } }, $u;
-	    # Time to return?
-	    $return++ if $param{ return_next_preorder };
-	}
+=item tree_edge
 
-	# Initialized the list successors if necessary.
-	$S->{ vertex_successors }->{ $u } = [ $G->successors( $u ) ]
-	    unless exists $S->{ vertex_successors }->{ $u };
+Called when traversing an edge that belongs to the traversal tree.
+Called with arguments ($u, $v, $self).
 
-	# Get the next successor vertex.
-	$v = shift @{ $S->{ vertex_successors }->{ $u } };
+=item non_tree_edge
 
-	if ( defined $v ) {
-	    # Something to do for each successor?
-	    $param{ successor }->( $u, $v, $S )
-		if exists $param{ successor };
+Called when an edge is met which either leads back to the traversal tree
+(either a C<back_edge>, a C<down_edge>, or a C<cross_edge>).
+Called with arguments ($u, $v, $self).
 
-	    unless ( exists $S->{ vertex_found }->{ $v } ) {
-		# An unseen successor.
-		$S->_mark_vertex_found( $v );
-		push @{ $S->{ preorder_list } }, $v;
-		$S->{ vertex_root }->{ $v } = $S->{ vertex_root }->{ $u };
-		push @{ $S->{ active_list } }, $v;
-		$S->{ active_pool }->{ $v } = 1;
+=item pre_edge
 
-		# Something to for each unseen edge?
-		# For multiedges, triggered only for the first edge.
-		$param{ unseen_successor }->( $u, $v, $S )
-		    if exists $param{ unseen_successor };
-	    } else {
-		# Something to do for each seen edge?
-		# For multiedges, triggered for the 2nd, etc, edges.
-		$param{ seen_successor }->( $u, $v, $S )
-		    if exists $param{ seen_successor };
-	    }
+Called for edges in preorder.
+Called with arguments ($u, $v, $self).
 
-	    # Time to return?
-	    $return++ if $param{ return_next_edge };
+=item post_edge
 
-	} elsif ( not exists $S->{ vertex_finished }->{ $u } ) {
-	    # Finish off with this vertex (we run out of descendants).
-	    $param{ finish }->( $S );
+Called for edges in postorder.
+Called with arguments ($u, $v, $self).
 
-	    $S->{ vertex_finished }->{ $u } = $S->{ when }++;
-	    push @{ $S->{ postorder_list } }, $u;
-	    delete $S->{ active_pool }->{ $u };
+=item back_edge
 
-	    # Time to return?
-	    $return++ if $param{ return_next_postorder };
-	}
-    }
+Called for back edges.
+Called with arguments ($u, $v, $self).
 
-    # Return an edge if so asked.
-    return ( $u, $v ) if $param{ return_next_edge };
+=item down_edge
 
-    # Return a vertex.
-    return $u;
-}
+Called for down edges.
+Called with arguments ($u, $v, $self).
 
-=pod
+=item cross_edge
 
-=item next_preorder
+Called for cross edges.
+Called with arguments ($u, $v, $self).
 
-	$v = $s->next_preorder
+=item pre
 
-Returns the next vertex in preorder of the graph
-encapsulated within the search object $s.
+=item pre_vertex
 
-=cut
+Called for vertices in preorder.
+Called with arguments ($v, $self).
 
-sub next_preorder {
-    my $S = shift;
+=item post
 
-    $S->_next_state( return_next_preorder => 1, @_ );
-}
+=item post_vertex
 
-=cut
+Called for vertices in postorder.
+Called with arguments ($v, $self).
 
-=item next_postorder
+=item first_root
 
-	$v = $S->next_postorder
+Called when choosing the first root (start) vertex for traversal.
+Called with arguments ($self, $unseen) where $unseen is a hash
+reference with the unseen vertices as keys.
 
-Returns the next vertex in postorder of the graph
-encapsulated within the search object $S.
+=item next_root
 
-=cut
+Called when choosing the next root (after the first one) vertex for
+traversal (useful when the graph is not connected).  Called with
+arguments ($self, $unseen) where $unseen is a hash reference with
+the unseen vertices as keys.  If you want only the first reachable
+subgraph to be processed, set the next_root to C<undef>.
 
-sub next_postorder {
-    my $S = shift;
+=item start
 
-    $S->_next_state( return_next_postorder => 1, @_ );
-}
+Identical to defining C<first_root> and undefining C<next_root>.
 
-=pod
+=item next_alphabetic
 
-=item next_edge
+Set this to true if you want the vertices to be processed in
+alphabetic order (and leave first_root/next_root undefined).
 
-	($u, $v) = $s->next_edge
+=item next_numeric
 
-Returns the vertices of the next edge of the graph
-encapsulated within the search object $s.
-
-=cut
-
-sub next_edge {
-    my $S = shift;
-
-    $S->_next_state( return_next_edge => 1, @_ );
-}
-
-=pod
-
-=item preorder
-
-	@V = $S->preorder
-
-Returns all the vertices in preorder of the graph
-encapsulated within the search object $S.
-
-=cut
-
-sub preorder {
-    my $S = shift;
-
-    1 while defined $S->next_preorder;  # Process entire graph.
-
-    return @{ $S->{ preorder_list } };
-}
-
-=pod
-
-=item postorder
-
-	@V = $S->postorder
-
-Returns all the vertices in postorder of the graph
-encapsulated within the search object $S.
-
-=cut
-
-sub postorder {
-    my $S = shift;
-
-    1 while defined $S->next_postorder; # Process entire graph.
-
-    return @{ $S->{ postorder_list } };
-}
-
-=pod
-
-=item edges
-
-	@V = $S->edges
-
-Returns all the edges of the graph
-encapsulated within the search object $S.
-
-=cut
-
-sub edges {
-    my $S = shift;
-    my (@E, $u, $v);
-
-    push @E, $u, $v while ($u, $v) = $S->next_edge;
-
-    return @E;
-}
-
-=pod
-
-=item roots
-
-	@R = $S->roots
-
-Returns all the root vertices of the trees of
-the graph encapsulated within the search object $S.
-"The root vertices" is ambiguous: what really happens
-is that either the roots from the previous search made
-on the $s are returned; or a preorder search is done
-and the roots of this search are returned.
-
-=cut
-
-sub roots {
-    my $S = shift;
-
-    $S->preorder
-	unless exists $S->{ preorder_list } and
-	       @{ $S->{ preorder_list } } == $S->{ G }->vertices;
-
-    return @{ $S->{ root_list } };
-}
-
-=pod
-
-=item _vertex_roots
-
-	%R = $S->_vertex_roots
-
-Returns as a hash of ($vertex, index) pairs where index is an index
-into the vertex_root list of the traversal.
-
-"The root vertices" is ambiguous; see the documentation of the roots()
-method for more details.
-
-(This is the old vertex_roots().)
-
-=cut
-
-sub _vertex_roots {
-    my $S = shift;
-    my $G = $S->{ G };
-
-    $S->preorder
-        unless exists $S->{ preorder_list } and
-	       @{ $S->{ preorder_list } } == $G->vertices;
-
-    return 
-	map { ( $_, $S->{ vertex_root }->{ $_ } ) } $G->vertices;
-}
-
-=pod
-
-=item vertex_roots
-
-	%R = $S->vertex_roots
-
-Returns as a hash of ($vertex, $root) pairs all the vertices
-and the root vertices of their search trees of the graph
-encapsulated within the search object $S.
-
-"The root vertices" is ambiguous; see the documentation of
-the roots() method for more details.
-
-(See also _vertex_roots()).
-
-=cut
-
-sub vertex_roots {
-    my $S = shift;
-    my $G = $S->{ G };
-
-    $S->preorder
-        unless exists $S->{ preorder_list } and
-	       @{ $S->{ preorder_list } } == $G->vertices;
-
-    return 
-        map { ( $_, $S->{root_list}[$S->{ vertex_root }->{ $_ }] ) }
-            $G->vertices;
-}
-
-# DELETE
-#
-#	(INTERNAL USE ONLY)
-#	The Destructor.
-#
-sub DELETE {
-    my $S = shift;
-
-    delete $S->{ G }; # Release the graph.
-}
-
-=pod
+Set this to true if you want the vertices to be processed in
+numeric order (and leave first_root/next_root undefined).
 
 =back
 
-=head1 COPYRIGHT
+The parameters C<first_root> and C<next_successor> have a 'hierarchy'
+of how they are determined: if they have been explicitly defined, use
+that value.  If not, use the value of C<next_alphabetic>, if that has
+been defined.  If not, use the value of C<next_numeric>, if that has
+been defined.  If not, the next vertex to be visited is chose randomly.
 
-Copyright 1999, O'Reilly & Associates.
+=head2 Methods
 
-This code is distributed under the same copyright terms as Perl itself.
+The following methods are available:
+
+=over 4
+
+=item unseen
+
+Return the unseen vertices in random order.
+
+=item seen
+
+Return the seen vertices in random order.
+
+=item seeing
+
+Return the active fringe vertices in random order.
+
+=item preorder
+
+Return the vertices in preorder traversal order.
+
+=item postorder
+
+Return the vertices in postorder traversal order.
+
+=item vertex_by_preorder
+
+    $v = $t->vertex_by_preorder($i)
+
+Return the ith (0..$V-1) vertex by preorder.
+
+=item preorder_by_vertex
+
+    $i = $t->preorder_by_vertex($v)
+
+Return the preorder index (0..$V-1) by vertex.
+
+=item vertex_by_postorder
+
+    $v = $t->vertex_by_postorder($i)
+
+Return the ith (0..$V-1) vertex by postorder.
+
+=item postorder_by_vertex
+
+    $i = $t->postorder_by_vertex($v)
+
+Return the postorder index (0..$V-1) by vertex.
+
+=item preorder_vertices
+
+Return a hash with the vertices as the keys and their preorder indices
+as the values.
+
+=item postorder_vertices
+
+Return a hash with the vertices as the keys and their postorder
+indices as the values.
+
+=item tree
+
+Return the traversal tree as a graph.
+
+=item has_state
+
+    $t->has_state('s')
+
+Test whether the traversal has state 's' attached to it.
+
+=item get_state
+
+    $t->get_state('s')
+
+Get the state 's' attached to the traversal (C<undef> if none).
+
+=item set_state
+
+    $t->set_state('s', $s)
+
+Set the state 's' attached to the traversal.
+
+=item delete_state
+
+    $t->delete_state('s')
+
+Delete the state 's' from the traversal.
+
+=back
+
+=head2 Backward compatibility
+
+The following parameters are for backward compatibility to Graph 0.2xx:
+
+=over 4
+
+=item get_next_root
+
+Like C<next_root>.
+
+=item successor
+
+Identical to having C<tree_edge> both C<non_tree_edge> defined
+to be the same.
+
+=item unseen_successor
+
+Like C<tree_edge>.
+
+=item seen_successor
+
+Like C<seed_edge>.
+
+=back
+
+=head2 Special callbacks
+
+If in a callback you call the special C<terminate> method,
+the traversal is terminated, no more vertices are traversed.
+
+=head1 SEE ALSO
+
+L<Graph::Traversal::DFS>, L<Graph::Traversal::BFS>
+
+=head1 AUTHOR AND COPYRIGHT
+
+Jarkko Hietaniemi F<jhi@iki.fi>
+
+=head1 LICENSE
+
+This module is licensed under the same terms as Perl itself.
 
 =cut
-
-1;

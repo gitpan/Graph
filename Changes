@@ -1,61 +1,9 @@
-2004-05-05  Jarkko Hietaniemi  <jhi@iki.fi>
+2005-01-01  Jarkko Hietaniemi  <jhi@iki.fi>
 
-	* Release 0.20105:
+	* The 0.50.
 
-	  Patch from Andras Solomon to allow inheriting constructors.
+2004-10-30  Jarkko Hietaniemi  <jhi@iki.fi>
 
-2004-05-05  Jarkko Hietaniemi  <jhi@iki.fi>
+	* Start wrapping up for the 0.50 release.
 
-	* Release 0.20104:
-
-	  Actually implement the "use Graph vertices_unsorted => 1"
-	  promised in 0.20103, I don't know where that chunk of code
-	  disappeared.  Add a test for it.
-
-	  Change the strongly_connected_graph to sort the vertices
-	  of strongly connected component vertices so that the
-	  subtest #6 of 09scc.t doesn't depend on the 'hash order'.
-	
-	  Spell Andras' name correctly.
-	
-2004-05-03  Jarkko Hietaniemi  <jhi@iki.fi>
-
-	* Release 0.20103:
-
-	  Further strongly connected component fixes from Andras Salamon.
-
-	  Add vertices_unsorted() that avoids the slowness
-	  (unnecessary sort()) of vertices().  To replace vertices()
-	  with vertices_unsorted() do
-
-	      use Graph vertices_unsorted => 1;
-
-	  Add new methods: is_predecessorless_vertex(),
-	  is_successorless_vertex(), predecessorless_vertices(),
-	  successorless_vertices(), cousins of is_source_vertex(),
-	  is_sink_vertex(), source_vertices(), sink_vertices().
-
-	* "Graph NG" about 75% done, for those who care.
-	  (Does anyone read these notes?)
-
-2004-04-05  Jarkko Hietaniemi  <jhi@iki.fi>
-
-	* Release 0.20102:
-	  Since my work on the "Graph NG" is progressing painfully slowly,
-	  I'm releasing this as a stopgap measure, but the DISCLAIMER still
-	  is applicable.
-
-	  Various bug fixes, especially for the strongly connected components.
-	  Contributors, either of fixes or test cases, in no particular order:
-	  Tom Anderson, frederik, Alex Harper, David Sanders, ethani, nadav,
-	  Heikki Lehväslaiho, Bob Mathews.
-
-2002-10-10  Jarkko Hietaniemi  <jhi@iki.fi>
-
-	* Release 0.20101: Add the DISCLAIMER.  Sorry, no bug fixes.
-	  Read the DISCLAIMER to learn why.
-
-1999-10-14  Jarkko Hietaniemi  <jhi@iki.fi>
-
-	* Release 0.201: Changed the output of toposort() to
-	  comply with the one in the Wolf book.
+	* Start bothering beta testers.

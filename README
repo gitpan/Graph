@@ -1,28 +1,23 @@
-NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE!
+This is Graph, a Perl module for dealing with graphs, the abstract
+data structures.  (If you were looking for pie charts, I'm sorry.)
 
-	Please read the file DISCLAIMER first.
+This is a full rewrite of the Graph module 0.2xx series as discussed
+in the book "Mastering Algorithms with Perl", written by Jarkko
+Hietaniemi (the undersigned), John Macdonald, and Jon Orwant,
+and published by O'Reilly and Associates.  This rewrite is not
+fully compatible with the 0.2xx series, simply because I did
+not want to carry over all the design flaws and bugs.
 
-This is Graph 0.2, the Perl module for graph operations as the code
-was for the 1st edition of "Mastering Algorithms with Perl", by Jon
-Orwant, Jarkko Hietaniemi, and John Macdonald, published in August
-1999 by the O'Reilly and Associates.
+Test cases of all sizes to keep me honest are warmly welcomed.
 
-Unfortunately the APIs, especially the DFS/BFS ones, have changed
-since the earlier releases of Graph (0.001..0.006).  These changes
-are hopefully for the better in clarity, both in ease of use and code
-re-use, but this code no doubt has more bugs than the older releases,
-simply because the old code has been tested more.
+For the changes, read Changes.
 
-At some places the documentation could also be more extensive.
+For the release notes, read RELEASE.
 
-You also now need an external module, Heap, by John Macdonald.
-Instead of just preaching about how one should use ready-made
-modules instead of reinventing the wheel, I now also practise that faith.
+If you find bugs, please distill your test case to the absolute minimum
+and report it, preferably via http://rt.cpan.org/NoAuth/Bugs.html?Dist=Graph
 
-Whether the future releases of Graph are based on this rewrite of the
-code or on the earlier releases or rewritten from scratch, depends on
-the feedback I will get.
+Jarkko Hietaniemi
+jhi@iki.fi
 
--- 
-Jarkko Hietaniemi <jhi@iki.fi>
 
