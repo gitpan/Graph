@@ -133,8 +133,8 @@ sub del_path {
     return unless $e;
     my $c = ($f & _COUNT) ? --$n->[ _nc ] : 0;
     if ($c == 0) {
-	delete $m->[ _i ]->{ ($f & _COUNTMULTI) ? $n->[ _ni ] : $n };
-	delete $p->[-1]->{ $l };
+	delete $m->[ _i ]->{ $n->[ _ni ] };
+	delete $p->[ -1 ]->{ $l };
     }
     return 1;
 }

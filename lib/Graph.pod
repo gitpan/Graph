@@ -987,7 +987,7 @@ from itself to itself.
 
 Return the sink vertices of the graph.
 In scalar context return the number of sink vertices.
-L</is_sink_vertex> for the definition of a sink vertex.
+See L</is_sink_vertex> for the definition of a sink vertex.
 
 =item source_vertices
 
@@ -995,7 +995,7 @@ L</is_sink_vertex> for the definition of a sink vertex.
 
 Return the source vertices of the graph.
 In scalar context return the number of source vertices.
-L</is_source_vertex> for the definition of a source vertex.
+See L</is_source_vertex> for the definition of a source vertex.
 
 =item successorful_vertices
 
@@ -1049,7 +1049,7 @@ Return the immediate predecessor vertices of the vertex.
 
 Return the isolated vertices of the graph.
 In scalar context return the number of isolated vertices.
-L</is_isolated_vertex> for the definition of an isolated vertex.
+See L</is_isolated_vertex> for the definition of an isolated vertex.
 
 =item interior_vertices
 
@@ -1057,7 +1057,7 @@ L</is_isolated_vertex> for the definition of an isolated vertex.
 
 Return the interior vertices of the graph.
 In scalar context return the number of interior vertices.
-L</is_interior_vertex> for the definition of an interior vertex.
+See L</is_interior_vertex> for the definition of an interior vertex.
 
 =item exterior_vertices
 
@@ -1065,7 +1065,7 @@ L</is_interior_vertex> for the definition of an interior vertex.
 
 Return the exterior vertices of the graph.
 In scalar context return the number of exterior vertices.
-L</is_exterior_vertex> for the definition of an exterior vertex.
+See L</is_exterior_vertex> for the definition of an exterior vertex.
 
 =item self_loop_vertices
 
@@ -1073,7 +1073,7 @@ L</is_exterior_vertex> for the definition of an exterior vertex.
 
 Return the self-loop vertices of the graph.
 In scalar context return the number of self-loop vertices.
-L</is_self_loop_vertex> for the definition of a self-loop vertex.
+See L</is_self_loop_vertex> for the definition of a self-loop vertex.
 
 =back
 

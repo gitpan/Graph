@@ -1,3 +1,14 @@
+2005-03-27  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* rt.cpan.org #12023 from Macha Nikolski:
+	  deleting an attributed vertex left the graph in a state
+	  where has_vertex() returned correctly false but vertices()
+	  still wrongly returned the freshly deleted vertex.
+
+	* A few missing "See":s added to the pod.
+
+	* Release as 0.61.
+
 2005-03-25  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Bug reported by Richard Ball: connected_component_by_index()
