@@ -1,3 +1,8 @@
+2002-10-10  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Release 0.20101: Add the DISCLAIMER.  Sorry, no bug fixes.
+	  Read the DISCLAIMER to learn why.
+
 1999-10-14  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Release 0.201: Changed the output of toposort() to

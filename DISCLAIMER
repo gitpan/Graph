@@ -1,0 +1,18 @@
+As of October 2002 I'm currently (very slowly) working on a full
+reimplementation of the Graph module.  Yes, this is what I've been
+telling people for (almost to a day) three years now.  But that's how
+it is.  Because of this, I am unlikely to find any time or energy to
+actually fix any bugs in this old Graph 0.2* series.  Yes, there are
+known bugs.
+
+Especially known to be broken is the code for detecting strong elements.
+
+I'm very sorry for this long and no doubt uncomfortable delay, but I
+have been otherwise very busy during the last few years, and still am.
+
+My suggestion for now is to report the bugs in CPAN using the RT request
+tracking system of CPAN: http://rt.cpan.org/NoAuth/Bugs.html?Dist=Graph
+so that I can verify the new implementation with the old bugs.
+
+
+
