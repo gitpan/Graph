@@ -4,9 +4,9 @@ use Graph;
 
 my $g1 = Graph->new;
 
-ok ( !$g1->hypervertexed );
+ok ( !$g1->hyperedged );
 
-my $g2 = Graph->new( hypervertexed => 1 );
+my $g2 = Graph->new( hyperedged => 1 );
 
-ok (  $g2->hypervertexed );
+ok (  $g2->hyperedged );
 

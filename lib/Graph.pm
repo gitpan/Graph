@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.59';
+$VERSION = '0.60';
 
 require 5.005;
 
@@ -2484,13 +2484,16 @@ sub _connected_components {
 	    }
 	} else {
 	    my %r; @r{ $g->unique_vertices } = ();
-	    my $root = sub {
+	    my $froot = sub {
+		wantarray ? ( keys %r ? scalar each %r: ()) : each %r;
+	    };
+	    my $nroot = sub {
 		$cc++;
 		wantarray ? ( keys %r ? scalar each %r: ()) : each %r;
 	    };
 	    my $t = Graph::Traversal::DFS->new($g,
-					       first_root => $root,
-					       next_root => $root,
+					       first_root => $froot,
+					       next_root  => $nroot,
 					       pre => sub {
 						   my ($v, $t) = @_;
 						   $cce{ $v } = $cc;
@@ -2517,7 +2520,6 @@ sub connected_component_by_index {
     my ($g, $i) = @_;
     $g->expect_undirected;
     my ($CCE, $CCI) = $g->_connected_components();
-    $i++ unless $g->has_union_find;
     return defined $CCI->{ $i } ? @{ $CCI->{ $i } } : ( );
 }
 

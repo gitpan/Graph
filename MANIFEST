@@ -125,6 +125,7 @@ t/g02_09scc.t
 t/u_ng_mst.t
 t/u_ng_path.t
 t/u_ng_scc.t
+t/u_rb_cc.t
 t/u_sn_sva.t
 util/cover.sh
 util/grand.pl

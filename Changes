@@ -1,4 +1,16 @@
-2005-03-03
+2005-03-25  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Bug reported by Richard Ball: connected_component_by_index()
+	  and connected_component_by_vertex() were starting their indexing
+	  from one, not zero.
+
+	* t/27_hyperedged.t was really testing for turning on
+	  hypervertexedness (the actual functionality was being
+	  tested correctly in t/32_hyperedge.t).
+
+	* Release as 0.60.
+
+2005-03-03  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* deep_copy_graph() could not handle code references since
 	  Data::Dumper by default doesn't handle those.  Now uses
@@ -9,11 +21,12 @@
 
 	* Release as 0.59.
 
-2005-02-19
+2005-02-19  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Document that using attributes does have a slowing down
 	  effect on other graph operations
-	  (rt.cpan.org Performance problem: edge attributes slow source_vertices)
+	  (rt.cpan.org #11498:
+	  Performance problem: edge attributes slow source_vertices)
 	  This is unlikely to get fixed any time soon, I am afraid,
 	  this is one of those working-as-designed-and-correctly-but-
 	  unfortunately-slow things.
@@ -31,7 +44,7 @@
 
 	* Release as 0.58.
 
-2005-02-12
+2005-02-12  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Further 10% speedup on 'make test' on top of 0.56 by inlining
 	  various code paths related to finding edges, now 'make test'
@@ -40,7 +53,7 @@
 
 	* Release as 0.57.
 
-2005-02-12
+2005-02-12  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Rewrite edges finding code (like edges_at()) to avoid a
 	  quadratic algorithm.  Shame on me.  Luckily this extremely
@@ -57,7 +70,7 @@
 
 	* Release as 0.56.
 
-2005-01-22
+2005-01-22  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Add unset_row(), get_row(), set_row(), and unset_row(), methods
 	  to Graph::BitMatrix and make it public (remove the "internal use
