@@ -42,6 +42,22 @@ Returns a new graph $G with the optional vertices @V.
 
 =cut
 
+sub import {
+    my ($class, %attr) = @_;
+    if (%attr) {
+	if ($attr{vertices_unsorted}) {
+	    delete $attr{vertices_unsorted};
+	    local $^W = 0;
+	    *vertices = \&vertices_unsorted;
+	}
+    }
+    *vertices = \&vertices_sorted unless defined &vertices;
+    if (keys %attr) {
+	require Carp;
+	Carp::croak("Unknown attributes: @{[map { qq['$_'] } sort keys %attr]}");
+    }
+}
+
 sub new {
    my $class = shift;
 
@@ -110,7 +126,7 @@ which will make vertices() to return unsorted results.
 
 =cut
 
-sub vertices {
+sub vertices_sorted {
     my $G = shift;
     my @V = exists $G->{ V } ? sort values %{ $G->{ V } } : ();
 
@@ -1866,7 +1882,7 @@ sub strongly_connected_graph {
 
     # Create the strongly connected components.
     while (my ($v, $r) = each %R) { push @{ $C[$r] }, $v }
-    foreach my $c (@C)            { $c = join("+", @$c)  }
+    foreach my $c (@C)            { $c = join("+", sort @$c)  }
 
     $C->directed( $G->directed );
     foreach my $c ( @C )          { $C->add_vertex( $c ) }

@@ -1,8 +1,22 @@
+2004-05-05  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Release 0.20104:
+
+	  Actually implement the "use Graph vertices_unsorted => 1"
+	  promised in 0.20103, I don't know where that chunk of code
+	  disappeared.  Add a test for it.
+
+	  Change the strongly_connected_graph to sort the vertices
+	  of strongly connected component vertices so that the
+	  subtest #6 of 09scc.t doesn't depend on the 'hash order'.
+	
+	  Spell Andras' name correctly.
+	
 2004-05-03  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Release 0.20103:
 
-	  Further strongly connected component fixes from Andras Solomon.
+	  Further strongly connected component fixes from Andras Salamon.
 
 	  Add vertices_unsorted() that avoids the slowness
 	  (unnecessary sort()) of vertices().  To replace vertices()

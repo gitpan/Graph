@@ -22,4 +22,5 @@ t/07complete.t
 t/08complement.t
 t/09scc.t
 t/10sssp.t
+t/11misc.t
 META.yml                                 Module meta-data (added by MakeMaker)

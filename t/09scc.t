@@ -52,7 +52,7 @@ print "ok 5\n" if grep { $_ eq 'b+c' || $_ eq 'c+b' } @sccv;
     $g->add_edge(qw(f a));
     $g->add_edge(qw(a f));
     my $s = $g->strongly_connected_graph;
-    print "ok 6\n" if $s eq "b-c,b-d,b-e+a+f,c-e+a+f,e+a+f-d";
+    print "ok 6\n" if $s eq "a+e+f-d,b-a+e+f,b-c,b-d,c-a+e+f";
 }
 
 {
