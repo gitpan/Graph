@@ -29,7 +29,9 @@ for my $i (0..$#p) {
 if ($min) {
     push @p, splice @p, 0, $min;
 }
-is("@p", "a b t h f r o m");
+print "# p = @p\n";
+ok("@p" eq "a b t h f r o m" ||
+   "@p" eq "a r t h f b o m");
 
 is($g->average_path_length(),           293 / 90);
 

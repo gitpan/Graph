@@ -56,7 +56,11 @@ is( $suh, "a=b,b=f,b=h,c=d,c=h,e=g,f=g" );
 
 my $sua = $u->SPT_Dijkstra(first_root => "a");
 
-is( $sua, "a=b,a=g,c=f,c=h,d=f,e=g,f=g" );
+print "# sua = sua\n";
+
+ok( $sua eq "a=b,a=g,c=f,c=h,d=f,e=g,f=g" ||
+    $sua eq "a=b,a=g,b=f,b=h,c=h,d=f,e=g" ||
+    $sua eq "a=b,a=g,b=f,b=h,c=h,d=e,e=g" );
 
 # Sedgewick, Algorithms in C, Third Edition
 # Chapter 21, "Shortest Paths", Figure 21.10 (p 282)

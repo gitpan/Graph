@@ -1,3 +1,17 @@
+2005-01-16  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* More bugs found in set_vertex_attribute(), fixed and tests
+	  added.  (Basically the same failure pattern as with the
+	  rt.cpan.org #9461: after setting vertex attributes many of
+	  the 'structural' methods such as predecessors() often returned
+	  wrong results.)
+
+	* More alternative solutions to spt.t, diameter.t, and dump.t,
+	  found by the PRNG of Koen var der Drift in Mac OS X 10.3.7,
+	  Perl 5.8.1.
+
+	* Release as 0.54.
+
 2005-01-14  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* The #9461 was still there.

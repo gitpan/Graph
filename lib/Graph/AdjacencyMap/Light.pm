@@ -192,7 +192,10 @@ sub __predecessors {
     my $V = $g->[ _V ];
     return wantarray ? () : 0 unless defined $V && defined $V->[ _s ];
     # my $i = $V->_get_path_id( $_[0] );
-    my $i = $V->[ _s ]->{ $_[0] };
+    my $i =
+	($V->[ _f ] & _LIGHT) ?
+	    $V->[ _s ]->{ $_[0] } :
+	    $V->_get_path_id( $_[0] );
     return wantarray ? () : 0 unless defined $i && defined $E->[ _p ]->{ $i };
     return keys %{ $E->[ _p ]->{ $i } };
 }
