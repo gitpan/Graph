@@ -1,4 +1,4 @@
-use Test::More tests => 84;
+use Test::More tests => 85;
 
 use Graph::Directed;
 use Graph::Undirected;
@@ -127,4 +127,13 @@ for my $i ([$g1d, $g1],
     my $c = $g->deep_copy;
     is($c->get_graph_attribute('color'), 'deep_purple');
 }
+
+SKIP: {
+    skip("no Deparse", 1) unless $] >= 5.008;
+    my $g = Graph->new;
+    $g->set_graph_attribute('color' => sub { $_[0] * $_[0] });
+    my $c = $g->deep_copy;
+    is($c->get_graph_attribute('color')->(7), 49);
+}
+
 

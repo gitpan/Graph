@@ -1,3 +1,14 @@
+2005-03-03
+
+	* deep_copy_graph() could not handle code references since
+	  Data::Dumper by default doesn't handle those.  Now uses
+	  the Deparse option for 5.8.x and later.
+
+	* The removed interfaces add_graph() and delete_graph() still
+	  had their documentation hanging around.
+
+	* Release as 0.59.
+
 2005-02-19
 
 	* Document that using attributes does have a slowing down

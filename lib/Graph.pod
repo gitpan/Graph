@@ -138,7 +138,9 @@ The copy will have the same directedness as the original.
 
 Create a deep copy of the graph (vertices, edges, and attributes) of
 the graph.  If you want a shallow copy that does not include attributes,
-see L</copy>.  (Uses Data::Dumper behind the scenes.)
+see L</copy>.  (Uses Data::Dumper behind the scenes.  Note that copying
+code references only works with Perls 5.8 or later, and even then only
+if B::Deparse can reconstruct your code.)
 
 =item undirected_copy
 
@@ -196,60 +198,6 @@ A complete graph has an edge between every pair of vertices.
 
 Create a complement graph that has the same vertices as the original graph.
 A complete graph has an edge (v,u) for every original edge (u,v).
-
-=item add_graph
-
-    $g->add_graph($h)
-
-    $g->add_graph($h, resolve => ...)
-
-Add the vertices and edges of the graph I<$h> to the graph I<$g>.
-The graph I<$h> is not affected.  By default already existing vertices
-and edges are silently accepted, to change this behaviour use the
-C<resolve> option: it can be a code reference that gets called
-(when there a corresponding edge or vertex already exists) with either
-
-    $g, $h, $v      # for vertices
-
-or
-
-    $g, $h, $u, $v  # for edges
-
-or a boolean value.  The return value of C<resolve> is tested: if it
-is true, the vertex or the edge is added, if false, not.
-
-If you want to add only the vertices or the edges,
-use the C<vertices> and C<edges> options:
-
-    $g->add_graph($h, vertices => 0)
-    $g->add_graph($h, egdes    => 0)
-
-=item delete_graph
-
-    $g->delete_graph($h)
-
-    $g->delete_graph($h, resolve => ...)
-
-Delete the vertices and edges of the graph I<$h> from the graph I<$g>.
-The graph I<$h> is not affected.  By default already missing vertices
-and edges are silently accepted, to change this behaviour use the
-C<resolve> option: it can be a code reference that gets called (when
-there is no corresponding edge or vertex to delete) with either
-
-    $g, $h, $v      # for vertices
-
-or
-
-    $g, $h, $u, $v  # for edges
-
-or a boolean value.  The return value of C<resolve> is tested: if it
-is true, the vertex or the edge is deleted, if false, not.
-
-If you want to delete only the vertices or the edges,
-use the C<vertices> and C<edges> options:
-
-    $g->delete_graph($h, vertices => 0)
-    $g->delete_graph($h, egdes    => 0)
 
 =back
 
@@ -961,8 +909,7 @@ For undirected graphs, see L</connected_graph>, or L</biconnected_graph>.
 
 Return true if the vertex $v is a sink vertex, false if not.  A sink
 vertex is defined as a vertex with predecessors but no successors:
-
-This definition means that isolated vertices are not sink vertices.
+this definition means that isolated vertices are not sink vertices.
 If you want also isolated vertices, use is_successorless_vertex().
 
 =item is_source_vertex
@@ -971,8 +918,7 @@ If you want also isolated vertices, use is_successorless_vertex().
 
 Return true if the vertex $v is a source vertex, false if not.  A source
 vertex is defined as a vertex with successors but no predecessors:
-
-The definition means that isolated vertices are not source vertices.
+the definition means that isolated vertices are not source vertices.
 If you want also isolated vertices, use is_predecessorless_vertex().
 
 =item is_successorless_vertex

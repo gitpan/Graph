@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.58';
+$VERSION = '0.59';
 
 require 5.005;
 
@@ -1596,6 +1596,7 @@ sub deep_copy {
     my $d = Data::Dumper->new([$g]);
     use vars qw($VAR1);
     $d->Purity(1)->Terse(1)->Deepcopy(1);
+    $d->Deparse(1) if $] >= 5.008;
     eval $d->Dump;
 }
 
