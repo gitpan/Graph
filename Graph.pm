@@ -1,194 +1,118 @@
 package Graph;
 
+# $Id: Graph.pm,v 1.23 1998/06/09 16:32:28 hietanie Exp $
+
+$VERSION = 0.003;
+
 =pod
 
 =head1 NAME
 
-Graph - graph data structures and algorithms
+Graph - graphs and graph algorithms
 
 =head1 SYNOPSIS
 
+	use Graph;
+
 =head1 DESCRIPTION
 
-=head1 VERSION
-
-Version 0.001.
-
-=head1 AUTHOR
-
-Jarkko Hietaniemi, <F<jhi@iki.fi>>
-
-=head1 COPYRIGHT
-
-Copyright 1998, O'Reilly & Associates.
-
-This code is distributed under the same copyright terms as Perl itself.
+The C<Graph> class provides graph data structures and some commonly used
+graph algorithms.
 
 =cut
 
-# The top-level graph class, meant for public consumption.
-#
-# Implementation Notes:
-#
-# None the base classes: Graph::_element, Graph::Vertex, and
-# Graph::Edge, is meant to be used directly.  A vertex or an edge
-# is meaningful only in the context of a graph, therefore please
-# not use those classes directly, let the Graph use them for you.
-#
-# There are also two `fake' classes: Graph::Directed and Graph::Undirected.
-# The former is in practice identical to Graph, the latter almost, the
-# only difference being that is produces undirected graphs from new(),
-# the default of Graph (and obviously Graph::Directed) being a directed
-# graph.
-#
-# As usual, the methods or subroutines starting with an underscore
-# are not meant to be used directly; internal use only.
-#
-# Unknown methods are trapped by the Graph::_element::AUTOLOAD to
-# be attribute set/get methods but only iff the method names begin
-# with an uppercase letter.  Methods beginning with lowercase letters
-# are assumed to be typos and cause a fatal runtime exception.
-# For example if $e is an edge $e->Weight will return the current
-# value of the 'Weight' attribute of the edge and $e->Weight( 3 )
-# will set the attribute to be 3.
-#
-# By using this `virtual' attribute method every element
-# (whether a graph, vertex, or edge) can have an 'Id' attribute.
-# For vertices this is mandatory (how else one could refer to
-# a vertex), for graph optional, and for edges rarely needed
-# because the two end vertices unambiguously define the edge.
-#
-# Being an undirected or a directed graph is simply a flag in
-# the graph: where it matters is how the successors are predecessors
-# of a vertex are defined.  For undirected graphs, these sets of
-# vertices are always equal.  For directed graphs, they may be,
-# but seldom are (only for a strongly connected graph, I guess).
-#
-# The $state used in DFS, BFS, and the flow networks, is a hash
-# reference carrying both static and dynamic state.  Most importantly
-# it holds the various hooks used by the algorithms.  It is, if you will,
-# the own private stack frame and heap of the algorithms, in a word, state.
-#
+require 5.004_04;
 
 use strict;
-use Carp 'confess';
-use vars qw(@ISA);
+local $^W = 1;
 
-use Graph::_element;
+use Graph::Element;
 use Graph::Vertex;
 use Graph::Edge;
 
-@ISA = qw(Graph::_element);
+use Carp qw(confess carp);
 
-use overload q("") => \&as_string,
-             q(eq) => sub { as_string( $_[ 0 ] ) eq $_[ 1 ] };
+$SIG{__DIE__} = sub{confess "Died"};
 
-# as_string($g)
-#   The stringification.
-#   Uses the stringifications of edges (and vertices) and vertices.
-#
+use vars qw(@ISA);
+
+@ISA = qw(Graph::Element);
+
+use overload q("") => \&as_string;
+
+=pod
+
+=head1 METHODS
+
+=cut
+
+=pod
+
+=head2 CONSTRUCTOR
+
+
+	$graph = Graph->new;
+
+The Constructor.  Creates a new B<directed> graph.  If you want
+undirected graphs, use the C<new()> constructor of the class
+C<Graph::Undirected>.  Read more about directedness later in
+this document.
+
+=cut
+
+sub new ($;$) {
+    my ( $class, $name ) = @_;
+
+    my $graph = Graph::Element::_new( $class, $name );
+
+    return $graph;
+}
+
+=pod
+
+	print "g = ", $g->as_string, "\n";
+
+The stringifier -- a string representation of the graph.  Normally
+there is no need to use this directly as I<operator overloading> (see
+L<overload>) works:
+
+	print "g = $g\n";
+
+Edges are listed first, unconnected vertices last, all separated by
+commas.  Vertices are printed by their names, edges from vertex I<u>
+to vertex I<v> either
+
+	u-v
+
+or
+	
+	u=v
+
+depending on whether the graph is directed or undirected, respectively.
+
+=cut
 
 sub as_string {
-    my $g = shift;
+    my $graph = shift;
     
+    my @e;
+
+    if ( $graph->directed ) {
+	foreach my $e ( $graph->edges ) {
+	    my ($u, $v) = $e->vertices;
+
+	    push @e, "$u-$v";
+	}
+    } else { # Undirected.
+	foreach my $e ( $graph->edges ) {
+	    my ($u, $v) = sort $e->vertices;
+
+	    push @e, "$u=$v";
+	}
+    }
+
     return join( ",",
-		 sort $g->edges, $g->unconnected_vertices );
-}
-
-# new($type, $id)
-#   The constructor.
-#   Sets the Id attribute.
-#
-
-sub new {
-    my $type = shift;
-
-    my $g = { };
-
-    bless $g, $type;
-
-    $g->Id( shift ) if @_;
-
-    return $g;
-}
-
-# add_vertex($graph, $vertex_ids)
-#   Adds one or more (or no) vertices to a graph.
-#
-
-sub add_vertex {
-    my $g = shift;
-
-    foreach my $id ( @_ ) {
-	unless ( exists $g->{ V }->{ $id } ) {
-	    $g->{ V }->{ $id } = Graph::Vertex->_new( $id );
-	    $g->{ V }->{ $id }->G( $g );
-	}
-    }
-}
-
-# add_edge($graph, $start_vertex, $end_vertex, ...)
-#   Adds one or more edges, represented by their start and
-#   end vertex ids, to the graph.
-#
-
-sub add_edge {
-    my $g = shift;
-
-    my ( $p, $s, $has_p, $has_s, $e );
-    my @edges;
-
-    while ( ( $p, $s ) = splice( @_, 0, 2 )) {
-
-	if ( not defined $s ) {
-	    warn "Uneven number of vertices, last vertex '$p'.\n";
-	    confess "Died";
-	}
-
-	$has_p = exists $g->{ V }->{ $p };
-	$has_s = exists $g->{ V }->{ $s };
-
-	$g->add_vertex( $p ) unless $has_p;
-	$g->add_vertex( $s ) unless $has_s;
-
-	if ( not $has_p or
-	     not $has_s or
-	     not exists $g->{ E }->{ $p }->{ S }->{ $s } or
-	     not exists $g->{ E }->{ $s }->{ P }->{ $p } ) {
-
-	    $p = $g->{ V }->{ $p };
-	    $s = $g->{ V }->{ $s };
-	    
-	    $e = Graph::Edge->_new( $p, $s );
-	    $e->G( $g );
-
-	    $g->{ E }->{ $p }->{ S }->{ $s } = $e;
-	    $g->{ E }->{ $s }->{ P }->{ $p } = $e;
-
-	    # Introduce the union-find structure.
-	    # NOTE: delete_edge does not yet update
-	    # the union-find structure.
-	    $g->union( $p, $s ) if $g->undirected;
-	}
-    }
-}
-
-# merge_edges($destination_graph, $source_graph)
-#   Imports all the edges from the source graph
-#   to the destination graph.  The import is
-#   done by the vertex ids (that is, by cloning),
-#   otherwise the vertices would be shared by
-#   the two graphs, which would not be a Good Thing.
-#
-
-sub merge_edges {
-    my ( $g_dst, $g_src ) = @_;
-
-    my ( $p, $s );
-
-    foreach my $e ( $g_src->edges ) {
-	$g_dst->add_edge( $e->vertex_Ids );
-    }
+                 sort @e, sort $graph->unconnected_vertices );
 }
 
 # _make_sense($graph, $sense, $make, $concept)
@@ -197,13 +121,12 @@ sub merge_edges {
 #
 
 sub _make_sense {
-    my ( $g, $sense, $make, $concept ) = @_;
+    my ( $graph, $sense, $make, $concept ) = @_;
 
     unless ( $make ) {
-	warn( ( caller( 2 ))[ 3 ], ":\n");
-	warn "\u$concept make sense only for $sense graphs.\n";
-	warn "The graph $g is not one.\n";
-	confess "Died";
+        warn( ( caller( 2 ))[ 3 ], ":\n");
+        warn "\u$concept make sense only for $sense graphs.\n";
+        confess "Died";
     }
 }
 
@@ -213,9 +136,9 @@ sub _make_sense {
 #
 
 sub _make_directed_sense {
-    my ( $g, $concept ) = @_;
+    my ( $graph, $concept ) = @_;
 
-    $g->_make_sense( "directed",   $g->directed,   $concept );
+    $graph->_make_sense( "directed",   $graph->directed,   $concept );
 }
 
 # _make_undirected_sense()
@@ -224,1859 +147,1519 @@ sub _make_directed_sense {
 #
 
 sub _make_undirected_sense {
-    my ( $g, $concept ) = @_;
+    my ( $graph, $concept ) = @_;
 
-    $g->_make_sense( "undirected", $g->undirected, $concept );
+    $graph->_make_sense( "undirected", $graph->undirected, $concept );
 }
 
-# union_find($graph, $do_union, $vertex, $other_vertex)
-#   The union-find operation.  The $do_union flag tells
-#   whether this a union operation or a find operation.
-#
+=pod
 
-sub union_find {
-    my ( $g, $do_union, $p, $s ) = @_;
+=head2 ADDING VERTICES
+
+	$vertex   = $graph->add_vertex($vertex_name);
+
+Add one vertex to the graph.  Return the vertex, regardless of
+whether it already was in the graph.
+
+	@vertices = $graph->add_vertices($v1, $v2, ..., $vn);
+
+Add one or more vertices to the graph.  In list context return the
+list of the I<n> added vertices, regardless of whether they already
+were in there graph.  In array context return the number of really
+added vertices.
+
+=cut
+
+sub add_vertex ($$) {
+    return Graph::Vertex->_new( @_ );
+}
+
+sub add_vertices ($;@) {
+    my $graph = shift;
+
+    if ( wantarray ) {
+	my @vertices;
+
+	foreach ( @_ ) {
+	    push @vertices, $graph->add_vertex( $_ );
+	}
+
+	return @vertices;
+    } else {
+	my $vertices = 0;
+	
+	foreach ( @_ ) {
+	    unless ( defined $graph->vertex( $_ ) ) {
+		$graph->add_vertex( $_ );
+		$vertices++;
+	    }
+	}
+
+	return $vertices;
+    }
+}
+
+=pod
+
+	$in_same_element = $graph->find( $vertex, $another_vertex );
+
+Return true if the two vertices are in the same connected C<$graph>
+element.  This is the other half of the I<union-find> fame.
+Union-find is the name of a method which enables extremely fast graph
+connectedness checks.  The other half, union, is not available because
+explicitly using it would be a bad idea: C<add_edge> and C<add_edges>
+will call it implicitly.
+
+	$is_connected    = $graph->connected;
+
+Return true if the C<$graph> is connected: that is, one can reach
+every vertex from any other vertex.  Makes sense only for undirected
+graphs, for directed graphs a similar concept does exist but it is
+called I<strong connectivity>.
+
+B<NOTE>: the union-find structure is not currently updated when
+vertices or edges of the graph are I<deleted>.  Yes, this is a bug.
+
+=cut
+
+sub _union_find {
+    my ( $graph, $u, $v, $do_union ) = @_;
 
     my ( $i, $j );
 
-    unless ( defined $g->{ union_find_by_vertex }->{ $p } ) {
-	$i = ++$g->{ union_find_next_id };
-	$g->{ union_find_by_vertex }->{ $p } = $i;
-	$g->{ union_find_by_id     }->[ $i ] = $p;
-	$g->{ union_find_parent    }->[ $i ] = 0;
+    unless ( defined $graph->{ union_find_by_vertex }->{ $u } ) {
+        $i = ++$graph->{ union_find_next_id };
+        $graph->{ union_find_by_vertex }->{ $u } = $i;
+        $graph->{ union_find_by_id     }->[ $i ] = $u;
+        $graph->{ union_find_parent    }->[ $i ] = 0;
     } else {
-	$i = $g->{ union_find_by_vertex }->{ $p };
-    }	
+        $i = $graph->{ union_find_by_vertex }->{ $u };
+    }   
 
-    unless ( defined $g->{ union_find_by_vertex }->{ $s } ) {
-	$j = ++$g->{ union_find_next_id };
-	$g->{ union_find_by_vertex }->{ $s } = $j;
-	$g->{ union_find_by_id     }->[ $j ] = $s;
-	$g->{ union_find_parent    }->[ $j ] = 0;
+    unless ( defined $graph->{ union_find_by_vertex }->{ $v } ) {
+        $j = ++$graph->{ union_find_next_id };
+        $graph->{ union_find_by_vertex }->{ $v } = $j;
+        $graph->{ union_find_by_id     }->[ $j ] = $v;
+        $graph->{ union_find_parent    }->[ $j ] = 0;
     } else {
-	$j = $g->{ union_find_by_vertex }->{ $s };
+        $j = $graph->{ union_find_by_vertex }->{ $v };
     }
 
     my ( $oi, $oj ) = ( $i, $j ); # Save these for path compression.
 
-    $i = $g->{ union_find_parent }->[ $i ]
-	while $g->{ union_find_parent }->[ $i ] > 0;
+    $i = $graph->{ union_find_parent }->[ $i ]
+        while $graph->{ union_find_parent }->[ $i ] > 0;
 
-    $j = $g->{ union_find_parent }->[ $j ]
-	while $g->{ union_find_parent }->[ $j ] > 0;
+    $j = $graph->{ union_find_parent }->[ $j ]
+        while $graph->{ union_find_parent }->[ $j ] > 0;
 
     # Path compression, do another pass (well, two passes)
     # connecting all the vertices to the newly found root.
 
-    ( $oi, $g->{ union_find_parent }->[ $oi ] ) =
-	( $g->{ union_find_parent }->[ $oi ], $i )
-	    while $g->{ union_find_parent }->[ $oi ] > 0;
+    ( $oi, $graph->{ union_find_parent }->[ $oi ] ) =
+        ( $graph->{ union_find_parent }->[ $oi ], $i )
+            while $graph->{ union_find_parent }->[ $oi ] > 0;
 
-    ( $oj, $g->{ union_find_parent }->[ $oj ] ) =
-	( $g->{ union_find_parent }->[ $oj ], $j )
-	    while $g->{ union_find_parent }->[ $oj ] > 0;
+    ( $oj, $graph->{ union_find_parent }->[ $oj ] ) =
+        ( $graph->{ union_find_parent }->[ $oj ], $j )
+            while $graph->{ union_find_parent }->[ $oj ] > 0;
 
     my $same = $i == $j;
 
     # Make the union.
     if ( $do_union and not $same ) {
 
-	# Weight balancing, no balancing would be simply:
-	# $g->{ union_find_parent }->[ $j ] = $i;
+        # Weight balancing, no balancing would be simply:
+        # $graph->{ union_find_parent }->[ $j ] = $i;
 
-	# Pick the smaller of the trees.
-	if ( $g->{ union_find_parent }->[ $j ]
-	     <
-	     $g->{ union_find_parent }->[ $i ] ) {
+        # Pick the smaller of the trees.
+        if ( $graph->{ union_find_parent }->[ $j ]
+             <
+             $graph->{ union_find_parent }->[ $i ] ) {
 
-	    $g->{ union_find_parent }->[ $j ] +=
-		$g->{ union_find_parent }->[ $i ] - 1;
-	    $g->{ union_find_parent }->[ $i ] = $j;
+            $graph->{ union_find_parent }->[ $j ] +=
+                $graph->{ union_find_parent }->[ $i ] - 1;
+            $graph->{ union_find_parent }->[ $i ] = $j;
 
-	} else {
+        } else {
 
-	    $g->{ union_find_parent }->[ $i ] +=
-		$g->{ union_find_parent }->[ $j ] - 1;
-	    $g->{ union_find_parent }->[ $j ] = $i;
+            $graph->{ union_find_parent }->[ $i ] +=
+                $graph->{ union_find_parent }->[ $j ] - 1;
+            $graph->{ union_find_parent }->[ $j ] = $i;
 
-	}
+        }
     }
 
     return $same;
 }
 
-# find($graph, $vertex, $other_$vertex)
+# $graph->find( $vertex, $another_$vertex )
 #   The find operation of the union-find fame.
 #
 
 sub find {
-    my ( $g, $p, $s ) = @_;
+    my ( $graph, $u, $v ) = @_;
 
-    $g->_make_undirected_sense( "union-find" );
+    $graph->_make_undirected_sense( "union-find" );
 
-    return $g->union_find( 0, $p, $s );
+    return $graph->_union_find( $u, $v, 0 );
 }
 
-# union($graph, $vertex, $other_vertex)
+# $graph->_union( $vertex, $another_vertex )
 #   The union operation of the union-find fame.
 #
 
-sub union {
-    my ( $g, $p, $s ) = @_;
+sub _union {
+    my ( $graph, $u, $v ) = @_;
 
-    $g->_make_undirected_sense( "union-find" );
+    $graph->_make_undirected_sense( "union-find" );
 
-    return $g->union_find( 1, $p, $s );
+    return $graph->_union_find( $u, $v, 1 );
 }
 
-# has_vertex($g, @ids)
-#   Return true if the graph has all the named vertices.
-#
-
-sub has_vertex {
-    my $g = shift;
-
-    foreach my $id ( @_ ) {
-	return 0 unless exists $g->{ V }->{ $id };
-    }
-
-    return 1;
-}
-
-# directed($graph)
-#   Get or set the directedness of the graph.
-#
-
-sub directed {
-    my $g = shift;
-
-    if ( @_ ) {
-	$g->attr( 'directed', shift());
-    } else {
-	# The default is directed.
-	$g->attr( 'directed', 1 )
-	    unless defined $g->attr( 'directed' );
-
-	return $g->attr( 'directed' );
-    }
-}
-
-# undirected($graph)
-#   Get or set the undirectedness of the graph.
-#
-
-sub undirected {
-    my $g = shift;
-
-    if ( @_ ) {
-	$g->attr( 'directed', shift() ? 0 : 1 );
-    } else {
-	# The default is directed.
-	$g->attr( 'directed', 1 )
-	    unless defined $g->attr( 'directed' );
-
-	return $g->attr( 'directed' ) ? 0 : 1;
-    }
-}
-
-# _successors($graph, $vertex)
-#   The true successors of the vertex in the graph.
-#   True means that only the successors expliclity
-#   added by add_edge(), regardless whether the graph
-#   is undirected or directed.
-#
-
-sub _successors {
-    my ( $g, $v ) = @_;
-
-    return map { $_->S } values %{ $g->{ E }->{ $v }->{ S } };
-}
-
-# _predecessors()
-#   The true predecessors of the vertex in the graph.
-#   For the meaning of true see _successors().
-#
-
-sub _predecessors {
-    my ( $g, $v ) = @_;
-
-    return map { $_->P } values %{ $g->{ E }->{ $v }->{ P } };
-}
-
-# neighbors($graph, $vertex)
-#   The union of _successors() and _predecessors,
-#   all the neighboring vertices of the vertex in the graph.
-#
-
-sub neighbors {
-    my ( $g, $v ) = @_;
-
-    return ( $g->_successors  ( $v ),
-	     $g->_predecessors( $v ) );
-}
-
-# successors()
-#   The successor vertices of the vertex in the graph.
-#   Directedness-scient, as opposed to _successors().
-#
-
-sub successors {
-    my ( $g, $v ) = @_;
-
-    return $g->directed ?
-	   $g->_successors( $v ):
-	   $g-> neighbors ( $v );
-}
-
-# predecessors()
-#   The predecessor vertices of the vertex in the graph.
-#   Directedness-scient, as opposed to _predecessors().
-#
-
-sub predecessors {
-    my ( $g, $v ) = @_;
-
-    return $g->directed ?
-	   $g->_predecessors( $v ):
-	   $g-> neighbors   ( $v );
-}
-
-# delete_vertex($graph, @vertex_ids)
-#   Delete one or more (or no) vertices from the graph.
-#   A bit tricky because all the connecting edges
-#   also need to be deleted.
-#
-
-sub delete_vertex {
-    my $g = shift;
-
-    foreach my $id ( @_ ) {
-	if ( exists $g->{ V }->{ $id } ) {
-	    my $v = $g->{ V }->{ $id };
-
-	    foreach my $s ( $g->_successors( $v ) ) {
-		delete $g->{ E }->{ $s }->{ P }->{ $v };
-	    }
-	    delete $g->{ E }->{ $v }->{ S };
-
-	    foreach my $p ( $g->_predecessors( $v ) ) {
-		delete $g->{ E }->{ $p }->{ S }->{ $v };
-	    }
-	    delete $g->{ E }->{ $v }->{ P };
-
-	    delete $g->{ V }->{ $v };
-	}
-    }
-}
-
-# delete_edge($graph, $start_vertex, $end_vertex, ...)
-#   Delete one or more (or no) edges from the graph.
-#   The edges are specified by their end vertices.
-#   Note that also the knowledge of the edge by the
-#   end vertices needs to undone.
-#   NOTE: delete_edge does not yet update
-#   the union-find structure.
-#
-
-sub delete_edge {
-    my $g = shift;
-
-    my ( $p, $s );
-
-    while ( ( $p, $s ) = splice( @_, 0, 2 )) {
-	$p = $g->{ V }->{ $p };
-	$s = $g->{ V }->{ $s };
-	delete $g->{ E }->{ $p }->{ S }->{ $s }
-	    if exists $g->{ E }->{ $p };
-	delete $g->{ E }->{ $s }->{ P }->{ $p }
-	    if exists $g->{ E }->{ $s };
-    }
-}
-
-# vertices($graph, @vertex_ids)
-#   Return all or selected vertices of the graph.
-#   If no ids are given, all the vertices are returned.
-#   If one id is given, that one vertex is returned.
-#   If more ids are given, the list of corresponding vertices is returned.
-#   Unknown vertices return as undefs.
-#
-
-sub vertices {
-    my $g = shift;
-
-    my $id;
-
-    if ( @_ == 1 ) {
-	$id = shift;
-
-	return $g->{ V }->{ $id };
-    } elsif ( @_ ) {
-	my @V;
-
-	foreach my $id ( @_ ) {
-	    push( @V, $g->{ V }->{ $id } );
-	}
-
-	return @V;
-    } else {
-	return values %{ $g->{ V } };
-    }
-}
-
-# edges($graph, @edge_ids)
-#   Return all or selected edges of the graph.
-#   If no ids are given, all the edges are returned.
-#   If one id pair is given, that one edge is returned.
-#   If more ids are given, the list of corresponding edges is returned.
-#   Unknown edges return as undefs.
-#
-
-sub edges {
-    my $g = shift;
-
-    my ( $v, $p, $s, @E );
-
-    if ( @_ == 2 ) {
-	( $p, $s ) = @_;
-
-	return $g->{ E }->{ $p }->{ S }->{ $s }
-	    if defined $g->{ E }->{ $p }->{ S }->{ $s };
-
-	return $g->{ E }->{ $s }->{ S }->{ $p }
-	    if $g->undirected and
-               defined $g->{ E }->{ $s }->{ S }->{ $p };
-	
-	return undef;
-
-    } elsif ( @_ ) {
-
-	if ( $g->directed ) {
-
-	    while ( ( $p, $s ) = splice( @_, 0, 2 )) {
-		push( @E, $g->{ E }->{ $p }->{ S }->{ $s } );
-	    }
-
-	} else {
-
-	    while ( ( $p, $s ) = splice( @_, 0, 2 )) {
-		if ( defined $g->{ E }->{ $p }->{ S }->{ $s } ) {
-		    push( @E, $g->{ E }->{ $p }->{ S }->{ $s } );
-		} elsif ( defined $g->{ E }->{ $s }->{ S }->{ $p } ) {
-		    push( @E, $g->{ E }->{ $s }->{ S }->{ $p } );
-		}
-	    }
-
-	}
-
-	return @E;
-
-    } else {
-
-	foreach $p ( $g->vertices ) {
-	    # True successors.
-	    foreach $s ( $g->_successors( $p ) ) {
-		push( @E, $g->{ E }->{ $p }->{ S }->{ $s } );
-	    }
-	}
-	
-	return @E;
-    }
-}
-
-# classify_vertices($graph)
-#   Classify the vertices of the graph.
-#   The classification is returned as hash reference where
-#   the keys are qw(connected unconnected self sink source)
-#   and the values are hash references which have the appropriate
-#   vertices both as the values and as the keys.
-#   If this sounds complicated, you can used the
-#   derived methods, connected_vertices() ... source_vertices().
-#   After the call, the class of a vertex $v
-#   is available as the Class attribute: $v->Class.
-#
-
-sub classify_vertices {
-    my $g = shift;
-
-    my ( %Vc, %Vu, %Vslf, %Vsnk, %Vsrc); # Classification slots.
-
-    foreach my $v ( $g->vertices ) {
-	# True successors or predecessors.
-	my @s = $g->_successors  ( $v );
-	my @p = $g->_predecessors( $v );
-	if ( @s or @p ) {
-	    $Vc{ $v } = $v;
-	    if ( @s == 0 ) {
-		$v->Class( 'sink' );
-		$Vsnk{ $v } = $v;
-	    } elsif ( @p == 0 ) {
-		$v->Class( 'source' );
-		$Vsrc{ $v } = $v;
-	    }
-	    foreach my $s ( @s ) {
-		if ( $s eq $v ) {
-		    $v->Class( 'self' );
-		    $Vslf{ $v } = $v;
-		    last;
-		}
-	    }
-	} else {
-	    $v->Class( 'unconnected' );
-	    $Vu{ $v } = $v;
-	}
-	# Mark the in- and out-degrees.
-	$v->In ( scalar @p );
-	$v->Out( scalar @s );
-    }
-
-    return { connected   => \%Vc,
-	     unconnected => \%Vu,
-	     self        => \%Vslf,
-	     sink        => \%Vsnk,
-	     source      => \%Vsrc };
-}
-
-# connected_vertices($graph)
-#   Returns the (unordered) list of connected vertices of the graph.
-#
-
-sub connected_vertices {
-    my $g = shift;
-
-    return values %{ $g->classify_vertices->{ connected } };
-}
-
-# unconnected_vertices($graph)
-#   Returns the (unordered) list of unconnected vertices of the graph.
-#
-
-sub unconnected_vertices {
-    my $g = shift;
-
-    return values %{ $g->classify_vertices->{ unconnected } };
-}
-
-# self_vertices($graph)
-#   Returns the (unordered) list of self-looping vertices of the graph.
-#
-
-sub self_vertices {
-    my $g = shift;
-
-    return values %{ $g->classify_vertices->{ self } };
-}
-
-# sink_vertices($graph)
-#   Returns the (unordered) list of sink vertices of the graph.
-#
-
-sub sink_vertices {
-    my $g = shift;
-
-    return values %{ $g->classify_vertices->{ sink } };
-}
-
-# source_vertices($graph)
-#   Returns the (unordered) list of source vertices of the graph.
-#
-
-sub source_vertices {
-    my $g = shift;
-
-    return values %{ $g->classify_vertices->{ source } };
-}
-
-# density($graph)
-#   Returns the density of the graph as a number between
-#   0 and 1.  Zero means an empty graph (no edges, and possibly
-#   no vertices...) and one means a complete graph.  Works
-#   correctly for both directed and undirected graphs.
-#
-
-sub density {
-    my $g = shift;
-
-    my $V = scalar $g->vertices;
-    my $m = $V * ( $V - 1 );
-
-    $m /= 2 if $g->undirected;
-
-    return $g->edges / $m;
-}
-
-# sparse($graph)
-#   Returns true if the graph is sparse.
-#   This is of course a judgement call but we use the limit
-#   E < V log(V).
-#
-
-sub sparse {
-    my $g = shift;
-
-    my $V = scalar $g->vertices;
-
-    return 1 if $V == 0;
-
-    my $m = $V * log( $V );
-
-    $m /= 2 if $g->undirected;
-
-    return $g->edges < $m;
-}
-
-# dense()
-#   Returns true if the graph is dense.
-#   This is of course a judgement call but we use the limit
-#   E > V - V log(V).
-#
-
-sub dense {
-    my $g = shift;
-
-    my $V = scalar $g->vertices;
-
-    return 0 if $V == 0;
-
-    my $m = $V - $V * log( $V );
-
-    $m /= 2 if $g->undirected;
-
-    return $g->edges < $m;
-}
-
-# _path_to_edge()
-#   A private helper function that converts a list of vertices
-#   that is supposed to represent of path to a list of
-#   vertices that can be fed to, say, the add_edge() method.
-#   The furious map() is doing nothing more complicated than
-#   converting a list like: a b c d ... to a list like:
-#   a b b c c d d ..., not unlike stuttering.
-#
-
-sub _path_to_edge {
-    return
-	map { ( $_[0]->[ $_ ], $_[0]->[ $_ + 1 ] ) }
-            0..( $#{ $_[0] } - 1 );
-}
-
-# _find_vertex()
-#   A private helper function that verifies that a given
-#   vertex really is a vertex in a given graph.  Returns
-#   the vertex as a real vertex object even if the vertex
-#   was specified only by its id.
-#
-
-sub _find_vertex {
-    my ( $g, $v ) = @_;
+sub is_connected {
+    my $graph = shift;
     
-    unless ( ref $v ) {
-	my $u = $g->vertices( $v );
-
-	unless ( defined $u ) {
-	    my $sub = ( caller(1) )[ 3 ];
-
-	    warn "$sub: vertex $v\n";
-	    warn "not in graph $g.\n";
-	    confess "Died";
-	}
-
-	return $u;
-    }
-	
-
-    return $v;
-}
-
-# add_path($graph, @path_vertices)
-#   Add a path of vertices (as edges) to the graph.
-#
-
-sub add_path {
-    my $g = shift;
-    
-    $g->add_edge( _path_to_edge( \@_ ) );
-}
-
-# delete_path()
-#   Delete a path of vertices (the edges) from the graph.
-#
-
-sub delete_path {
-    my $g = shift;
-    
-    $g->delete_edge( _path_to_edge( \@_ ) );
-}
-
-# _walk_init($graph, $state)
-#   A private helper method used by both DFS and BFS.
-#   Initializes the state and the graph vertices for a traversal.
-#
-
-sub _walk_init {
-    my ( $g, $state ) = @_;
-
-    $state->{ graph   } = $g;
-    $state->{ order   } = 0;
-    
-    $state->{ unseen } = { };
-
-    foreach my $v ( $g->vertices ) {
-	$state->{ unseen }->{ $v } = 1;
-    }
-}
-
-# _walk_successors($graph, $vertex, $state)
-#   A private helper method used by both DFS and BFS.
-#   For a vertex in a graph returns its successors,
-#   possibly filtered by a hook and ordered by another hook.
-#   Marks the vertex as seen (not un-seen) and
-#   marks the `seen' time stamp.
-#
-
-sub _walk_successors {
-    my ( $g, $v, $state ) = @_;
-
-    delete $state->{ unseen }->{ $v };
-
-    $state->{ seen }->{ $v } = $state->{ order }++;
-		
-    my @s = $v->successors;
-		
-    my $successor_grep = $state->{ successor_grep }; # Selector.
-    my $successor_sort = $state->{ successor_sort }; # Orderer.
-
-    # If some successors are (not) wanted.
-    @s = grep { $successor_grep->( $v, $_, $state ) } @s
-	if defined $successor_grep;
-
-    # If some successor order is preferred.
-    @s = sort { $successor_sort->( $a, $b, $state ) } @s
-	if defined $successor_sort;
-		
-    return @s;
-}
-
-# classify_edges($graph, $state)
-#   Classify the edges to one of the classes
-#   qw(tree back forward cross)
-#   After the call the class of edge $e is available
-#   as the attribute Class: $e->Class.
-#   For an undirected graph, no forward or cross edges exist:
-#   potential forward edges become back edges.
-#
-
-sub classify_edges {
-    my ( $g, $state ) = @_;
-
-    # Reset edge classifications.
-
-    foreach my $e ( $g->edges ) {
-	$e->delete_attr( 'class' );
-    }
-    
-    $state->{ edge_class } = { };
-
-    $state->{ edge_unseen_hook } =
-	sub {
-	    my ( $p, $s, $state ) = @_;
-
-	    $state->{ edge_class }->{ $p }->{ $s } = "tree";
-	};
-
-    $state->{ edge_seen_hook } =
-	sub {
-	    my ( $p, $s, $state ) = @_;
-	     
-	    if ( not exists $state->{ done }->{ $s } ) {
-		$state->{ edge_class }->{ $p }->{ $s } = "back";
-	    } elsif ( $state->{ seen }->{ $p }
-		      <
-		      $state->{ seen }->{ $s } ) {
-		if ( $state->{ graph }->directed ) {
-		    $state->{ edge_class }->{ $p }->{ $s } = "forward";
-		} else {
-		    # Remove and reinserted edge reversed.
-		    $g->delete_edge( $p->Id, $s->Id );
-
-		    $g->add_edge( $s->Id, $p->Id );
-		    $state->{ edge_class }->{ $s }->{ $p } = "back";
-		}
-	    } else {
-		$state->{ edge_class }->{ $p }->{ $s } = "cross";
-	    }
-	};
-
-    $g->depth_first( $state );
-
-    my %class;
-
-    foreach my $e ( $g->edges ) {
-	my ( $p, $s ) = $e->vertices;
-	my $c = $state->{ edge_class }->{ $p }->{ $s };
-	if ( defined $c ) {
-	    $e->Class( $c );
-	    push( @{ $class{ $c } }, $e );
-	}
-    }
-
-    return \%class;
-}
-
-# cyclic($graph)
-#   Returns true if the graph is cyclic (has back edges).
-#
-
-sub cyclic {
-    my $g = shift;
-
-    my $class = $g->classify_edges;
-
-    return exists $class->{ back };
-}
-
-# dag($graph)
-#   Returns true if the graph is directed and acyclic.
-#
-
-sub dag {
-    my $g = shift;
-    
-    # Directed and a-cyclic.
-    return $g->directed && not $g->cyclic;
-}
-
-# connected($graph)
-#   Returns true if the graph is connected (has multiple roots,
-#   a depth-first forest).  A meaningful question only for
-#   undirected graphs.
-#
-
-sub connected {
-    my $g = shift;
-    
-    $g->_make_undirected_sense( "Being connected" );
+    $graph->_make_undirected_sense( "Being connected" );
 
     my $state = { };
 
-    my @v = $g->vertices;
+    my @v = $graph->vertices;
     my $v = shift @v;
 
     for my $u ( @v ) {
-	# If not in same union-tree component, give up.
-	return 0 unless $g->find( $u, $v );
+        # If not in same union-tree component, give up.
+        return 0 unless $graph->find( $u, $v );
     }
 
     return 1;
 }
 
-# transpose_graph($graph)
-#   Returns the transpose of the graph.
-#
+=pod
 
-sub transpose_graph {
-    my $g = shift;
+=head2 ADDING EDGES
 
-    $g->_make_directed_sense( "transpose" );
+	$edge  = $add->add_edge($v1, $v2[, $edge_name]);
 
-    my $t = ( ref $g )->new;
+Add one edge to the graph by the names of the vertices.
+The vertices are implicitly added to the graph if not already there.
+Return the edge, regardless of whether it already was in the graph.
+An optional symbolic name can be attached to the edge.  This is
+normally unnecessary because an edge is fully specified by its
+vertices.
 
-    foreach my $e ( $g->edges ) {
-	# Reverse every edge.
-	$t->add_edge( reverse $e->vertex_Ids );
-    }
+	@edges = $add->add_edges($e1_v1, $e1_v2,
+                                 $e2_v1, $e2_v2,
+                                 ...,
+                                 $en_v1, $e2_v2);
 
-    return $t;
+Add one or more edges to the graph by the names of the vertices.  The
+vertices are implicitly added to the graph if not already there.  In
+list context return the list of the I<n> edges, regardless of whether
+they already were in the graph.  In scalar context return the number
+of really added edges.
+
+See L<Graph::Vertex> for how to find out which edges start from and
+leave a vertex, and to find out which vertices are behind those edges.
+See L<Graph::Edge> for how to retrieve the vertices of edges.
+
+=cut
+
+sub add_edge ($$$;$) {
+    return Graph::Edge->_new( @_ );
 }
 
-# complete_graph($graph)
-#   Returns the complete graph of the graph.
-#
+sub add_edges ($;@) {
+    my $graph = shift;
+    my @edges;
 
-sub complete_graph {
-    my $g = shift;
+    if ( wantarray ) {
+	my @edges;
 
-    my $c = ( ref $g )->new;
+	push @edges, $graph->add_edge( splice @_, 0, 2 ) while @_;
+	
+	return @edges;
+    } else {
+	my $edges = 0;
 
-    my @V = $g->vertices;
+	while ( @_ ) {
+	    my ( $u, $v ) = splice @_, 0, 2;
 
-    foreach my $p ( @V ) {
-	foreach my $s ( @V ) {
-	    # Add every possible edge...
-	    $c->add_edge( $p->Id, $s->Id )
-		# ...except selfloops.
-		unless $p eq $s;
+	    unless ( $graph->edge( $u, $v ) ) {
+		$graph->add_edge( $u, $v );
+		$edges++;
+	    }
 	}
+
+	return $edges;
     }
 
-    return $c;
-}
 
-# complement_graph($graph)
-#   Returns the complement graph of the graph.
-#
+    return @edges;
+} 
 
-sub complement_graph {
-    my $g = shift;
+=pod
 
-    my $c = $g->complete_graph;
+=head2 RETRIEVING VERTICES
 
-    foreach my $e ( $g->edges ) {
-	# Delete every edge present in the original.
-	$c->delete_edge( $e->vertex_Ids );
+	$vertex   = $graph->vertex($vertex_name);
+
+Return one vertex of the graph by its name names.  If the vertex does
+not exist, C<undef> is returned.
+
+	@vertices = $graph->vertices($v1, $v2, ..., $vn);
+
+Return the list of the I<n> vertices of the graph by their names.  If
+a vertex by a name does not exists, C<undef> is returned for that
+vertex.
+
+	@vertices = $graph->vertices;
+
+If no names are specified all the vertices are returned, in
+pseudorandom order.
+
+=cut
+
+sub vertices ($;@) {
+    my $graph = shift;
+
+    if ( @_ ) { # Some vertices by name.
+	return @{ $graph->{ _BY_NAME }->{ _VERTICES } }{ @_ };
+    } else {	# All the vertices.
+	return values %{ $graph->{ _VERTICES } };
     }
-
-    return $c;
 }
 
-# depth_first_forest($graph, $state)
-#   Returns the depth-first forest of the graph.
-#   The $state can be used to filter out certain vertices.
-#
+sub vertex ($$$) {
+    my $graph = shift;
 
-sub depth_first_forest {
-    my ( $g, $state ) = @_;
+    return ( $graph->vertices( $_[ 0 ] ) )[ 0 ];
+}
 
-    $state = { } unless defined $state;
+=pod
 
-    my $f = ( ref $g )->new;
+	$has_vertex   = $graph->has_vertex($vertex_name);
 
-    $g->classify_edges( $state );
+Return true if the the graph has the vertex.
 
-    foreach my $e ( $g->edges ) {
-	if ( defined $e->Class and $e->Class eq "tree" ) {
-	    $f->add_edge( $e->vertex_Ids );
+	@has_vertices = $graph->has_vertices($v1, $v2, ...);
+
+In list context return a list of truth values, one for each vertex:
+true if the graph has the vertex, false if not.  In scalar context,
+return the logical and of the list, that is, all the vertices must
+exist.
+
+=cut
+
+sub has_vertex ($$) {
+    my ( $graph, $vertex ) = @_;
+
+    return defined $graph->vertex( $vertex ) ? 1 : 0;
+}
+
+sub has_vertices ($;@) {
+    my $graph = shift;
+    my @has;
+
+    push @has, defined $graph->vertex( shift @_ ) ? 1 : 0 while @_;
+
+    if ( wantarray ) {
+	return @has;
+    } else {
+	foreach ( @has ) { return 0 unless $_ }
+	return 1;
+    }
+}
+
+=pod
+
+=head2 RETRIEVING EGDES
+
+	$edge  = $graph->edge($v1, $v2);
+
+Return an edge of the graph by its vertex names, or vertices.  If the
+edge does not exist, C<undef> is returned.
+
+	@edges = $graph->edges($e1_v1, $e1_v2,
+                               $e2_v1, $e2_v2,
+                               ...,
+                               $en_v1, $en_v2);
+
+Return the list of I<n> edges of the graph by their vertex names, or
+vertices.  If an edge by its vertices does not exist, C<undef> is
+returned for that edge.
+
+	@edges = $graph->edges;
+
+If no names are specified all the edges are returned, in pseudorandom
+order.
+
+=cut
+
+sub edges ($;@) {
+    my $graph = shift;
+    my @edges;
+
+    if ( @_ ) { # Some edges by their vertices.
+	while ( @_ ) {
+	    my ( $vertex_from, $vertex_to ) = splice @_, 0, 2;
+
+	    # Names to vertices if needed.
+	    $vertex_from = $graph->vertex( $vertex_from )
+		unless ref $vertex_from;
+	    $vertex_to   = $graph->vertex( $vertex_to   )
+		unless ref $vertex_to;
+
+	    push @edges,
+	         ( ref $vertex_from and ref $vertex_to ) ?
+                     $graph->{ _BY_VERTICES }->
+		     { $vertex_from->_id }->
+		     { $vertex_to->_id } :
+                     undef;
 	}
+    } else { # All the edges.
+	@edges = values %{ $graph->{ _EDGES } };
     }
 
-    return $f;
+    return @edges;
 }
 
-# topo_sort($graph, $state)
-#   Returns the topological sort of the vertices of the graph.
-#   The $state can be used to filter out certain vertices.
-#
+sub edge ($$$) {
+    my $graph = shift;
 
-sub topo_sort {
-    my ( $g, $state ) = @_;
-
-    $state = { } unless defined $state;
-
-    $g->depth_first( $state );
-
-    # A Schwartzian Transform.
-    return map { $_->[ 0 ] }
-               sort { $b->[ 1 ] <=> $a->[ 1 ] } # Note: $b $a
-                    map { [ $_, $state->{ done }->{ $_ } ] }
-                        $g->vertices;
+    return ( $graph->edges( @_[ 0, 1 ] ) )[ 0 ];
 }
 
-# add_attributed_edge($graph, $attribute_name, $vertex,
-#                     $attribute_value, $other_vertex)
-#   Sets the $attribute_name of the edge defined by
-#   the vertices in the graph to the $attribute_value.
-#
+=pod
 
-sub add_attributed_edge {
-    my ( $g, $a, $p, $w, $s ) = @_;
+	$has_edge  = $graph->has_edge($v1, $v2);
 
-    $g->add_edge( $p->Id, $s->Id );
-    $g->edges( $p, $s )->$a( $w );
+Return true if the graph has the edge defined by the vertices, false if not.
+
+	@edges = $graph->edges($e1_v1, $e1_v2,
+                               $e2_v1, $e2_v2,
+                               ...,
+                               $en_v1, $en_v2);
+
+Return a list of I<n> truth values, one for each edge, true if the
+edge exists, false if not.  In scalar context, return the logical and
+of the list, that is, all the edges must exist.
+
+=cut
+	  
+sub has_edge ($$$) {
+    my $graph = shift;
+
+    return defined $graph->edge( @_ ) ? 1 : 0;
 }
 
-# add_attributed_path($graph, $attribute_name,
-#                     @vertices_and_attribute_values)
-#   Sets the attributed path: a bulk version of add_attributed_edge.
-#
-
-sub add_attributed_path {
-    my $g = shift;
-    my $a = shift; # The attribute name.
-
-    # The path vertices: every even element of @_.
-    my @pv = @_[ map { 2 * $_     } 0..( $#_ / 2     ) ];
-
-    # The attributes: every odd element of @_.
-    my @a  = @_[ map { 2 * $_ + 1 } 0..( $#_ / 2 - 1 ) ];
-
-    # The path vertices as edge vertices.
-    my @ev = _path_to_edge( \@pv );
-
-    # Add them edges.
-    $g->add_edge( @ev );
-
-    # Add the attributes to the edges.
-
-    my $e;
+sub has_edges ($$) {
+    my $graph = shift;
+    my @has;
     
-    foreach $e ( $g->edges( @ev ) ) {
-	$e->$a( shift @a );
+    push @has, defined $graph->edge( splice @_, 0, 2 ) while @_;
+
+    if ( wantarray ) {
+	return @has;
+    } else {
+	foreach ( @has ) { return 0 unless $_ }
+	return 1;
     }
 }
 
-# add_Weight_edge($graph, $vertex, $weight, $other_vertex)
-#   Sets the Weight attribute of the edge defined by
-#   the vertices to the $weight.
-#
+=pod
 
-sub add_Weight_edge {
-    my ( $g, $p, $w, $s ) = @_;
+=head2 RETRIEVING EGDES BY NAMES
 
-    $g->add_attributed_edge( 'Weight', $p, $w, $s );
+	$edge  = $graph->edge_by_name($edge_name);
+
+	@edges = $graph->edges_by_names($e1, $e2, ...);
+
+Return one or more edges by their symbolic names, or if no names are
+given, all the edges.  The symbolic name can be given using either
+in edge creation time
+
+	$graph->add_edge($v1, $v2, $edge_name);
+
+or later
+
+	$edge->name($edge_name);
+
+=cut
+
+sub edges_by_names ($;@) {
+    my $graph = shift;
+
+    if ( @_ ) {	# Some edges by name.
+	return @{ $graph->{ _BY_NAME }->{ _EDGES } }{ @_ };
+    } else {	# All the edges.
+	return values %{ $graph->{ _BY_NAME }->{ _EDGES } };
+    }
 }
 
-# add_Weight_path($graph, @vertices_and_Weights)
-#   Sets the Weight attribute of the path defined by
-#   the vertices to the weights.
-#
+sub edge_by_name ($$$) {
+    my $graph = shift;
 
-sub add_Weight_path {
-    my $g = shift;
-
-    $g->add_attributed_path( 'Weight', @_ );
+    return ( $graph->edges_by_names( @_[ 0, 1 ] ) )[ 0 ];
 }
 
-# _depth_first_visit($graph, $vertex, $state)
-#   The actual recursive workhorse of the DFS.
-#   Visits the vertex, recursively visits the
-#   successors (chosen and sorted by _walk_successors())
-#   recursively, and calls all the edge-related hooks.
-#
+=pod
 
-sub _depth_first_visit {
-    my ( $g, $v, $state ) = @_;
+=head2 DELETING EDGES
 
-    my $edge_hook        = $state->{ edge_hook        };
-    my $edge_unseen_hook = $state->{ edge_unseen_hook };
-    my $edge_seen_hook   = $state->{ edge_seen_hook   };
+	$deleted = $graph->delete_edge( $v1, $v2 );
 
-    # Something to do for each vertex?
-    $state->{ vertex_hook }->( $v, $state )
-	if defined $state->{ vertex_hook };
+Delete one edge by its vertices.  Return true if the edge really
+was deleted and false if the edge wasn't there.
 
-    foreach my $s ( $g->_walk_successors( $v, $state ) ) {
-		    
-	# Something to do for each edge?
-	$edge_hook->( $v, $state )
-	    if defined $edge_hook;
+	$deleted = $graph->delete_edge( $e );
 
-	if ( exists $state->{ unseen }->{ $s } ) {
-			
-	    # Something to do for each unseen edge?
-	    $edge_unseen_hook->( $v, $s, $state )
-		if defined $edge_unseen_hook;
-			
-	    $g->_depth_first_visit( $s, $state );
-	    
-	} else {
-			
-	    # Something to do for each seen edge?
-	    $edge_seen_hook->( $v, $s, $state )
-		if defined $edge_seen_hook;
-	}
-    }
+Delete one edge. Return true if the edge really was deleted and false
+if the edge wasn't there.
 
-    # Record the finishing time of this vertex.
-    $state->{ done }->{ $v } = $state->{ order }++;
-}
+	@deleted = $graph->delete_edges( $e1_v1, $e1_v2,
+                                         $e2_v1, $e2_v2,
+                                         ...,
+                                         $en_v1, $en_v2);
 
-# depth_first($graph, $state)
-#   The frontend of the DFS.
-#   Calls the root vertex hooks and
-#   calls the real DFS engine at each yet unseen root vertex.
-#
+Delete one or more edges by their vertices.  In list context return
+the list of I<n> truth values, one for each edge: true for the edges
+really deleted and false for the edges that weren't there.  In scalar
+context return the number of really deleted edges.
 
-sub depth_first {
-    my ( $g, $state ) = @_;
+=cut
 
-    $state = { } unless defined $state;
+sub delete_edges {
+    my $graph = shift;
+    my @deleted;
 
-    $g->_walk_init( $state );
+    while ( @_ ) {
+	my $edge = $graph->edge( splice @_, 0, 2 );
 
-    my @V = $g->vertices;
+	if ( ref $edge ) {
+	    push @deleted, 1;
 
-    # Apply the possible preferred ordering for the
-    # wanted starting (aka root) vertices.
+	    $graph->_delete_from_graph( $edge, '_EDGES' );
 
-    @V = grep { $state->{ root_grep }->( $_    , $state ) } @V
-	if exists $state->{ root_grep };
+	    my ( $vertex_from, $vertex_to ) = $edge->vertices;
 
-    @V = sort { $state->{ root_sort }->( $a, $b, $state ) } @V
-	if exists $state->{ root_sort };
+	    delete $graph->{ _BY_VERTICES }->
+	                   { $vertex_from->_id }->{ $vertex_to->_id };
 
-    if ( exists $state->{ root } ) {
-	my $v = $g->_find_vertex( $state->{ root } );
-	# If the _find_vertex succeeded, move the $v
-	# to the front of the root candidates.
-	@V = ( $v, grep { $_->Id ne $v->Id } @V );
-    }
+	    $edge->delete_attribute( 'start' );
+	    $edge->delete_attribute( 'stop'  );
 
-    my $root_hook = $state->{ root_hook };
+	    delete $vertex_from->{ _OUT_VERTICES }->{ $edge->_id };
+	    delete $vertex_to  ->{ _IN_VERTICES  }->{ $edge->_id };
 
-    foreach my $v ( @V ) {
+	    delete $vertex_from->{ _OUT_EDGES    }->{ $vertex_to->_id   };
+	    delete $vertex_to  ->{ _IN_EDGES     }->{ $vertex_from->_id };
 
-	if ( exists $state->{ unseen }->{ $v } ) {
+	    if ( $graph->undirected ) {
+		delete $vertex_from->{ _IN_VERTICES  }->{ $edge->_id };
+		delete $vertex_to  ->{ _OUT_VERTICES }->{ $edge->_id };
 
-	    push( @{ $state->{ roots } }, $v );
+		delete $vertex_from->{ _IN_EDGES     }->{ $vertex_to->_id   };
+		delete $vertex_to  ->{ _OUT_EDGES    }->{ $vertex_from->_id };
 
-	    $root_hook->( $v, $state )
-		if defined $root_hook;
-
-	    $g->_depth_first_visit( $v, $state )
-	}
-
-	# If only one tree wanted, not a forest.
-	last if $state->{ tree_only };
-    }
-
-    return $state;
-}
-
-
-# breadth_first($graph, $state)
-#   The BFS.  Implements the whole iterative queue
-#   and calls all the relevant hooks.
-#
-
-sub breadth_first {
-    my ( $g, $state ) = @_;
-
-    $state = { } unless defined $state;
-
-    my $edge_hook        = $state->{ edge_hook        };
-    my $edge_unseen_hook = $state->{ edge_unseen_hook };
-    my $edge_seen_hook   = $state->{ edge_seen_hook   };
-
-    $g->_walk_init( $state );
-
-    my @V = $g->vertices;
-
-    # Apply the possible preferred ordering for the
-    # wanted starting (aka root) vertices.
-
-    @V = grep { $state->{ root_grep }->( $_,     $state ) } @V
-	if exists $state->{ root_grep };
-
-    @V = sort { $state->{ root_sort }->( $a, $b, $state ) } @V
-	if exists $state->{ root_sort };
-
-    if ( exists $state->{ root } ) {
-	my $v = $g->_find_vertex( $state->{ root } );
-	# If the _find_vertex succeeded, move the $v
-	# to the front of the root candidates.
-	@V = ( $v, grep { $_->Id ne $v->Id } @V );
-    }
-
-    my $root_hook = $state->{ root_hook };
-
- TREE:
-
-    foreach my $v ( @V ) {
-
-	if ( exists $state->{ unseen }->{ $v } ) {
-	    
-	    # Seed the queue: enqueue the root vertex.
-	    push( @{ $state->{ todo } }, $v );
-    
-	    $root_hook->( $v, $state ) if defined $root_hook;
-
-	    push( @{ $state->{ roots } }, $v );
-
-	    while ( @{ $state->{ todo } } ) {
-	    
-		$v = shift @{ $state->{ todo } };
-	    
-		if ( exists $state->{ unseen }->{ $v } ) {
-		
-		    foreach my $s ( $g->_walk_successors( $v, $state ) ) {
-				
-			$edge_hook->( $v, $s, $state )
-			    if defined $edge_hook;
-			
-			if ( exists $state->{ unseen }->{ $s } ) {
-			
-			    push( @{ $state->{ todo } }, $s );
-
-			    $edge_unseen_hook->( $v, $s, $state )
-				if defined $edge_unseen_hook;
-			
-			} else {
-			
-			    $edge_seen_hook->( $v, $s, $state )
-				if defined $edge_unseen_hook;
-			}
-		    }
-		}
+                # TODO: update the union-find structure.
 	    }
 
-	    # If only one tree wanted, not a forest.
-	    last TREE if $state->{ tree_only };
+	    $edge->_delete;
+	} else {
+	    push @deleted, 0;
 	}
-    }	
-    
-    return $state;
+    }
+
+    return wantarray ? @deleted : grep { $_ } @deleted;
 }
 
+sub delete_edge ($$;$) {
+    my $graph = shift;
 
-# MST_kruskal($graphg)
-#   Returns the Kruskal MST.
-#   Makes sense only for undirected graphs.
-#
+    if ( @_ == 1 ) {	# One edge by name.
+	return ( $graph->delete_edges( $_[0]->vertices ) )[ 0 ];
+    } else {		# Edge by vertices.
+	return ( $graph->delete_edges( @_[0, 1] ) )[ 0 ];
+    }
+}
+
+=pod
+
+=head2 DELETING VERTICES
+
+	$deleted = $graph->delete_vertex($vertex_name);
+
+Delete one vertex and the edges depending on it from the graph.  Return
+true if the vertex did exist, false if not.
+
+	@deleted = $graph->delete_vertices($v1, $v2, ...);
+
+Delete one or more vertices and the edges depending on them from the
+graph.  In list context return a list of truth values, one for each
+vertex: true if the vertex did exist, false if not.  In scalar context
+return the number of really deleted vertices.
+
+=cut
+
+sub delete_vertex {
+    my $graph  = shift;
+    my $vertex = shift;
+
+    $vertex = $graph->vertex( $vertex ) unless ref $vertex;
+
+    if ( ref $vertex ) {
+	foreach my $edge ( $vertex->edges ) {
+	    $graph->delete_edge( $edge );
+	}
+
+	$graph->_delete_from_graph( $vertex, '_VERTICES' );
+
+	$vertex->_delete;
+
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+sub delete_vertices ($;@) {
+    my $graph = shift;
+    my @deleted;
+
+    push @deleted, $graph->delete_vertex( shift @_ ) while @_;
+
+    return wantarray ? @deleted : grep { $_ } @deleted;
+}
+
+=pod
+
+=head2 RETRIEVING NEIGHBOURING VERTICES
+
+	@neighbours   = $graph->vertex_neighbours( $vertex );
+
+Return all the neighbouring vertices of the vertex.  Also the American
+neigbors are available.
+
+	@successors   = $graph->vertex_successors( $vertex );
+
+Return all the successor vertices of the vertex.
+
+	@predecessors = $graph->vertex_predecessors( $vertex );
+
+Return all the predecessor vertices of the vertex.
+
+=cut
+
+sub _vertex_values {
+    my $graph   = shift;
+    my $element = shift;
+    my $vertex  = shift;
+
+    my $self = $graph->vertex( $vertex );
+
+    if ( @_ ) {	# Some values by name.
+	return @{ $self->{ $element } }{ @_ };
+    } else {	# All the values.
+	return values %{ $self->{ $element } };
+    }
+}
+
+sub _out_vertices {
+    my $graph = shift;
+
+    return $graph->_vertex_values( '_OUT_VERTICES', @_ );
+}
+
+sub _in_vertices {
+    my $graph = shift;
+
+    return $graph->_vertex_values( '_IN_VERTICES',  @_ );
+}
+
+sub vertex_successors {
+    my $graph = shift;
+
+    $graph->_make_directed_sense("out-vertices");
+
+    return $graph->_vertex_values( '_OUT_VERTICES', @_ );
+}
+
+sub vertex_predecessors {
+    my $graph = shift;
+
+    $graph->_make_directed_sense("out-vertices");
+
+    return $graph->_vertex_values( '_IN_VERTICES',  @_ );
+}
+
+sub vertex_neighbours {
+    my $graph = shift;
+
+    return $graph->_in_vertices( @_ ), $graph->_out_vertices( @_ );
+}
+
+*vertex_neighbors = \&vertex_neighbours;
+
+=pod
+
+=head2 RETRIEVING NEIGHBOURING EDGES
+
+	@all = $graph->vertex_edges( $vertex );
+
+Return all the neighboring edges of the vertex.
+
+	@out = $graph->vertex_out_edges( $vertex );
+
+Return all the edges leaving the vertex.
+
+	@in  = $graph->vertex_in_edges( $vertex );
+
+Return all the edges arriving at the vertex.
+
+=cut
+
+sub vertex_out_edges {
+    my $graph = shift;
+
+    return $graph->_vertex_values( '_OUT_EDGES', @_ );
+}
+
+sub vertex_in_edges {
+    my $graph = shift;
+
+    return $graph->_vertex_values( '_IN_EDGES',  @_ );
+}
+
+sub vertex_edges {
+    my $graph = shift;
+
+    if ( @_ ) {	# Some edges by name.
+	return $graph->vertex_in_edges( @_ ), $graph->vertex_out_edges( @_ );
+    } else {	# All the edges.
+	return $graph->vertex_in_edges, $graph->vertex_out_edges;
+    }
+}
+
+=pod
+
+=head2 VERTEX CLASSES
+
+The vertices returned by the following methods are in pseudorandom order.
+
+	@connected_vertices   = $graph->connected_vertices;
+
+The list of connected vertices of the graph.
+
+	@unconnected_vertices = $graph->unconnected_vertices;
+
+The list of unconnected vertices of the graph.
+
+	@sink_vertices        = $graph->sink_vertices;
+
+The list of sink vertices of the graph.
+
+	@source_vertices      = $graph->source_vertices;
+
+The list of source vertices of the graph.
+
+        @exterior_vertices    = $graph->exterior_vertices;
+
+The list of exterior vertices (sinks and sources) of the graph.
+
+        @interior_vertices    = $graph->interior_vertices;
+
+The list of interior vertices (non-sinks and non-sources) of the graph.
+
+        @selfloop_vertices    = $graph->selfloop_vertices;
+
+The list of self-loop vertices of the graph.
+
+=cut
+
+sub connected_vertices {
+    my $graph = shift;
+
+    grep { $_->{ _OUT_EDGES } or $_->{ _IN_EDGES } } $graph->vertices;
+}
+
+sub unconnected_vertices {
+    my $graph = shift;
+
+    grep { not $_->{ _OUT_EDGES } and not $_->{ _IN_EDGES } } $graph->vertices;
+}
+
+sub sink_vertices {
+    my $graph = shift;
+
+    grep { not $_->{ _OUT_EDGES } and $_->{ _IN_EDGES } } $graph->vertices;
+}
+
+sub source_vertices {
+    my $graph = shift;
+
+    grep { $_->{ _OUT_EDGES } and not $_->{ _IN_EDGES } } $graph->vertices;
+}
+
+sub exterior_vertices {
+    my $graph = shift;
+
+    grep { $_->{ _OUT_EDGES } xor $_->{ _IN_EDGES } } $graph->vertices;
+}
+
+sub interior_vertices {
+    my $graph = shift;
+
+    grep { $_->{ _OUT_EDGES } and $_->{ _IN_EDGES } } $graph->vertices;
+}
+
+sub selfloop_vertices {
+    my $graph = shift;
+    my @self;
+
+    foreach my $u ( $graph->vertices ) {
+	my @v = $graph->vertex_successors( $u );
+
+	@v = $graph->vertex_predecessors( $u ) unless @v;
+
+        foreach my $v ( @v ) {
+            if ( $u->_id eq $v->_id ) {
+                push @self, $u;
+	        last;
+            }
+        }
+    }
+
+    return @self;
+}
+
+=pod
+
+=head2 PATHS
+
+A B<path> is a connected set of the I<n-1> edges I<v1 v2>, I<v2 v3>,
+..., leading from the vertex I<v1> to the vertex I<vn>.
+
+=over 4
+
+=item ADDING PATHS
+
+	@edges = $graph->add_path($v1, $v2, $v3, ..., $vn);
+
+Add one or more edges, a B<path>, to the graph.  The vertices are
+added to the graph explicitly if they already aren't there.  Return
+the list of the I<n-1> edges.
+
+=item RETRIEVING PATHS
+
+	@edges  = $graph->path($v1, $v2, ..., $vn);
+
+Return the I<n-1> edges of the path.  If an edge does not exist (that is,
+the path does not exist), C<undef> is returned for that edge.
+
+	$has_path = $graph->has_path($v1, $v2, ..., $vn);
+
+Return true if the graph has the path, that is, it has all the I<n-1> edges.
+
+=item DELETING PATHS
+
+	@deleted = $graph->delete_path($v1, $v2, ..., $vn);
+
+Delete one or more edges, a B<path>, from the graph.  Return a list
+of I<n-1> truth values, one for each edge in the path: true if the
+edge did exist, false if not.
+
+=back
+
+=cut
+
+sub add_path {
+    my $graph       = shift;
+    my $vertex_from = shift;
+    my @edges;
+
+    while ( @_ ) {
+	my $vertex_to = shift;
+	push @edges, $graph->add_edge( $vertex_from, $vertex_from );
+	$vertex_from = $vertex_to;
+    }
+
+    return @edges;
+}
+
+sub path ($;@) {
+    my $graph       = shift;
+    my $vertex_from = shift;
+    my @path;
+
+    while ( @_ ) {
+	my $vertex_to = shift;
+	push @path, $graph->edge( $vertex_from, $vertex_from );
+	$vertex_from = $vertex_to;
+    }
+    
+    return @path;
+}
+
+sub has_path {
+    my $graph = shift;
+
+    foreach my $edge ( $graph->path( @_ ) ) {
+	return 0 unless defined $edge;
+    }
+
+    return 1;
+}
+
+sub delete_path ($;@) {
+    my $graph       = shift;
+    my $vertex_from = shift;
+    my @deleted;
+
+    while ( @_ ) {
+	my $vertex_to = shift;
+	push @deleted, $graph->delete_edge( $vertex_from, $vertex_from );
+	$vertex_from = $vertex_to;
+    }
+
+    return @deleted;
+}
+
+=pod
+
+=head2 CYCLES
+
+A B<cycle> is a cyclical path, defined by the I<n> edges I<v1 v2>,
+I<v2 v3>, ..., I<vn v1>, starting from and returning back to the
+vertex I<v1>.
+
+=over 4
+
+=item ADDING CYCLES
+
+	@edges = $graph->add_cycle($v1, $v2, $v3, ..., $vn);
+
+Add one or more edges, a cycle, to the graph.  The vertices are added
+to the graph explicitly if they already aren't there.  Return the
+list of the I<n> edges.
+
+=item RETRIEVING CYCLES
+
+	@edges  = $graph->cycle($v1, $v2, ..., $vn);
+
+Return the I<n> edges of the cycle.  If an edge does not exist (that is,
+the cycle does not exist), C<undef> is returned for that edge.
+
+	$has_cycle = $graph->has_cycle($v1, $v2, ..., $vn);
+
+Return true if the graph has the cycle, that is, it has all the I<n> edges.
+
+=item DELETING CYCLES
+
+	@edges = $graph->delete_cycle($v1, $v2, $v3, ..., $vn);
+
+Delete one or more edges, a cycle, from the graph.  In list context
+return a list of I<n> truth values, one for each edge in the cycle:
+true if the edge did exist, false if not.
+
+=back
+
+=cut
+
+sub add_cycle ($$;@) {
+    add_path @_, $_[1];
+}
+
+sub cycle ($;@) {
+    my $graph       = shift;
+    my $vertex_from = shift;
+    my @cycle;
+
+    push @_, $vertex_from; # Create the cycle.
+    while ( @_ ) {
+	my $vertex_to = shift;
+	push @cycle, $graph->edge( $vertex_from, $vertex_from );
+	$vertex_from = $vertex_to;
+    }
+    
+    return @cycle;
+}
+
+sub has_cycle {
+    my $graph = shift;
+
+    foreach my $edge ( $graph->cycle( @_ ) ) {
+	return 0 unless defined $edge;
+    }
+
+    return 1;
+}
+
+sub delete_cycle ($$;@) {
+    delete_path @_, $_[1];
+}
+
+=pod
+
+=head2 DETECTING CYCLES
+
+	@cycle = $graph->is_cyclic;
+
+In list context return some cycle as a list of vertices -- if the
+graph is cyclic (has cycles), an empty list if the graph is not cyclic
+(I<acyclic>).  In array context return true if the graph is cyclic,
+false if acyclic.
+
+=cut
+
+sub is_cyclic {
+    my ( $graph, $state ) = @_;
+
+    $state = { } unless defined $state;
+
+    $state->{ state_init } = '
+$state->{ a_cycle } = undef;
+$state->{ in_path } =
+    sub {
+        my ( $path, $vertex ) = @_;
+
+        for ( my $i = $#$path; $i >= 0; $i-- ) {
+            if ( $path->[ $i ] eq $vertex ) {
+                $state->{ a_cycle } = [ @$path[ $i .. $#$path ] ];
+                return 1;
+            }
+        }
+        return 0;
+    };
+';
+
+    $state->{ seen_edge_hook } = '
+return $state if $state->{ in_path }->( $path, $successor )';
+
+    $state->{ seen_vertex_hook } = '
+return $state if $state->{ in_path }->( $path, $vertex )';
+
+    $state->{ vertex_hook } = 'return $state if defined $state->{ a_cycle }';
+
+    $state->{ edge_hook } = $state->{ vertex_hook };
+
+    my $df = $graph->make_depth_first( $state );
+
+    $state = $df->( $graph, $state );
+
+    my @cycle = defined $state->{ a_cycle } ? @{ $state->{ a_cycle } } : ( );
+
+    delete $state->{ a_cycle };
+
+    return @cycle;
+}
+
+=pod
+
+=head1 ADDING ATTRIBUTED EDGES AND PATHS
+
+	$graph->add_attributed_edge( $attribute_name,
+				     $vertex_from,
+				     $attribute_value,
+				     $vertex_to );
+
+Add the attribute to the edge (and create the edge if it does not exist).
+
+	$graph->add_attributed_path( $attribute_name,
+				     $vertex_1,
+				     $attribute_value_1,
+				     $vertex_2,
+				     $attribute_value_2,
+				     ...
+				     $vertex_n );
+
+Add the I<n-1> attribute values to the I<n-1> edges along the path.
+
+=cut
+
+sub add_attributed_edge ($$$$$) {
+    my $graph = shift;
+    my $attr  = shift;
+
+    $graph->add_edge( $_[0], $_[2] )->attribute( $attr, $_[1] );
+}
+
+sub add_attributed_path ($$$$$;@) {
+    my $graph = shift;
+    my $attr  = shift;
+
+    my $vertex_from = shift;
+
+    while ( @_ ) {
+        $graph->add_edge( $vertex_from, $_[1] )->attribute( $attr, $_[0] );
+        $vertex_from = $_[1];
+        splice @_, 0, 2;
+    }
+}
+
+=head1 RETRIEVING EDGES' AND PATHS' ATTRIBUTES
+
+	$attribute_value = $graph->attributed_edge( $attribute_name,
+				                    $vertex_from,
+				                    $vertex_to );
+
+Return the attribute of the edge.  If the edge does not exist
+C<undef> is returned.
+
+	@attribute_values = $graph->attributed_path( $attribute_name,
+			                             $vertex_1,
+				                     $vertex_2,
+				                     ...
+				                     $vertex_n );
+
+Return the list of the I<n-1> attribute values.  If an edge does
+not exist, C<undef> is returned for that edge.
+
+=cut
+
+sub attributed_edge ($$$$) {
+    my $graph = shift;
+    my $attr  = shift;
+
+    my $e = $graph->edge( $_[0], $_[1] );
+
+    return defined $e ? $e->attribute( $attr ) : undef;
+}
+
+sub attributed_path ($$$$;@) {
+    my $graph = shift;
+    my $attr  = shift;
+
+    my $vertex_from = shift;
+
+    my @attr;
+
+    while ( @_ ) {
+        my $e = $graph->edge( $vertex_from, $_[0] );
+        push @attr, defined $e ? $e->attribute( $attr, $_[0] ) : undef;
+        $vertex_from = shift;
+    }
+
+    return @attr;
+}
+
+=pod
+
+=head1 GRAPH PROPERTIES
+
+=head2 GRAPH DENSITY
+
+	$density = $graph->density;
+
+Return the density of the C<$graph> as a number between 0 and 1.
+Graph density is defined as the relative number of edges.  A zero
+signifies an empty graph: no edges; a one signifies a I<complete>
+graph: I<|V|(|V|-1)/2> edges (for undirected graphs) or I<|V|(|V|-1)>
+(for directed graphs), I<|V|> being the number of vertices.
+
+	$is_sparse = $graph->sparse;
+
+Return true if the C<$graph> is sparse; that is, its density is less
+than I<|V|ln(|V|)> (for undirected graphs) or I<2|V|ln(|V|)> (for
+directed graphs), I<ln()> being the natural, I<e>-based logarithm.
+
+	$is_dense = $graph->dense;
+
+Return true if the C<$graph> is dense; that is, its density is greater
+than I<|V|(|V|-1)/4> (for undirected graphs) or I<|V|(|V|-1)/2> (for
+directed graphs).
+
+=cut
+
+sub density {
+    my $graph = shift;
+
+    my $V     = $graph->vertices;
+
+    return 0 if $V < 2;
+
+    my $limit = $V * ( $V - 1 );
+
+    $limit /= 2 if $graph->undirected;
+
+    return $graph->edges / $limit;
+}
+
+sub is_sparse {
+    my $graph = shift;
+
+    my $V     = $graph->vertices;
+
+    return 1 if $V < 2;
+
+    my $limit = $V * log( $V );
+
+    $limit *= 2 if $graph->directed;
+
+    return $graph->edges <= $limit;
+}
+
+sub is_dense {
+    my $graph = shift;
+
+    my $V     = $graph->vertices;
+
+    return 0 if $V < 2;
+
+    my $limit = $V * ( $V - 1 ) / 2;
+
+    $limit /= 2 if $graph->undirected;
+
+    return $graph->edges >= $limit;
+}
+
+=pod
+
+=head2 DERIVATIVE GRAPHS
+
+The four following methods are graph constructors.  They copy always
+the vertices, the edges if applicable, and all the graph, vertex, and
+edge attributes.
+
+	$copy       = $graph->copy;
+
+Return a copy of the C<$graph>.
+
+	$transpose  = $graph->transpose_graph;
+
+Return a transpose graph of the C<$graph>, a graph where every edge is
+reversed.  Makes sense only for directed graphs.
+
+	$complete   = $graph->complete_graph;
+
+Return a complete graph of the C<$graph>, a graph that has every
+possible edge (without resorting to multiedges).
+
+	$complement = $graph->complement_graph;
+
+Return a complement graph of the C<$graph>, a graph that has every
+edge that the C<$graph> does B<not>.
+
+=cut
+
+sub _copy_graph_attributes {
+    my ( $graph_dst, $graph_src ) = @_;
+
+    my %a  = $graph_src->_attributes;
+    my $id = $graph_dst->_id;
+
+    $graph_dst->{ _ATTRIBUTE } = \%a;
+    $graph_dst->_id( $id );
+}
+
+sub _copy_vertex_attributes {
+    my ( $graph_dst, $graph_src ) = @_;
+
+    foreach my $v ( $graph_src->vertices ) {
+         my %a = $v->_attributes;
+	 my $w = $graph_dst->vertex( $v->name );
+	 my $id = $w->_id;
+
+	 $w->{ _ATTRIBUTE } = \%a;
+	 $w->_id( $id );
+    }
+}
+
+sub _copy_edge_attributes {
+    my ( $graph_dst, $graph_src ) = @_;
+
+    foreach my $e ( $graph_src->edges ) {
+         my ( $u, $v ) = $e->vertices;
+	 my $f = $graph_dst->edge( $u->name, $v->name );
+         my %a = $e->_attributes;
+	 my $id = $f->_id;
+
+	 $f->{ _ATTRIBUTE } = \%a;
+
+	 $f->_id( $id );
+    }
+}
+
+sub copy {
+    my $graph = shift;
+
+    my $copy = (ref $graph)->new;
+
+    $copy->_copy_graph_attributes( $graph );
+
+    foreach my $e ( $graph->edges ) {
+	my ( $u, $v ) = $e->vertices;
+
+	$copy->add_edge( $u->name, $v->name );
+    }
+
+    $copy->_copy_edge_attributes( $graph );
+
+    foreach my $v ( $graph->unconnected_vertices ) {
+	$copy->add_vertex( $v->name );
+    }
+
+    $copy->_copy_vertex_attributes( $graph );
+
+    return $copy;
+}
+
+sub transpose_graph {
+    my $graph = shift;
+
+    my $transpose = (ref $graph)->new;
+
+    $transpose->_copy_graph_attributes( $graph );
+
+    foreach my $e ( $graph->edges ) {
+	my ( $u, $v ) = $e->vertices;
+
+	$transpose->add_edge( $v->name, $u->name ); # 'pose 'em.
+    }
+
+    foreach my $v ( $graph->unconnected_vertices ) {
+	$transpose->add_vertex( $v->name );
+    }
+
+    $transpose->_copy_vertex_attributes( $graph );
+
+    return $transpose;
+}
+
+sub complete_graph {
+    my $graph = shift;
+
+    my $complete = (ref $graph)->new;
+
+    $complete->_copy_graph_attributes( $graph );
+
+    my @v = $graph->vertices;
+
+    foreach my $u ( @v ) {
+        foreach my $v ( @v ) {
+	    $complete->add_edge( $u->name, $v->name ); # O(V**2).
+        }
+    }
+
+    $complete->_copy_vertex_attributes( $graph );
+    $complete->_copy_edge_attributes  ( $graph );
+
+    return $complete;
+}
+
+sub complement_graph {
+    my $graph = shift;
+
+    my $complement = (ref $graph)->complete; # Start with a complete graph...
+
+    $complement->_copy_graph_attributes( $graph );
+
+    foreach my $e ( $graph->edges ) {
+	my ( $u, $v ) = $e->vertices;
+
+	$complement->delete_edge( "$u", "$v" ); # ...and delete those we have.
+    }
+
+    $complement->_copy_vertex_attributes( $graph );
+
+    return $complement;
+}
+
+=pod
+
+=head1 DIRECTEDNESS
+
+A graph can be B<directed> or B<undirected>.  Or more precisely, the
+edges of the graph can be directed or undirected.  The difference
+between a directed edge and an undirected edge is that if there is an
+undirected edge from vertex I<v1> to vertex I<v2>, there is also an
+implicit edge in the opposite direction, from vertex I<v2> to vertex
+I<v1>.
+
+For this module, however, the directedness property is attached to
+the graph.  If a graph is undirected, either by instantiating an
+object of the C<Graph::Undirected> class, or marking a graph
+undirected (see below), whenever an edge is added to graph, also
+the edge going to the other direction is added, and likewise for
+deleting edges.  If you do not want this dual behaviour, mark the
+graph directed.
+
+The directedness of a graph can be examined and set using the
+following methods:
+
+	$is_directed   = $graph->directed;
+	$is_undirected = $graph->undirected;
+
+Test the directedness of the graph.
+
+	$graph->directed( 1 );
+	$graph->undirected( 0 );
+
+Mark the graph directed.
+
+	$graph->undirected( 1 );
+	$graph->directed( 0 );
+
+Mark the graph undirected.
+
+=cut
+
+sub directed {
+    my $graph = shift;
+
+    if ( @_ ) {
+	$graph->attribute( 'directed', $_[0] ? 1 : 0);
+    } else {
+	# The default is directed.
+	$graph->attribute( 'directed', 1 )
+	    unless defined $graph->attribute( 'directed' );
+
+	return $graph->attribute( 'directed' );
+    }
+}
+
+sub undirected {
+    my $graph = shift;
+
+    if ( @_ ) {
+	$graph->attribute( 'directed', $_[0] ? 0 : 1 );
+    } else {
+	# The default is directed.
+	$graph->attribute( 'directed', 1 )
+	    unless defined $graph->attribute( 'directed' );
+
+	return $graph->attribute( 'directed' ) ? 0 : 1;
+    }
+}
+
+=pod
+
+=head1 MINIMUM SPANNING TREES
+
+A minimum spanning tree (MST) is a derivative graph of an undirected
+`weighted' graph.  Each edge weighs something or in other words has a
+cost associated with it.  A MST spans all the vertices with the least
+possible total weight.
+
+	$mst = $graph->MST_kruskal;
+
+Return a Kruskal's minimum spanning tree of the C<$graph>.  Notice the
+'a tree', if there are many edges with similar costs, multiple equally
+minimal trees can exist.
+
+=cut
 
 sub MST_kruskal {
-    my $g = shift;
+    my ( $graph, $attr ) = @_;
 
-    $g->_make_undirected_sense( "minimum spanning tree" );
+    $graph->_make_undirected_sense( "minimum spanning tree" );
 
-    my $mst = ( ref $g )->new; # The minimum spanning tree.
+    $attr = 'weight' unless defined $attr;
+
+    my $mst = ( ref $graph )->new; # The minimum spanning tree.
 
     $mst->undirected( 1 );
 
-    my @e  = $g->edges;
-
     # The weighted edges.
-    my @we = map { [ $_, $_->Weight ] } @e;
+    my @we = map { [ $_, $_->attribute( $attr ) ] } $graph->edges;
+
+    my $V = $graph->vertices;
+    my %seen;
 
     # Walk the edges in the order of increasing weight.
     foreach my $we ( sort { $a->[ 1 ] <=> $b->[ 1 ] } @we ) {
-	my ( $p, $s ) = ( $we->[ 0 ]->P, $we->[ 0 ]->S );
-	# Add edge only iff no cycle imminent.
-	unless ( $mst->find( $p, $s ) ) {
-	    $mst->add_edge( $p->Id, $s->Id );
-	    $mst->edges( $p->Id, $s->Id )->Weight( $we->[ 1 ] );
-	}
+        my ( $p, $s ) = ( $we->[ 0 ]->start, $we->[ 0 ]->stop );
+        # Add edge only iff no cycle imminent.
+        unless ( $mst->find( $p, $s ) ) {
+            $mst->add_edge( $p, $s );
+            $mst->edge( $p, $s )->attribute( $attr, $we->[ 1 ] );
+            $seen{ $p } = $seen{ $s } = 1;
+            last if scalar keys %seen == $V;
+        }
     }
 
     return $mst;
 }
 
-# MST_prim($graph, $start_vertex)
-#   Returns the Prim MST, possibly starting from a vertex
-#   (if none specified, a good candidate is chosen).
-#   Makes sense only for undirected graphs.
-#
+=pod
 
-sub MST_prim {
-    my ( $g, $v ) = @_;
+=head1 ALL-PAIRS SHORTEST PATHS
 
-    $g->_make_undirected_sense( "minimum spanning tree" );
+All-pairs shortest paths algorithms find out the shortest possible paths
+between any pair of vertices.
 
-    use Heap::Fibonacci;
+=head2 FLOYD-WARSHALL ALL-PAIRS SHORTEST PATHS
 
-    my $heap = Heap::Fibonacci->new;
+	$fw_apsp = $graph->APSP_floyd_warshall;
 
-    # If no start vertex defined pick a vertex next to
-    # a short/light edge to start with.
-    $v = ( sort { $a->Weight <=> $b->Weight } $g->edges )[ 0 ]->P
-	unless defined $v;
+Return the Floyd-Warshall all-pairs shortest paths as a graph.  More
+specifically: in the returned graph every possible (path-connected)
+pair is an edge.
 
-    # Verify the vertex.
-    $v = $g->_find_vertex( $v );
+Before the method call each edge should have an attribute, by default
+C<weight>, that tells the `cost' of the edge.  The name of the
+attribute can be change by supplying an argument:
 
-    my ( %seen, %tree, $hpv, $hps );
+	$fw_apsp = $graph->APSP_floyd_warshall( 'distance' );
 
-    use Graph::_heapval;
+After the method call each edge has two attributes: C<weight> (or what
+was specified), which is the length of the minimal path up to and
+including that edge, and C<prev>, which is the second to last vertex
+on the minimal path.Example: If there is a path from vertex C<a> to
+vertex C<f>, the edge C<a-f> has the attributes C<weight>, for example
+6, and C<prev>, for example C<d>, which means that the last edge of
+the minimal path from C<a> to C<f> is C<d-f>.  To trace the path
+backwards, see the edge C<a-d>.  Sounds good but there is a catch: if
+there is a negative cycle in the path the Prev attributes point along
+this negative cycle and there is no way to break out of it back to the
+original minimal path.
 
-    # Start a new heap.
-    $hpv = Graph::_heapval->new( $heap, \%seen, 0, $v );
-
-    while ( defined $heap->minimum ) {
-	$hpv = $heap->extract_minimum;
-	$v = $hpv->vertex;
-	foreach my $s ( $v->successors ) {
-	    my $w = $g->edges( $v, $s )->Weight;
-	    unless ( exists $seen{ $s } ) {
-		$hps = Graph::_heapval->new( $heap, \%seen, $w, $s );
-		$tree{ $s } = $v;
-	    } else {
-		$hps = $seen{ $s };
-		if ( $w < $hps->val ) {
-		    $hps->val( $w );
-		    $heap->decrease_key( $hps );
-		    $tree{ $s } = $v;
-		}
-	    }
-	}
-    }
-
-    my $mst = ( ref $g )->new;
-
-    $mst->undirected( 1 );
-
-    foreach my $s ( $g->vertices ) {
-	$mst->add_edge( $tree{ $s }->Id, $s->Id )
-	    if defined $tree{ $s };
-    }
-
-    return $mst;
-}
-
-# strongly_connected_components($graph, $state)
-#   Returns the strongly connected components of the graph.
-#   The components are returned as a list of new vertices
-#   whose names are formed by joining the names of the
-#   constituent vertices by underlines: for example if
-#   the vertices a b c form a strongly connected component,
-#   a new component would be a_b_c.
-#   Makes sense only for directed graphs.
-#   The $state can be used to filter out certain vertices.
-#
-
-sub strongly_connected_components {
-    my ( $g, $state ) = @_;
-    
-    $g->_make_directed_sense( "strong connectivity" );
-
-    $state = { } unless defined $state;
-
-    $g->depth_first( $state );
-
-    my %done = %{ $state->{ done } };
-
-    my $t  = $g->transpose_graph;
-
-    # Reset the state for $t.
-
-    $state = { };
-
-    $state->{ successor_sort } =
-	sub {
-	    my ( $a, $b ) = @_;
-			 
-	    $done{ $a } <=> $done{ $b };
-	};
-	
-    $t->depth_first( $state );
-
-    my ( $sct, @sct, %sct, %scf, @scc, $scc );
-
-    foreach my $root ( @{ $state->{ roots } } ) {
-
-	# Grow the strongly-connected tree.
-	$sct =
-	    $t->depth_first_forest
-		( {
-		   root_sort => sub {
-		       my ( $a, $b ) = @_;
-		       
-		       return -1 if $a eq $root;
-		       return  1 if $b eq $root;
-
-		       return $a->Id cmp $b->Id;
-		   },
-		   tree_only => 1     
-		  } );
-
-	# Delete from the %sct the vertices already in %scf.
-	@sct = $sct->vertices;
-	@sct{ @sct } = @sct;
-
-	# In Perl 5.004 and newer,
-	# delete @sct{ keys %scf } is fine.
-	foreach my $v ( keys %scf ) {
-	    delete $sct{ $v };
-	}
-
-	# Now we have just the `new' tree.
-	@sct = keys %sct;
-	@scf{ @sct } = @sct;
-
-	# Make a new graph and add this new tree to it.
-	$scc = ( ref $g )->new;
-	$scc->add_vertex( @sct );
-
-	# Stash for return.
-	push( @scc, $scc );
-    }
-
-    return @scc;
-}
-
-# strongly_connected_component_graph($graph)
-#   Return the strongly connected component graph of
-#   the original graph.  The names of the new vertices
-#   are as described in strongly_connected_components()
-#   and the edges will be between those vertices.
-#   Makes sense only for directed graphs.
-#   The $state can be used to filter out certain vertices.
-#
-
-sub strongly_connected_component_graph {
-    my ( $g, $state ) = @_;
-    
-    $g->_make_directed_sense( "strong connectivity" );
-
-    $state = { } unless defined $state;
-
-    my $scc = ( ref $g )->new;
-    my @scc = $g->strongly_connected_components( $state );
-
-    my ( %scc_v2i, @scc_i2sv, %scc_e );
-
-    foreach my $v ( $g->vertices ) {
-
-	my $component;
-
-	for ( my $i = 0; $i < @scc; $i++ ) {
-	    $component = $i;
-	    last if grep { $v eq $_ } $scc[ $i ]->vertices;
-	}
-
-	$scc_v2i{ $v } = $component;
-
-	unless ( defined $scc_i2sv[ $component ] ) {
-	    my $sv = "(" . $scc[ $component ] . ")";
-	    $scc->add_vertex( $sv );
-	    $scc_i2sv[ $component ] = $scc->vertices( $sv );
-	}
-    }
-
-    foreach my $e ( $g->edges ) {
-	my ( $p, $s ) = $e->vertices;
-	unless ( $scc_v2i{ $p } == $scc_v2i{ $s } ) {
-	    unless ( $scc_e{ $scc_v2i{ $p } }->{ $scc_v2i{ $s } } ) {
-		$scc_e{ $scc_v2i{ $p } }->{ $scc_v2i{ $s } } = 1;
-		$scc->add_edge(
-		    $scc_i2sv[ $scc_v2i{ $p } ],
-		    $scc_i2sv[ $scc_v2i{ $s } ]
-			      );
-	    }
-	}
-    }
-
-    return $scc;
-}
-
-
-# _articulation_points_visit($graph, $vertex, $root_vertex, $state)
-#   A private helper method.
-#   The recursive part of finding the articulation points.
-#   Makes sense only for undirected graphs.
-#
-
-sub _articulation_points_visit {
-    my ( $g, $v, $r, $state ) = @_;
-
-    my $min = $state->{ id }++;
-
-    $state->{ min }->{ $v } = $state->{ val }->{ $v } = $min;
-
-    foreach my $s ( $v->successors ) {
-
-	if ( exists $state->{ min }->{ $s } ) {
-
-	    $min = $state->{ min }->{ $s }
-	        if $state->{ min }->{ $s } < $min;
-
-	    $state->{ back }->{ $s }++;
-
-	} else {
-
-	    # Descend looking for a better minimum.
-	    my $try = $g->_articulation_points_visit( $s, $r, $state );
-
-	    $min = $try if $try < $min;
-
-	    if ( $try >= $state->{ val }->{ $v } ) {
-
-		# If this is a root vertex for the second time or
-		# this is a non-root vertex.
-		if ( ( exists $state->{ root }->{ $v } and
-		       ++$state->{ root }->{ $v } == 2 )
-		     or
-		     $try > $state->{ val }->{ $r } ) {
-		    $state->{ articulation_points }->{ $v } = $v;
-		}
-	    }
-	}
-    }
-
-    $state->{ min }->{ $v } = $min;
-
-    return $min;
-}
-
-# articulation_points($graph)
-#   Returns the articulation points (vertices) of the graph.
-#   Makes sense only for undirected graphs.
-#
-
-sub articulation_points {
-    my $g = shift;
-
-    $g->_make_undirected_sense( "biconnectivity" );
-
-    my $state = { };
-
-    foreach my $v ( $g->vertices ) {
-	unless ( exists $state->{ min }->{ $v } ) {
-	    $state->{ root }->{ $v } = 0;
-	    $g->_articulation_points_visit( $v, $v, $state );
-	}
-    }
-
-    return values %{ $state->{ articulation_points } };
-}
-
-# biconnected($grah)
-#   Returns true if the graph is biconnected (has no articulation points).
-#   Makes sense only for undirected graphs.
-#   The $state can be used to filter out certain vertices.
-#
-
-sub biconnected {
-    my $g = shift;
-
-    $g->_make_undirected_sense( "biconnectivity" );
-
-    return ( $g->articulation_points ) == 0;
-}
-
-# bridges()
-#   Returns the bridges (edges) of the graph (none for a biconnected one).
-#   Makes sense only for undirected graphs.
-#
-
-sub bridges {
-    my $g = shift;
-
-    $g->_make_undirected_sense( "biconnectivity (bridges)" );
-
-    my @V = $g->vertices;
-    my $state = { };
-
-    my @av = $g->articulation_points;
-    my @sv = $g->sink_vertices;
-
-    my %bv;		# The bridge vertices.
-
-    @bv{ @av } = @av;	# A bridge connects articulation vertices...
-    @bv{ @sv } = @sv;	# ...or sink vertices.
-
-    my @bridges;	# The result.
-
-    foreach my $e ( $g->edges ) {
-	my ( $p, $s ) = $e->vertices;
-
-	# If both ends are bridge vertices, we have a bridge.
-	push( @bridges, $e )
-	    if exists $bv{ $p->Id } and exists $bv{ $s->Id };
-    }
-
-    return @bridges;
-}
-
-# biconnected_components($graph)
-#   Returns the biconnected components of the graph
-#   as list of of smaller graphs.
-#   Makes sense only for undirected graphs.
-#
-
-sub biconnected_components {
-    my $g = shift;
-
-    $g->_make_undirected_sense( "biconnectivity" );
-
-    my $b = ( ref $g )->new;
-
-    $b->undirected( 1 );
-
-    # First make a copy of the original graph
-    # but leave only the vertices and edges that
-    # can belong to biconnected components.
-
-    $b->merge_edges( $g );
-
-    # Delete the bridges.
-    foreach my $e ( $g->bridges ) {
-	$b->delete_edge( $e->vertex_Ids );
-    }
-
-    # Delete the now unconnected (deleting bridges
-    # above may have disconnected some) vertices.
-    foreach my $v ( $b->unconnected_vertices ) {
-	$b->delete_vertex( $v->Id );
-    }
-
-    my @v = $b->vertices;
-    my @a = $b->articulation_points;
-
-    my ( %a, %id);
-
-    @a{ @a } = @a;	# Hash for easier access.
-
-    my $id = 0;	        # The biconnected component id.
-
-    my $state = { };
-
-    $state->{ root_grep } =
-	sub {
-	    my ( $v ) = @_;
-
-	    # Must not be an articulation point nor
-	    # a singly-connected sink or source nor
-	    # unconnected.
-	    return ( exists $a{ $v } or $v->In + $v->Out < 2 ) ? 0 : 1;
-	};
-
-    $state->{ successor_grep } =
-	sub {
-	    my ( $v, $s, ) = @_;
-
-	    # Must not be an articulation point.
-	    return exists $a{ $v } ? 0 : 1;
-	};
-
-    $state->{ root_hook } =
-	sub {
-	    my ( $v, $state ) = @_;
-
-	    $id++;
-	};
-
-    $state->{ edge_hook } =
-	sub {
-	    my ( $p, $s, $state ) = @_;
-
-	    # Label both the vertices: the p...
-	    if ( defined $p->Bcc ) { # No, not Blind-carbon-copy...
-		$p->Bcc->{ $id } = $id;
-	    } else {
-		$p->Bcc( { $id, $id } );
-	    }
-
-	    # ...and the s.
-	    if ( defined $s->Bcc ) {
-		$s->Bcc->{ $id } = $id;
-	    } else {
-		$s->Bcc( { $id, $id } );
-	    }
-	};
-
-    $b->breadth_first( $state );
-
-    my ( %p, %s );	# The labels for each vertex end.
-    my @bcc;		# The returned biconnected components.
-    my @nv;		# Per-edge vertex counter.
-
-    foreach my $e ( $b->edges ) {
-	my ( $p, $s ) = $e->vertices;
-	if ( defined $p->Bcc and defined $s->Bcc ) {
-	    %p = %{ $p->Bcc };
-	    %s = %{ $s->Bcc };
-
-	    @nv = ( );	# Reset the counters.
-
-	    foreach my $i ( keys %p ) {
-		$nv[ $i ] += 2; # Both ends of an edge == two ends.
-	    }
-
-	    foreach my $i ( 0..$#nv ) {
-		# If both ends (two of them) of this edge
-		# are in this ($i) component, add them to
-		# the corresponding biconnected component.
-		if ( defined $nv[ $i ] and $nv[ $i ] == 2 ) {
-		    unless ( defined $bcc[ $i ] ) {
-			$bcc[ $i ] = ( ref $b )->new;
-			$bcc[ $i ]->undirected( 1);
-		    }
-		    $bcc[ $i ]->add_edge( $p->Id, $s->Id );
-		}
-	    }
-	}
-    }
-
-    shift @bcc;	# The first element is always unused.
-
-    return @bcc;
-}
-
-
-# _SSSP_relax($graph,
-#             $vertex, $weight_at_vertex,
-#	      $weight,
-#             $other_vertex, $weight_at_other_vertex)
-#   A private helper method, used by SSSP_dijkstra and SSSP_bellman_ford.
-#   Returns either the new relaxed value or undef.
-#   Makes sense only for directed graphs.
-#
-
-sub _SSSP_relax {
-    my ( $g, $p, $pval, $w, $s, $sval ) = @_;
-
-    # If the start vertex is undefined (== infinite)
-    # it cannot be smaller than the end vertex + weight.
-    return undef unless defined $pval;
-
-    # Weight at the end vertex of an edge equals
-    # the weight of the edge plus the weight at
-    # the start vertex.
-    $w += $pval;
-
-    return $w # Houston, we have a relaxation.
-	if not defined $sval or $sval > $w;
-
-    return undef;
-}
-
-# SSSP_dijkstra($graph, $starte_vertex)
-#   Returns the Dijkstra SSSP as a graph.
-#   More specifically: returns a graph that has the single-source
-#   shortest paths as edges, and the path lengths to the end vertex
-#   as Weight attributes.
-#   Makes sense only for directed graphs.
-#
-
-sub SSSP_dijkstra {
-    my ( $g, $v ) = @_;
-
-    $g->_make_directed_sense( "single-source shortest path" );
-
-    use Heap::Fibonacci;
-
-    my $heap = Heap::Fibonacci->new;
-
-    # If no start vertex defined pick a vertex next to
-    # a short edge to start with.
-    $v = ( sort { $a->Weight <=> $b->Weight } $g->edges )[ 0 ]->P
-	unless defined $v;
-
-    # Verify the vertex.
-    $v = $g->_find_vertex( $v );
-
-    my ( %seen, $hpv, $hps, $relax, %path, %dist );
-
-    $hpv = Graph::_heapval->new( $heap, \%seen, 0, $v );
-
-    while ( defined ( $hpv = $heap->extract_minimum ) ) {
-	$v = $hpv->vertex;
-	foreach my $s ( $v->successors ) {
-	    my $w = $g->edges( $v, $s )->Weight;
-	    if ( $w < 0 ) {
-		warn "SSSP_dijkstra: edge $v -> $s negative.\n";
-		die  "use of SSSP_bellman_ford suggested.\n";
-	    } elsif ( $w == 0 ) {
-		warn "SSSP_dijkstra: edge $v -> $s weightless.\n";
-		warn "the vertices $v and $s could be combined.\n";
-	    }
-	    unless ( exists $seen{ $s } ) {
-		$hps = Graph::_heapval->new( $heap, \%seen, undef, $s );
-		$path{ $s } = $v;
-	    } else {
-		$hps = $seen{ $s };
-	    }
-	    $relax = $g->_SSSP_relax( $v, $hpv->val,
-				      $w,
-				      $s, $hps->val );
-	    if ( defined $relax ) {
-		$hps->val( $relax );
-		$heap->decrease_key( $hps );
-		$dist{ $s } = $hps->val;
-		$path{ $s } = $v;
-	    }
-	}
-    }
-
-    # Build the SSSP.
-
-    my $sssp = ( ref $g )->new;
-
-    foreach $v ( $g->vertices ) {
-	# For all except the root vertex.
-	$sssp->add_Weight_edge( $path{ $v }, $dist{ $v }, $v )
-	    if defined $path{ $v };
-    }
-
-    return $sssp;
-}
-
-# SSSP_bellman_ford($graph, $start_vertex)
-#   Returns the Bellman-Ford SSSP as a graph.
-#   More specifically: returns a graph that has the single-source
-#   shortest paths as edges, and the path lengths to the end vertex
-#   as the Weight attributes.
-#   The start vertex must be given.
-#   Makes sense only for directed graphs.
-#
-
-sub SSSP_bellman_ford {
-    my ( $g, $v ) = @_;
-
-    unless ( defined $v ) {
-	warn "SSSP_bellman_ford: source vertex must be given.\n";
-	confess "Died";
-    }
-
-    $g->_make_directed_sense( "single-source shortest path" );
-
-    my ( %dist, %path );
-
-    # Verify the vertex.
-    $v = $g->_find_vertex( $v );
-
-    # Start vertex starts first.
-    $dist{ $v } = 0;
-
-    my @V = $g->vertices;
-    my $V = @V;
-
-    # Relax all edges |V| - 1 times (NOT |V| times)
-    for ( my $i = 1; $i < $V; $i++ ) {
-	foreach my $e ( $g->edges ) {
-	    my ( $p, $s ) = $e->vertices;
-	    my $w = $g->edges( $p, $s )->Weight;
-	    if ( $w == 0 ) {
-		warn "SSSP_bellman_ford: edge $p -> $s weightless.\n";
-		warn "the vertices $p and $s could be combined.\n";
-	    }
-	    my $relax = $g->_SSSP_relax( $p, $dist{ $p },
-					 $w,
-					 $s, $dist{ $s } );
-	    if ( defined $relax ) {
-		$dist{ $s } = $relax;
-		$path{ $s } = $p;
-	    }	    
-	}
-    }
-
-    # Check for negative cycles.
-    foreach my $e ( $g->edges ) {
-	my ( $p, $s ) = $e->vertices;
-	my $w = $g->edges( $p, $s )->Weight;
-	if ( defined $path{ $s } and
-	     $path{ $s } eq $p   and
-	     $dist{ $s } > $dist{ $p } + $w ) {
-	    warn "SSSP_bellman_ford: edge $p -> $s in negative cycle.\n";
-	    warn "SSSP_bellman_ford: ($dist{$s} > $dist{$p} + $w)\n";
-	}
-    }
-
-    # Build the SSSP.
-
-    my $sssp = ( ref $g )->new;
-
-    foreach $v ( $g->vertices ) {
-	# For all except the root vertex.
-	$sssp->add_Weight_edge( $path{ $v }, $dist{ $v }, $v )
-	    if defined $path{ $v };
-    }
-
-    return $sssp;
-}
-
-# SSSP_dag($dag, $start_vertex)
-#   Returns the DAG SSSP as a graph.
-#   More specifically: returns a graph that has the single-source
-#   shortest paths as edges, and the path lengths to the end vertex
-#   as the Weight attributes.
-#   The start vertex must be given.
-#   Makes sense only for directed graphs.
-#
-
-sub SSSP_dag {
-    my ( $g, $v ) = @_;
-
-    $g->_make_directed_sense( "single-source shortest path" );
-
-    unless ( defined $v ) {
-	warn "SSSP_dag: source vertex must be given.\n";
-	confess "Died";
-    }
-
-    my ( %dist, %path );
-
-    if ( defined $v ) { # If a start vertex was given.
-	# Verify the vertex.
-	$v = $g->vertices( $v ) unless ref $v;
-
-	# Start vertex starts first.
-	$dist{ $v } = 0;
-    }
-
-    foreach $v ( $g->topo_sort ) {
-	foreach my $s ( $v->successors ) {
-	    my $w = $g->edges( $v, $s )->Weight;
-	    if ( $w == 0 ) {
-		warn "SSSP_dag: edge $v -> $s weightless.\n";
-		warn "the vertices $v and $s could be combined.\n";
-	    }
-	    my $relax = $g->_SSSP_relax( $v, $dist{ $v },
-					 $w,
-					 $s, $dist{ $s } );
-	    if ( defined $relax ) {
-		$dist{ $s } = $relax;
-		$path{ $s } = $v;
-	    }	    
-	}
-    }
-
-    # Build the SSSP.
-
-    my $sssp = ( ref $g )->new;
-
-    foreach $v ( $g->vertices ) {
-	# For all except the root vertex.
-	$sssp->add_Weight_edge( $path{ $v }, $dist{ $v }, $v  )
-	    if defined $path{ $v };
-    }
-
-    return $sssp;
-}
-
-# APSP_floyd_warshall($graph)
-#   Returns the Floyd-Warshall all-pairs shortest paths as a graph.
-#   More specifically: in the returned graph every possible (path-connected)
-#   pair is an edge.  Each edge has two attributes: Weight, which is the
-#   length of the minimal path, and Prev, which is the second to last
-#   vertex on the minimal path.  Example:  If there is a path from
-#   vertex 'a' to vertex 'f', the edge 'a-f' has the attributes Weight,
-#   for example 6, and Prev, for example 'd', which means that the
-#   last edge of the minimal path from 'a' to 'f' is 'd-f'.  To trace
-#   the path backwards, see the edge 'a-d'.  Sounds good but there is
-#   a catch: if there is a negative cycle in the path the Prev attributes
-#   point along this negative cycle and there is no way to break out of it
-#   back to the original minimal path.
-#
+=cut
 
 sub APSP_floyd_warshall {
-    my $g = shift;
+    my ( $graph, $attr ) = @_;
 
-    my @V = $g->vertices;
+    $attr = 'weight' unless defined $attr;
+
+    my @V = $graph->vertices;
     my $V = @V;
 
-    my ( $v, %v2i, @i2v,
-	 $i, $j, $k,
-	 $e, $p, $s,
-	 $dist, $prev_dist,
-	 $path, $prev_path,
-	 $prev_dist_ij, $prev_dist_ikpkj,
-	 $prev_path_ij, $prev_path_kj
-       );
+    my ( %v2i, @i2v );
+    my $vertex_id = 0;
 
-    foreach $v ( $g->vertices ) {
-	$v2i{ $v } = $i++;	# Number the vertices.
+    foreach my $v ( $graph->vertices ) {
+	$v2i{ $v } = $vertex_id++;	# Number the vertices.
 	$i2v[ $v2i{ $v } ] = $v;
     }
 
+    my $dist;
+
     # The distance matrix diagonal is naturally zero.
     # (and the path matrix diagonal is implicitly undefs).
-    foreach $v ( $g->vertices ) {
-	$i = $v2i{ $v };
+    foreach my $v ( $graph->vertices ) {
+	my $i = $v2i{ $v };
 	$dist->[ $i ]->[ $i ] = 0;
     }
 
-    # The rest of the distance matrix are the Weights
+    my $path;
+
+    # The rest of the distance matrix are the weights
     # and the rest of the path matrix are the parent vertices.
-    foreach $e ( $g->edges ) {
-	( $p, $s ) = $e->vertices;
-	$i = $v2i{ $p };
-	$j = $v2i{ $s };
-	$dist->[ $i ]->[ $j ] = $g->edges( $p, $s )->Weight;
+    foreach my $e ( $graph->edges ) {
+	my ( $p, $s ) = $e->vertices;
+	my $i = $v2i{ $p };
+	my $j = $v2i{ $s };
+	$dist->[ $i ]->[ $j ] = $graph->edges( $p, $s )->attribute( $attr );
 	$path->[ $i ]->[ $j ] = $p;
     }
 
-    # O($V**3) quite obviously: three loops till $V.
+    my ( $prev_dist,    $prev_path,
+         $prev_dist_ij, $prev_dist_ikpkj,
+	 $prev_path_ij, $prev_path_kj     );
 
-    for ( $k = 0; $k < $V; $k++ ) {
+    # O($V**3) quite obviously: three $V-sized loops.
+
+    for ( my $k = 0; $k < $V; $k++ ) {
 
 	$prev_dist = $dist;	# Save and...
 	$dist      = [ ];	# ...reset.
@@ -2084,8 +1667,8 @@ sub APSP_floyd_warshall {
 	$prev_path = $path;	# Save and...
 	$path      = [ ];	# ...reset.
 
-	for ( $i = 0; $i < $V; $i++ ) {
-	    for ( $j = 0; $j < $V; $j++ ) {
+	for ( my $i = 0; $i < $V; $i++ ) {
+	    for ( my $j = 0; $j < $V; $j++ ) {
 
 		if ( defined $prev_dist->[ $i ]->[ $j ] ) {
 		    $prev_dist_ij =
@@ -2129,76 +1712,84 @@ sub APSP_floyd_warshall {
 
     # Map the matrices back to a graph.
 
-    my $apsp = ( ref $g )->new;
+    my $apsp = ( ref $graph )->new;
 
-    for ( $i = 0; $i < $V; $i++ ) {
-	$p = $i2v[ $i ];
-	for ( $j = 0; $j < $V; $j++ ) {
-	    $s = $i2v[ $j ];
-	    $apsp->add_Weight_edge( $p, $dist->[ $i ]->[ $j ], $s );
-	    $apsp->add_attributed_edge( 'Prev',
-					$p, $path->[ $i ]->[ $j ], $s );
+    for ( my $i = 0; $i < $V; $i++ ) {
+	my $p = $i2v[ $i ];
+	for ( my $j = 0; $j < $V; $j++ ) {
+	    my $s = $i2v[ $j ];
+	    my $e = $apsp->add_edge( $p, $s );
+	    $e->attribute( $attr,  $dist->[ $i ]->[ $j ] );
+	    $e->attribute( 'prev', $path->[ $i ]->[ $j ] );
 	}
     }
 
     return $apsp;
 }
 
-# transitive_closure($graph)
-#   Returns the transitive closure of the graph.
-#   The closure is returned as a graph that has an edge from vertex
-#   u to vertex v if there is a path from u to v in the original graph.
-#
+=pod
+
+=head2 TRANSITIVE CLOSURE
+
+	$closure_graph = $graph->transitive_closure;
+
+Return the transitive closure of the C<$graph>, as a graph.  If there
+is a path between a pair of vertices the the C<$graph>, there is an
+edge between that pair of vertices in the transitive closure graph.
+Transitive closure is the Boolean reduction of the all-pairs shortest
+paths: the length of the path does not matter, just the existence.
+
+=cut
 
 sub transitive_closure {
-    my $g = shift;
+    my $graph = shift;
 
-    my @V = $g->vertices;
+    my @V = $graph->vertices;
     my $V = @V;
 
-    my ( $v, %v2i, @i2v,
-	 $i, $j, $k,
-	 $e, $p, $s,
-	 $closure_matrix,
-	 $prev_closure_matrix,
-	 $prev_closure_ij,
-	 $prev_closure_jk,
-	 $prev_closure_kj
-       );
+    my ( %v2i, @i2v );
+    my $vertex_id = 0;
 
-    foreach $v ( $g->vertices ) {
-	$v2i{ $v } = $i++;	# Number the vertices.
+    foreach my $v ( $graph->vertices ) {
+	$v2i{ $v } = $vertex_id++;	# Number the vertices.
 	$i2v[ $v2i{ $v } ] = $v;
     }
 
+    my $closure_matrix;
+
     # Initialize the closure matrix to zeros.
-    for ( $i = 0; $i < $V; $i++ ) {
+    for ( my $i = 0; $i < $V; $i++ ) {
 	$closure_matrix->[ $i ] = [ ( 0 ) x $V ];
     }
 
     # The closure matrix diagonal is naturally one.
-    foreach $v ( $g->vertices ) {
-	$i = $v2i{ $v };
+    foreach my $v ( $graph->vertices ) {
+	my $i = $v2i{ $v };
 	$closure_matrix->[ $i ]->[ $i ] = 1;
     }
 
     # Also the edges are ones.
-    foreach $e ( $g->edges ) {
-	( $p, $s ) = $e->vertices;
-	$i = $v2i{ $p };
-	$j = $v2i{ $s };
+    foreach my $e ( $graph->edges ) {
+	my ( $p, $s ) = $e->vertices;
+	my $i = $v2i{ $p };
+	my $j = $v2i{ $s };
 	$closure_matrix->[ $i ]->[ $j ] = 1;
     }
 
     # O($V**3) quite obviously: three loops till $V.
 
-    for ( $k = 0; $k < $V; $k++ ) {
+    my ( $prev_closure_matrix,
+	 $prev_closure_ij,
+         $prev_closure_jk,
+         $prev_closure_kj );
+
+    for ( my $k = 0; $k < $V; $k++ ) {
 
 	$prev_closure_matrix = $closure_matrix;	# Save and...
 	$closure_matrix      = [ ];	        # ...reset.
 
-	for ( $i = 0; $i < $V; $i++ ) {
-	    for ( $j = 0; $j < $V; $j++ ) {
+	for ( my $i = 0; $i < $V; $i++ ) {
+	    for ( my $j = 0; $j < $V; $j++ ) {
 
 		$closure_matrix->[ $i ]->[ $j ] =
 		    $prev_closure_matrix->[ $i ]->[ $j ] |
@@ -2210,10 +1801,10 @@ sub transitive_closure {
 
     # Map the closure matrix into a closure graph.
 
-    my $closure_graph = ( ref $g )->new;
+    my $closure_graph = ( ref $graph )->new;
 
-    for ( $i = 0; $i < $V; $i++ ) {
-	for ( $j = 0; $j < $V; $j++ ) {
+    for ( my $i = 0; $i < $V; $i++ ) {
+	for ( my $j = 0; $j < $V; $j++ ) {
 	    if ( $closure_matrix->[ $i ]->[ $j ] ) {
 		$closure_graph->add_edge( $i2v[ $i ], $i2v[ $j ] );
 	    }
@@ -2223,253 +1814,744 @@ sub transitive_closure {
     return $closure_graph;
 }
 
-# add_Capacity_edge($graph, $vertex, $capacity, $other_vertex)
-#   Sets the Capacity attribute of the edge defined by
-#   the vertices to be $w.
-#
+=pod
 
-sub add_Capacity_edge {
-    my ( $g, $p, $w, $s ) = @_;
+=head1 GRAPH TRAVERSAL
 
-    $g->add_attributed_edge( 'Capacity', $p, $w, $s );
+=head2 GRAPH DEPTH-FIRST TRAVERSAL
+
+You will the following method only if you plan to create customized
+depth-first traversal routines.  Usually you will use the ready-made
+algorithms listed later.
+
+	$depth_first = $graph->make_depth_first( $state );
+
+Create an anonymous subroutine that will descend a graph (a graph, not
+necessarily the C<$graph>) using depth-first traversal, according to
+the parameters defined in the (optional) C<$state> (an anonymous
+hash).  After the C<make_depth_first> you can perform the depth-first
+walk by
+
+	$done_state = $depth_first->( $some_graph, $some_state );
+
+Often you will want to specify something in the C<$state> because what
+happens without it is very minimal: the I<seen> and I<done> `time
+stamps' for vertices will be recorded.  The time stamps or `ticks'
+begin at zero and increase by one at each new I<seen> vertex and at
+each I<done> (no outstanding successor vertices exist) vertex.
+
+You can control the following aspects of the depth-first traversal by
+setting the corresponding C<$state> parameters to be `hooks', pieces
+of code.  They are run when the traversal reaches a certain point
+and/or needs to make certain decisions on how to proceed.  The hooks
+are either anonymous subroutines which are run with certain parameters
+or they can be Perl code, which is inserted as-is to the appropriate point
+in the traversal.
+
+=over 4
+
+=item possible state initialization (default: C<$state->{ order }> is
+set to zero and C<$state->{ unseen }> is set to contain all the
+vertices of the graph *))
+
+=item the selection and order in which the I<root vertices> of the
+depth-first forest are picked from all the vertices of the graph
+default: the next unseen vertex in alphabetical order)
+
+      $state->{ root_selector }->( $graph, $state )
+
+=item what is done to a root vertex
+
+      $state->{ root_hook }->( $graph, $state )
+
+=item the selection and order in which the I<successor vertices> of a
+vertex are picked from all the successors of the vertex (default: the
+next unseen successor in alphabetical order)
+
+      $state->{ successor_selector }->( $graph, $vertex, $path, $state )
+
+=item what is done to each vertex (default: nothing)
+
+      $state->{ vertex_hook }->( $graph, $vertex, $path, $state )
+
+=item what is done to each unseen vertex (default: the I<seen> and
+I<done> timestamps are recorded *))
+
+      $state->{ unseen_vertex_hook }->( $graph, $vertex, $path, $state )
+
+=item what is done to each seen vertex (default: nothing)
+
+      $state->{ seen_vertex_hook }->( $graph, $vertex, $path, $state )
+
+=item what is done to each edge (default: nothing)
+
+      $state->{ edge_hook }->( $graph, $successor, $path, $state )>
+
+=item what is done to each unseen edge (default: the depth-first
+recursion is done for the unseen end vertex of the edge *))
+
+      C<$state->{ unseen_edge_hook }->( $graph, $successor, $path, $state )>
+
+=item what is done to each seen edge (default: nothing)
+
+      C<$state->{ seen_edge_hook }->( $graph, $successor, $path, $state )>
+
+=back
+
+*) in this case you cannot replace the default but you can add an action.
+
+The C<$path> is the path by which we ended up in this C<$vertex> or
+C<$successor>, the I<current vertex>: an anonymous array of vertices,
+a root vertex in the C<$path->[0]> and the current vertex in
+C<$path->[-1]>.
+
+An I<unseen edge> is an edge where we have seen (either just saw or
+saw several `ticks' ago) the start vertex of edge but the end vertex
+we haven't seen (but are about to).
+
+Note the difference: when calling C<make_depth_first> the various
+`hooks' need not be defined, yet, the keys of the anonymous hash need
+just need to exist.  But note that B<all> the hooks present in
+C<make_depth_first> must be present when actually invoking the depth
+first traversal and also that B<none> of the hooks not present at the
+time of C<make_depth_first> will be called.  Some might say that the
+C<make_depth_first> I<compiles> the traversal.
+
+You B<can> change the contents of the state between the invocations of
+the depth-first traversal, within the restrictions listed above.  You
+can for example change your C<root_selector> and C<successor_selector>
+to walk the vertices in some different order (though it will still be
+depth-first).
+
+You can also change the C<$graph> before and between invocations.  The
+anonymous subroutine returned by C<make_depth_first> is in fact
+completely graph-independent.
+
+=cut
+
+sub make_depth_first {
+    my ( $graph, $state ) = @_;
+
+    $state = { } unless defined $state;
+
+    my $code = sprintf '
+sub {
+    my ( $graph, $state ) = @_;
+
+    $state = { } unless defined $state;
+
+    $state->{ order  } = 0;
+    $state->{ unseen } = { };
+    foreach my $vertex ( $graph->vertices ) {
+        $state->{ unseen }->{ $vertex } = 1;
+    }
+
+    # state_init
+    %s
+
+    $state->{ dive } =
+        sub {
+            my ( $graph, $vertex, $path, $state ) = @_;
+
+            if ( exists $state->{ unseen }->{ $vertex } ) {
+                delete $state->{ unseen }->{ $vertex };
+                # Record the starting time.
+                $state->{ seen }->{ $vertex } = $state->{ order }++;
+                # unseen_vertex_hook
+                %s
+                foreach my $successor ( %s ) {
+                    my @succargs = ( $graph, $successor, $path, $state );
+
+                    if ( exists $state->{ unseen }->{ $successor } ) {
+                        # unseen_edge_hook
+                        %s
+                        push @{ $path }, $successor;
+                        $state->{dive}->( @succargs );
+                        pop @{ $path };
+                    } else {
+                        # seen_edge_hook
+                        %s
+                    }
+                    # edge_hook
+                    %s
+                 }
+                 # Record the finishing time.
+                 $state->{ seen }->{ $vertex } = $state->{ order }++;
+            } else {
+                # seen_vertex_hook
+                %s
+            }
+            # vertex_hook
+            %s
+        };
+
+    foreach my $root ( %s ) {
+        if ( exists $state->{ unseen }->{ $root } ) {
+            # root_hook
+            %s
+            $state->{ dive }->( $graph, $root, [$root], $state );
+            # tree_only
+            %s
+        }
+    }
+
+    return $state;
+}
+',
+    exists $state->{ state_init } ?
+        ( ref $state->{ state_init } eq 'CODE' ?
+             '$state->{ state_init }->( @_ );' :
+              $state->{ state_init } ) :
+        '',
+
+    exists $state->{ unseen_vertex_hook } ?
+        ( ref $state->{ unseen_vertex_hook } eq 'CODE' ?
+             '$state->{ unseen_vertex_hook }->( @_ );' :
+              $state->{ unseen_vertex_hook } ) :
+        '',
+
+    exists $state->{ successor_selector } ?
+        ( ref $state->{ successor_selector } eq 'CODE' ?
+             '$state->{ successor_selector }->( @_ );' :
+              $state->{ successor_selector } ) :
+        'sort $graph->vertex_successors( $vertex )',
+
+    exists $state->{ unseen_edge_hook } ?
+        ( ref $state->{ unseen_edge_hook } eq 'CODE' ?
+             '$state->{ unseen_edge_hook }->( @_ );' :
+              $state->{ unseen_edge_hook } ) :
+        '',
+
+    exists $state->{ seen_edge_hook } ?
+        ( ref $state->{ seen_edge_hook } eq 'CODE' ?
+             '$state->{ seen_edge_hook }->( @_ );' :
+              $state->{ seen_edge_hook } ) :
+        '',
+
+    exists $state->{ edge_hook } ?
+        ( ref $state->{ edge_hook } eq 'CODE' ?
+             '$state->{ edge_hook }->( @_ );' :
+              $state->{ edge_hook } ) :
+        '',
+
+    exists $state->{ seen_vertex_hook } ?
+        ( ref $state->{ seen_vertex_hook } eq 'CODE' ?
+             '$state->{ seen_vertex_hook }->( @_ );' :
+              $state->{ seen_vertex_hook } ) :
+        '',
+
+    exists $state->{ vertex_hook } ?
+        ( ref $state->{ vertex_hook } eq 'CODE' ?
+             '$state->{ vertex_hook }->( @_ );' :
+              $state->{ vertex_hook } ) :
+        '',
+
+    exists $state->{ root_selector } ?
+        ( ref $state->{ root_selector } eq 'CODE' ?
+             '$state->{ root_selector }->( @_ );' :
+              $state->{ root_selector } ) :
+        'sort $graph->vertices',
+
+    exists $state->{ root_hook } ?
+        ( ref $state->{ root_hook } eq 'CODE' ?
+             '$state->{ root_hook }->( @_ );' :
+              $state->{ root_hook } ) :
+        '',
+
+    ref $state->{ tree_only } ?
+        'last;' : '';
+
+#    print $code;
+
+    return eval $code;
 }
 
-# add_Capacity_path($graph, @vertices_and_Capacities)
-#   Sets the Capacity attribute of the pathedge defined by
-#   the vertices to be Capacities.
-#
+=pod
 
-sub add_Capacity_path {
-    my $g = shift;
+=head2 TOPOLOGICAL SORT
 
-    $g->add_attributed_path( 'Capacity', @_ );
-}
+	@topo = $graph->topological_sort;
 
-# flow_ford_fulkerson($graph, $state)
-#   The Ford-Fulkerson method/framework for solving network
-#   flow problems.  Three things MUST be defined in the $state:
-#   the source vertex, the sink vertex, and the next_path hook.
-#   Returns the maximal flow network as a graph.  The flows
-#   at each edge $e can be retrieved by $e->Flow.
-#   Does all the work of finding the minimal residual
-#   capacity of each potential augmenting path returned
-#   by the next_state hook; the hook only needs to return
-#   the next potential path.
-#   Makes sense only for directed graphs.
-#
+Return the vertices of the C<$graph> sorted topologically, that is,
+in an order that respects the partial ordering of the graph.  There may
+be many possible topological orderings of the graph.
 
-sub flow_ford_fulkerson {
-    my ( $g, $state ) = @_;
+=cut
 
-    $g->_make_directed_sense( "single-source shortest path" );
+sub topological_sort {
+    my ( $graph, $state ) = @_;
 
-    my $source = $state->{ source };
+    my $df = $graph->make_depth_first( $state );
 
-    unless ( defined $source ) {
-	warn "ford_fulkerson: source vertex undefined.\n";
-	confess "Died";
-    }
+    $state = $df->( $graph, $state );
 
-    my $sink   = $state->{ sink };
-
-    unless ( defined $sink ) {
-	warn "ford_fulkerson: sink vertex undefined.\n";
-	confess "Died";
-    }
-
-    my $next_path = $state->{ next_path };
-
-    unless ( defined $next_path ) {
-	warn "ford_fulkerson: next_path hook undefined.\n";
-	confess "Died";
-    }
-
-    my $flow = ( ref $g )->new;
-
-    # Copy the edges to the flow.
-    $flow->merge_edges( $g );
-
-    # Copy the Capacities and zero the Flows.
-    foreach my $e ( $g->edges ) {
-	my $c = $e->Capacity;
-	unless ( $c ) {
-	    warn <<EOW;
-ford_fulkerson: edge $e
-of graph $g
-has no defined Capacity.
-EOW
-            confess "Died";
-	}
-	# Now copy the Capacity to the flow graph...
-	$e = $flow->edges( $e->vertex_Ids );
-	$e->Capacity( $c );
-	# ...and zero the flow.
-	$e->Flow( 0 );
-    }
-    
-    # Update the source and the sink to point to the flow.
-
-    $state->{ source } = $flow->vertices( $source->Id );
-    $state->{ sink   } = $flow->vertices( $sink  ->Id );
-
-    my $ap;	# Augmenting path.
-
-    while ( defined ( $ap = $next_path->( $flow, $g, $state ) ) ) {
-	if ( @{ $ap } > 1 ) { # == 1: source == sink ?
-
-	    # Augmenting Path Edges.
-	    my @ape = $flow->edges( _path_to_edge( $ap ) );
-
-	    # Residual Capacity Candidate.
-	    my $rcc = $ape[ 0 ]->Capacity - $ape[ 0 ]->Flow;
-	    # Residual Capacity.
-	    my $rc  = $rcc > 0 ? $rcc : 0;
-
-	    # Find the minimum non-negative residual capacity.
-	    for ( my $i = 1; $i < @ape; $i++ ) {
-		# Residual Capacity Candidate.
-		$rcc = $ape[ $i ]->Capacity - $ape[ $i ]->Flow;
-		$rc  = $rcc if $rcc >= 0 and $rcc < $rc;
-	    }
-
-	    if ( $rc > 0 ) {
-		# Augment the path.
-		foreach my $e ( @ape ) {
-		    $e->Flow( $e->Flow + $rc );
-		}
-	    }
-	}
-   }
-
-    return $flow;
-}
-
-# flow_edmonds_karp($graph, $vertex, $other_vertex)
-#   An application of Ford-Fulkerson framework.
-#   The potential augmenting paths are returned by the
-#   next_state hook, which is a BFS turned inside out into an iterator.
-#
-
-sub flow_edmonds_karp {
-    my ( $g, $a, $b ) = @_;
-
-    # Verify the vertices.
-    $a = $g->_find_vertex( $a );
-    $b = $g->_find_vertex( $b );
-
-    my $state = { };
-
-    $state->{ source } = $a;
-    $state->{ sink   } = $b;
-
-    $state->{ next_path } = sub {
-	my ( $flow, $g, $state ) = @_;
-
-	my $source = $state->{ source };
-	my $sink   = $state->{ sink   };
-
-	# Seed the queue.
-	if ( not defined $state->{ todo } ) {
-	    # The todo-queue has two parts:
-	    # the first element is an anymous hash
-	    # holding the vertices seen on this path,
-	    # the rest of the elements are the
-	    # vertices of the path.
-	    push( @{ $state->{ todo } },
-		  [ { $source, undef }, $source ] );
-	}
-
-	# While the queue empties.
-
-	while ( @{ $state->{ todo } } ) {
-
-	    my $ap = shift @{ $state->{ todo } };
-
-	    my $seen = shift @{ $ap };
-
-	    my $v = $ap->[ -1 ]; # The last one.
-
-	    # If this path reached the sink.
-	    if ( $v eq $sink ) {
-		return $ap;
-	    } else {
-		# Make new extended paths.
-		foreach my $s ( $v->successors ) {
-		    unless ( exists $seen->{ $s } ) {
-			my $e = $flow->edges( $v, $s );
-			push(
-			     @{ $state->{ todo } },
-			     [ 
-			      # Add this successor to
-			      # the seen vertices and..
-		              { %{ $seen },
-				$s, undef },
-			      # ..the path so far and...
-			      @{ $ap },
-			      # ...this successor.
-			      $s ] );
-		    }
-		}
-	    }
-	}
-
-	return undef;
-    };
-
-    return $g->flow_ford_fulkerson( $state );
-}
-
-
-# TSP_approx_prim($graph)
-#   Returns an approximation for the TSP by using the Prim MST.
-#   Guaranteed to be no worse than twice the minimal tour.
-#
-
-sub TSP_approx_prim {
-    my $g = shift;
-
-    my $full_tour = $g->complete_graph;
-
-    $full_tour->undirected( 1 );
-
-    # Copy the coordinates.
-    foreach my $v ( $g->vertices ) {
-	$full_tour->vertices( $v->Id )->X( $v->X );
-	$full_tour->vertices( $v->Id )->Y( $v->Y );
-    }
-
-    # Compute the distances.
-    foreach my $e ( $full_tour->edges ) {
-	my ( $p, $s ) = $e->vertices;
-	my $dX = $s->X - $p->X;
-	my $dY = $s->Y - $p->Y;
-	# No need to take the square root, because
-	# if a >= 0 and b >=0 and a > b then
-	# also sqrt(a) > sqrt(b).
-	# We use the Weight attribute instead of, say, Dist,
-	# because MST_prim() uses Weight.
-	$e->Weight( $dX * $dX + $dY * $dY );
-    }
-
-    my $MST_prim = $full_tour->MST_prim;
-
-    my $state = { };
-
-    $MST_prim->depth_first( $state );
-
-    # Next take the vertex names of the MST in preorder.
     # A Schwartzian Transform.
-    my @e = map { $_->[ 0 ]->Id }
-                sort { $a->[ 1 ] <=> $b->[ 1 ] }
-                     map { [ $_, $state->{ seen }->{ $_ } ] }
-                         $g->vertices;
-
-    my $tour = ( ref $g )->new;
-
-    $tour->add_path( @e );
-    $tour->add_edge( $e[ 0 ], $e[ -1 ] ); # Complete the tour.
-
-    return $tour;
+    return map { $_->[ 0 ] }
+               sort { $b->[ 1 ] <=> $a->[ 1 ] } # Note: $b $a
+                    map { [ $_, $state->{ done }->{ $_ } ] }
+                        $graph->vertices;
 }
+
+=pod
+
+=pod
+
+=head1 COMPATIBILITY
+
+Neil Bowers has written C<graph-modules-1.001> in Canon Research
+Center Europe.  The whole graph model is very different.
+
+In Bowers' model graph nodes (vertices) and graph edges are
+instantiated explicitly, in that order.  In effect, there is only one
+graph per one Perl script runtime.
+
+In this module I<graphs> are instantiated and then vertices and edges
+are added into them, either explicitly or implicitly.  There may be
+multiple graphs active simultaneously, and they may have identically
+named vertices.
+
+Some simple compatibility mappings are possible:
+
+=over 4
+
+=item C<getAttribute()> and C<setAttribute()> are possible either
+using explicit C<attribute()> or with the implicit virtual attributes,
+see L<Graph::Element>.
+
+=item C<Graph::Node> is C<Graph::Vertex> -- but note that you should
+never explicitly use C<Graph::Vertex>, as opposed to what you have
+been doing with C<Graph::Node>.
+
+=back
+
+The C<save()> method is available for graphs, see L<Graph::Archive>.
+
+=cut
+
+=head1 SAVING (AND, SOME DAY, LOADING) GRAPHS
+
+=head2 GRAPH FILE FORMATS
+
+The known graph file formats are
+
+=over 4
+
+=item graph adjacency list, suffix C<'gal'>
+
+An example:
+
+	gal 001
+	vertices 6
+	a b c d e f
+	edges 5
+	a b
+	b c d
+        c
+        d
+	e b e
+        f
+	2 _id GLOB(0x15b3e8) directed 1
+	a 1 _id GLOB(0x15ccdc)
+	...
+	b c 1 _id GLOB(0x15cee0)
+	b d 1 _id GLOB(0x15cee8)
+	...
+
+The first line identifies the C<gal> format and its version as C<001>.
+The next line tells the number of the vertices, I<V>.  The next line
+lists the vertices.  The next line tells the number of edges, I<E>.
+The next I<E> lines are the edges in adjacency list format:
+
+	start_vertex end_vertex_1 vertex_2 ...
+
+After the edge lines lines are I<1+V+E> lines listing the attributes
+of the graph, the vertices, and the edges.  The vertex attribute lines
+begin with the vertices, the edges attributes lines with the two
+vertices.  The attributes themselves are of the form:
+
+	number_of_attributes attribute_key_1 attribute_value_1 ...
+
+The vertices, edges, and attributes can contain whitespace characters
+but they must be encoded like this: C<=XX> where the C<XX> are two
+hexadecimal digits, for example C<=20> is the space character (in
+ASCII or ISO Latin).  Obviously, any possible C<=>s need to be
+encoded: C<=3d>.
+
+=item graph adjacency matrix, suffix C<'gam'>
+
+The C<gam> format is very similar to the C<gal> format.  The only
+difference is in listing the edges an adjacency matrix is used: a
+I<boolean matrix> in text format that has C<1> whenever there is an
+edge from a vertex to another vertex, C<0> elsewhere.
+
+	gal 001
+	vertices 6
+	a b c d e f
+	edges 5
+	0 1 0 0 0 0
+	0 0 1 1 0 0
+	0 0 0 0 0 0
+	0 0 0 0 0 0
+	0 1 0 0 1 0
+        0 0 0 0 0 0
+	2 _id GLOB(0x15b3e8) directed 1
+	a 1 _id GLOB(0x15ccdc)
+	...
+	b c 1 _id GLOB(0x15cee0)
+	b d 1 _id GLOB(0x15cee8)
+	...
+
+The above C<gam> specififies exactly the same edges as the
+even-further-above C<gal>.
+
+=item I<daVinci>, suffix C<'daVinci'>, see
+C<http://www.informatik.uni-bremen.de/~davinci/>.
+
+=back
+
+=head2 SAVING GRAPHS
+
+	$graph->save('daV');
+
+The graph will be saved in daVinci format to C<graph.daVinci>.
+
+	$graph->save('foo.daV');
+
+The graph will be saved in daVinci format to C<foo.daVinci>.
+
+	$graph->save('foo');
+
+The graph will be saved in daVinci format to C<foo.daVinci>.
+
+	$graph->save();
+
+The graph will be saved in daVinci format to C<graph.daVinci>.
+
+	$graph->save('gal');
+
+The graph will be saved in adjacency list format to C<graph.gal>.
+
+	$graph->save('foo.gal');
+
+The graph will be saved in adjacency list format to C<foo.gal>.
+
+	$graph->save('gam');
+
+The graph will be saved in adjacency matrix format to C<graph.gam>.
+
+	$graph->save('foo.gam');
+
+The graph will be saved in adjacency matrix format to C<foo.gam>.
+
+In all the above the 'suffix' is case-insensitive, the filename part
+is not.
+
+=cut
+
+sub _vertex_encode {
+    my $name = shift;
+
+    $name =~ s/([\s%])/sprintf("%%%02x", ord $1)/eg;
+
+    return $name;
+}
+
+sub _write_daVinci_vertex {
+    my ( $depth, $graph, $vertex, $seen ) = @_;
+
+    my $prefix = ' ' x $depth;
+
+    if ( exists $seen->{ $vertex } ) {
+	return sprintf 'r("%s")', $vertex;
+    } else {
+	$seen->{ $vertex } = 1;
+
+	my $attributes = _write_daVinci_attributes( $depth + 1, $vertex );
+
+        my $succ = _write_daVinci_succ( $depth + 1, $graph, $vertex, $seen );
+
+	my $nev  = _vertex_encode( $vertex );
+
+	return sprintf 'l("%s",n("%s",%s))',
+                       $nev, $nev,
+                       join ",\n$prefix", $attributes, $succ;
+    }
+}
+
+sub _write_daVinci_attributes {
+    my ( $depth, $self ) = @_;
+
+    my $prefix = ' ' x $depth;
+
+    my %a = $self->_attributes;
+
+    my @a = map { my $k = $_;
+		  my $v = $self->attribute( $_ );
+
+		  if ( $k eq '_id' ) {
+		      $k = 'OBJECT';
+		      if ( ref $self eq 'Graph::Vertex' ) {
+			  $v = $self->name;
+		      } elsif ( ref $self eq 'Graph::Edge' ) {
+			  $v = $self;
+		      }
+		  }
+
+		  sprintf( 'a("%s","%s")',
+			   _vertex_encode( $k ),
+			   _vertex_encode( $v ) )
+	        }
+                keys %a;
+
+    return '[' . join( ",", @a ) . ']';
+}
+
+sub _write_daVinci_succ {
+    my ( $depth, $graph, $vertex, $seen ) = @_;
+
+    my $prefix = ' ' x $depth;
+
+    my @succ;
+
+    foreach my $u ( $graph->vertex_successors( $vertex ) ) {
+        my $e = $graph->edge( $vertex, $u );
+	push @succ, sprintf 'e("%s",%s,%s)',
+                            $e,
+                            _write_daVinci_attributes( $depth + 1, $e ),
+                            $u eq $vertex ?
+                               sprintf 'r("%s")', _vertex_encode( $u ) :
+                               _write_daVinci_vertex( $depth + 1,
+						      $graph,
+						      $u,
+						      $seen );
+    }
+
+    return sprintf '[' . join( ",\n$prefix", @succ ) . ']';
+}
+
+sub _write_daVinci {
+    my $graph = shift;
+
+    my $depth = 1;
+    my %seen;
+
+    my @daVinci;
+
+    foreach my $v ( sort $graph->vertices ) {
+	push @daVinci, _write_daVinci_vertex( $depth, $graph, $v, \%seen )
+	    unless $seen{ $v };
+    }
+
+    return "[\n" . join( ",\n", @daVinci ) . "\n]"; 
+}
+
+sub _file_defaults {
+    my $spec = shift;
+
+    if ( defined $spec ) {
+	if ( "\L$spec" eq 'dav' ) {
+	    return ( 'graph.daVinci', 'daV' );
+	} elsif ( "\L$spec" eq 'gal' ) {
+	    return ( 'graph.gal', 'gal' );
+	} elsif ( "\L$spec" eq 'gam' ) {
+	    return ( 'graph.gam', 'gam' );
+	}
+	
+	my ( $base, $suffix ) = ( $spec =~ /(.+)\.([^.]+)$/);
+
+	if ( defined $suffix ) {
+	    if ( "\L$suffix" eq 'dav' ) {
+		return ( "$base.daVinci", 'daV' );
+	    } elsif ( "\L$suffix" eq 'gal' ) {
+		return ( $spec, 'gal' );
+	    } elsif ( "\L$suffix" eq 'gam' ) {
+		return ( $spec, 'gam' );
+	    } else {
+		warn "Unknown graph file format '$suffix'.\n";
+		return ( );
+	    }
+	} else {
+	    return ( "$spec.daVinci", 'daV' );
+	}
+    } else {
+	return ( 'graph.daVinci', 'daV' );
+    }
+}
+
+sub _ga_init ($$) {
+    my ( $graph, $version ) = @_;
+
+    my @v = sort $graph->vertices;
+
+    my %c; # The vertex names encoded.
+
+    @c{ @v } = map { _vertex_encode $_ } @v;
+
+    return ( \@v,
+	     \%c,
+	     join "\n",
+	          $version,
+	          sprintf( "graph %s", defined $graph->name ?
+                                              $graph->name : '' ),
+	          sprintf( "vertices %d", scalar @v ),
+	          join( " ", @c{ @v } ),
+	          sprintf( "edges %d", scalar $graph->edges ) );
+}
+
+sub _ga_attributes ($$) {
+    my ( $graph, $v ) = @_;
+
+    my @att;
+
+    my %gat = $graph->_attributes;
+
+    push @att, join " ",
+               scalar keys %gat,
+               map { _vertex_encode $_ } %gat;
+
+    foreach my $u ( @$v ) {
+	my %att = $u->_attributes;
+
+	push @att, sprintf( "%s %d %s",
+                            _vertex_encode( $u ),
+                            scalar keys %att,
+                            join " ",
+                                map { _vertex_encode $_ } %att );
+    }
+
+    foreach my $e ( $graph->edges ) {
+	my ( $u, $v ) = $e->vertices;
+
+	my %att = $e->_attributes;
+
+	delete $att{ start };
+	delete $att{ stop  };
+
+	push @att, sprintf( "%s %s %d %s",
+                            _vertex_encode( $u ),
+                            _vertex_encode( $v ),
+                            scalar keys %att,
+                            join " ",
+                                map { _vertex_encode $_ } %att );
+			    
+    }
+
+    return @att;
+}
+
+my $gal_version = 'gal 001';
+
+sub _write_adjlist {
+    my $graph = shift;
+
+    my ( $v, $c, $h ) = $graph->_ga_init( $gal_version );
+
+    my @adj;
+
+    foreach my $u ( @$v ) {
+	push @adj, join " ",
+                        $c->{ $u },
+                        map { $c->{ $_ } }
+                            sort $graph->vertex_successors( $u );
+    }
+
+    return join( "\n", $h, @adj, $graph->_ga_attributes( $v ) );
+}
+
+my $gam_version = 'gam 001';
+
+sub _write_adjmatrix {
+    my $graph = shift;
+
+    my ( $v, $c, $h ) = $graph->_ga_init( $gam_version );
+
+    my @adj;
+
+    foreach my $u ( @$v ) {
+	my @adv;
+
+	foreach my $v ( @$v ) {
+	    push @adv, $graph->has_edge( $u, $v ) ? 1 : 0;
+	}
+
+	push @adj, join " ", @adv;
+    }
+
+    return join( "\n", $h, @adj, $graph->_ga_attributes( $v )  );
+}
+
+sub save {
+    my ( $graph, $spec ) = @_;
+
+    my ( $filename, $format ) = _file_defaults( $spec );
+
+    my %saver = ( 'daV', \&_write_daVinci,
+		  'gal', \&_write_adjlist,
+		  'gam', \&_write_adjmatrix );
+
+    my $saver = $saver{ $format };
+
+    if ( defined $saver ) {
+	if ( open( SAVE, ">$filename" ) ) {
+	    print SAVE $saver->( $graph );
+	    print SAVE "\n";
+	    close SAVE;
+	    return 1;
+	} else {
+	    warn "Failed to open '$filename' for saving: $!\n";
+	    return 0;
+	}
+    } else {
+	warn "save: unknown file specifier '$spec', cannot save.\n";
+    }
+}
+
+=pod
+
+=head1 LOADING GRAPHS
+
+Sorry, at the moment no methods for loading graphs from files are
+implemented.
+
+=cut
+
+# TODO: Graph::Element::destroy, to customize element destruction.
+
+sub DESTROY {
+    my $graph = shift;
+
+    # print "DESTROY: $graph\n";
+    # print "DESTROY: ", $graph->as_string, "\n";
+
+    # Deleting the vertices will also delete the edges.
+    foreach my $v ( $graph->vertices ) {
+	$graph->delete_vertex( $v ) if defined $v;
+    }
+
+    $graph->_delete;
+}
+
+=pod
+
+=head1 SEE ALSO
+
+L<Graph::Directed>, L<Graph::Undirected>, L<Graph::Vertex>,
+L<Graph::Edge>, L<Graph::Element>.
+
+=head1 VERSION
+
+Version 0.003.
+
+=head1 AUTHOR
+
+Jarkko Hietaniemi <F<jhi@iki.fi>>
+
+=head1 COPYRIGHT
+
+Copyright 1998, O'Reilly and Associates.
+
+This code is distributed under the same copyright terms as Perl itself.
+
+=cut
 
 1;

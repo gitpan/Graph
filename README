@@ -1,5 +1,10 @@
-This package implements various graph data structures and algorithms.
+As you can guess from the version number this software is
+still somewhat unstable.  The implementations may be extremely
+buggy, the APIs can change.  You have been warned.
 
-Copyright 1998, O'Reilly & Associates.
+NOTE: the release 0.003 does not contain all the algorithms that 0.001
+(and the never-publicly-released 0.002) had.  They are under
+reconstruction as the data structures underwent a major overhaul in
+0.003.
 
-This code is distributed under the same copyright terms as Perl itself.
+

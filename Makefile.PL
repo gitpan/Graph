@@ -1,36 +1,32 @@
 require 5;
 
+# $Id: Makefile.PL,v 1.1 1998/05/31 19:49:01 hietanie Exp $
+
 use ExtUtils::MakeMaker;
 
-open(VERSION, "VERSION") and
-    chomp($version = <VERSION>) and
-    close(VERSION);
-die "Version undefined: $!\n" unless defined $version;
-die "Version $version illegal\n" unless $version > 0;
+sub MY::libscan
+{
+ my($self, $path) = @_;
 
-use Cwd;
-
-my $cwd = getcwd();
-
-die "ERROR: This directory ($cwd)\ndoes not look like version $version.\n"
-    unless $cwd =~ /\Q$version\E$/;
-
-if ( -M "Graph.pm" > -M "VERSION" or -M "Graph.pm" > -M "Makefile.PL" )  {
-    print "Setting Graph.pm to version $version\n";
-    local($^I, @ARGV) = ('.bak', 'Graph.pm');
-    my $updates = 0;
-    while (<>) {
-        $updates++
-           if s/^(Version|\$VERSION\s*=)\s*(?:\d.+)([.;])$/$1 $version$2/;
-        print;
-        close ARGV if eof;
-    }
-    die "ERROR: Updated $updates version stamps, expected 1 or 2.\n"
-       unless $updates == 1 or $updates == 2;
+ return '' 
+        if($path =~ m:/(RCS|CVS|SCCS)/: ||
+           $path =~ m:[~%]$: ||
+           $path =~ m:\.(orig|rej)$:
+          );
+ 
+ $path;
 }
 
 WriteMakefile(
-    'NAME'      => 'Graph',
-    'VERSION'   => $version,
-    'dist'      => { 'COMPRESS' => 'gzip' }
+    VERSION_FROM => 'Graph.pm',
+    NAME         => 'Graph',
+    VERSION      => $VERSION,
+    dist         => { COMPRESS => 'gzip -9f',
+		      SUFFIX   => 'gz', 
+		      DIST_DEFAULT => 'all tardist',
+		    },
+    clean        => { FILES    => join(" ",
+				       map { "$_ */$_ */*/$_" }
+				       qw(*% *.html *.b[ac]k *.old *.orig)),
+		    },
 );

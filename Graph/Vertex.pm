@@ -1,91 +1,94 @@
 package Graph::Vertex;
 
+# $Id: Vertex.pm,v 1.7 1998/06/06 13:43:33 jhi Exp $
+
 =pod
 
 =head1 NAME
 
-Graph::Edge - baseclass for Graph class representing a graph vertex (node)
+Graph::Vertex - a base class for graph edges
 
 =head1 SYNOPSIS
 
+B<Not to be used directly>.
+
 =head1 DESCRIPTION
 
-=head1 VERSION
-
-Version 0.01.
-
-=head1 AUTHOR
-
-Jarkko Hietaniemi, <F<jhi@iki.fi>>
-
-=head1 COPYRIGHT
-
-Copyright 1998, O'Reilly & Associates.
-
-This code is distributed under the same copyright terms as perl itself.
+This class is not to be used directly because a vertex always must
+belong to a graph.  The graph classes will do this right.  Some useful
+public methods exist, though.
 
 =cut
 
-# A simple base class for vertices.
-#
-# The attribute methods are inherited from the Graph::_element class.
-
 use strict;
+local $^W = 1;
+
+use Graph::Element;
+
 use vars qw(@ISA);
 
-use Graph::_element;
+@ISA = qw(Graph::Element);
 
-@ISA = qw(Graph::_element);
-
-use overload q("") => \&as_string, q(cmp) => \&cmp;
-
-# as_string($vertex)
-#   The stringification.
-#   Simply returns the Id attribute.
-#
+use overload q("") => \&as_string, 'cmp' => \&cmp;
 
 sub as_string {
-    my $v = shift;
+    my $vertex = shift;
 
-    return $v->Id;
+    return $vertex->name;
 }
-
-# _new($type, $id)
-#   The constructor.
-#   Sets the Id attribute.
-#
-
-sub _new {
-    my $type = shift;
-
-    my $v = { };
-
-    bless $v, $type;
-
-    $v->Id( shift );
-
-    return $v;
-}
-
-# cmp($vertex, $other_vertex)
-#   Tests the equality of the Ids of the vertices.
-#
 
 sub cmp {
-    my ( $v1, $v2 ) = @_;
+    my ( $u, $v ) = @_;
 
-    return $v1->Id cmp $v2->Id;
+    return $u->name cmp ( ref $v ? $v->name : $v );
 }
 
-# successors($vertex)
-#   Returns the successors of the vertex.
-#   ASSUMES the $v->G has been set.
-#
+sub _new ($$$) {
+    my ( $class, $graph, $name ) = @_;
 
-sub successors {
-    my $v = shift;
+    die "$class->new: Usage: $class->_new( graph, name )\n"
+	unless defined $graph and defined $name;
 
-    return $v->G->successors( $v );
+    my $vertex;
+
+    if ( defined $graph->vertex( $name ) ) {
+	$vertex = $graph->vertex( $name );
+    } else {
+	$vertex = Graph::Element::_new( $class, $name );
+	$vertex->_add_to_graph( $graph, '_VERTICES', $name );
+    }
+
+    return $vertex;
 }
+
+=pod
+
+=head2 ADDING AND DELETING VERTICES
+
+See L<Graph>.
+
+=cut
+
+=pod
+
+=head1 SEE ALSO
+
+L<Graph>, L<Graph::Element>.
+
+=head1 VERSION
+
+Version 0.003.
+
+=head1 AUTHOR
+
+Jarkko Hietaniemi <F<jhi@iki.fi>>
+
+=head1 COPYRIGHT
+
+Copyright 1998, O'Reilly and Associates.
+
+This code is distributed under the same copyright terms as Perl itself.
+
+=cut
 
 1;
