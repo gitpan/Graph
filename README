@@ -1,19 +1,24 @@
-Perl Module Graph::Directed - 0.01
+This is Graph 0.2, the Perl module for graph operations as the code
+was for the 1st edition of "Mastering Algorithms with Perl", by Jon
+Orwant, Jarkko Hietaniemi, and John Macdonald, published in August
+1999 by the O'Reilly and Associates.
 
-     Copyright 1998 Mats Kindahl. All rights reserved.
+Unfortunately the APIs, especially the DFS/BFS ones, have changed
+since the earlier releases of Graph (0.001..0.006).  These changes
+are hopefully for the better in clarity, both in ease of use and code
+re-use, but this code no doubt has more bugs than the older releases,
+simply because the old code has been tested more.
 
-     This program is free software; you can redistribute it and/or
-     modify it under the same terms as Perl itself.
+At some places the documentation could also be more extensive.
 
-To install, unzip and untar the archive. In the directory created type
+You also now need an external module, Heap, by John Macdonald.
+Instead of just preaching about how one should use ready-made
+modules instead of reinventing the wheel, I now also practise that faith.
 
-perl Makefile.pl
-make
-make test
-make install
+Whether the future releases of Graph are based on this rewrite of the
+code or on the earlier releases or rewritten from scratch, depends on
+the feedback I will get.
 
-Documentation is in the module file and will be added onto
-perllocal.pod as usual.
+-- 
+Jarkko Hietaniemi <jhi@iki.fi>
 
-I can be contacted using e-mail at matkin@docs.uu.se, 
-matkin@acm.org, or matkin@iar.se.

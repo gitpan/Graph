@@ -1,12 +1,10 @@
-# -*- Mode: Perl -*-
- 
+require 5.004_04;
+
 use ExtUtils::MakeMaker;
-use Config;
- 
-&WriteMakefile(
-               'NAME'     => 'Graph',
-               'LINKTYPE' => '$(INST_PM)',
-	       'VERSION'  => '0.01',
-               'dist'     => { SUFFIX => 'gz', COMPRESS => 'gzip -f' },
-               'clean'    => {'FILES' => '*~'},
+
+WriteMakefile(
+    VERSION_FROM => 'lib/Graph.pm',
+    NAME         => 'Graph',
+    PREREQ_PM    => {Heap => 0.01},
+    dist         => { COMPRESS => 'gzip' },
 );

@@ -1,4 +1,4 @@
-package Graph::Directed;
+package Graph::Undirected;
 
 use strict;
 local $^W = 1;
@@ -34,9 +34,9 @@ This code is distributed under the same copyright terms as Perl itself.
 
 # new
 #
-#	$D = Graph::Directed->new(@V)
+#	$U = Graph::Undirected->new(@V)
 #
-#	The Constructor.  Returns a new directed graph $D, possibly
+#	The Constructor.  Returns a new undirected graph $U, possibly
 #	populated with the optional initial vertices @V.
 #
 sub new {
@@ -46,14 +46,26 @@ sub new {
 
     bless $G, $class;
 
-    $G->directed(1);
+    $G->directed(0);
 
     return $G;
 }
 
+sub stringify {
+    my $G = shift;
+
+    return $G->_stringify("=", ",");
+}
+
+sub eq {
+    my ($G, $H) = @_;
+    
+    return ref $H ? $G->stringify eq $H->stringify : $G->stringify eq $H;
+}
+
 # _edges
 #
-#	@e = $G->_edges($u, $v)
+#	@e = $G->_edges($u, $v, $E)
 #
 #	(INTERNAL USE ONLY)
 #	Both vertices undefined:
@@ -61,39 +73,40 @@ sub new {
 #	Both vertices defined:
 #		returns all the edges between the vertices.
 #	Only 1st vertex defined:
-#		returns all the edges leading out of the vertex.
+#		returns all the edges at the vertex.
 #	Only 2nd vertex defined:
-#		returns all the edges leading into the vertex.
+#		returns all the edges at the vertex.
+#	The already seen vertices are recorded in $E.
 #	Edges @e are returned as ($start_vertex, $end_vertex) pairs.
 #
 sub _edges {
-    my ($G, $u, $v) = @_;
+    my ($G, $u, $v, $E) = @_;
     my @e;
 
+    $E = { } unless defined $E;
+
     if (defined $u and defined $v) {
-	@e = ($u, $v)
-	    if exists $G->{ Succ }->{ $u }->{ $v };
+	if (exists $G->{ Succ }->{ $u }->{ $v }) {
+	    @e = ($u, $v)
+		if not $E->{ $u }->{ $v } and
+		   not $E->{ $v }->{ $u };
+	    $E->{ $u }->{ $v } = $E->{ $v }->{ $u } = 1;
+	}
     } elsif (defined $u) {
 	foreach $v ($G->successors($u)) {
 	    push @e, $G->_edges($u, $v);
 	}
-    } elsif (defined $v) {	# not defined $u and defined $v
+    } elsif (defined $v) {
 	foreach $u ($G->predecessors($v)) {
 	    push @e, $G->_edges($u, $v);
 	}
-    } else { 			# not defined $u and not defined $v
+    } else {
 	foreach $u ($G->vertices) {
 	    push @e, $G->_edges($u);
 	}
     }
 
     return @e;
-}
-
-sub stringify {
-    my $G = shift;
-
-    return $G->_stringify("-", ",");
 }
 
 1;
