@@ -10,7 +10,7 @@ SKIP: {
     $g->add_edge(qw(b c));
     $g->add_edge(qw(c d));
     $g->add_edge(qw(c e));
-    $g->add_cycle(qw(e f g)); # This is not a true cycle.
+    $g->add_cycle(qw(e f g)); # This is not a true cycle if weakrefs work.
     my $out = tie *STDOUT, 'FakeOut';
     find_cycle($g);
     is($$out, undef);

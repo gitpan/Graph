@@ -32,7 +32,7 @@ Graph - graph data structures and algorithms
 
 This module is not for B<drawing> any sort of I<graphics>, but instead
 it is for creating abstract data structures called graphs, and for
-doing various kinds of operations on those.
+doing various operations on those.
 
 =head2 Constructors
 
@@ -70,6 +70,11 @@ undirected
 A boolean option telling that an undirected graph should be created.
 One could also use the C<new()> constructor the Graph::Undirected class
 instead.
+
+Note that while often it is possible to think undirected graphs as
+bidirectional graphs, or as directed graphs with edges going both ways,
+in this module directed graphs and undirected graphs are two different
+things that often behave differently.
 
 You can test the directness of a graph with $g->is_directed() and
 $g->is_undirected().
@@ -1125,9 +1130,13 @@ This really makes sense only for directed graphs.
 
 =item degree
 
-    $d = $g->degree($v)
+=item vertex_degree
 
-The in-degree minus the out-degree at the vertex.
+    $d = $g->degree($v)
+    $d = $g->vertex_degree($v)
+
+For directed graphs: the in-degree minus the out-degree at the vertex.
+For undirected graphs: the number of edges at the vertex.
 
 =item in_degree
 

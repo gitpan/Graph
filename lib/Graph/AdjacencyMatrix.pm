@@ -14,7 +14,6 @@ sub _E () { 3 } # Graph::_E
 
 sub new {
     my ($class, $g, %opt) = @_;
-    my $m = Graph::BitMatrix->new($g);
     my $n;
     my @V = $g->vertices;
     my $want_distance;
@@ -33,28 +32,18 @@ sub new {
 	$want_transitive = $opt{is_transitive};
 	delete $opt{is_transitive};
     }
-    if (my @opt = keys %opt) {
-	die sprintf "Graph::AdjacencyMatrix::new: Unknown option%s: @{[map { qq['$_' => $opt{$_}]} @opt]}", @opt == 1 ? '' : 's';
-    }
+    Graph::_opt_unknown(\%opt);
     if ($want_distance) {
 	$n = Graph::Matrix->new($g);
 	for my $v (@V) { $n->set($v, $v, 0) }
     }
+    my $m = Graph::BitMatrix->new($g, connect_edges => $want_distance);
     if ($want_distance) {
 	for my $u (@V) {
 	    for my $v (@V) {
 		if ($g->has_edge($u, $v)) {
-		    $m->set($u, $v);
 		    $n->set($u, $v,
 			    $g->get_edge_attribute($u, $v, $d));
-		}
-	    }
-	}
-    } else {
-	for my $u (@V) {
-	    for my $v (@V) {
-		if ($g->has_edge($u, $v)) {
-		    $m->set($u, $v);
 		}
 	    }
 	}
@@ -188,12 +177,12 @@ Return the list of vertices (useful for indexing the adjacency matrix).
 
 =head1 ALGORITHM
 
-The algorithm used is two nested loops, which is O(V**2) in time,
-and the returned matrices are O(V**2) in space.
+The algorithm used to create the matrix is two nested loops, which is
+O(V**2) in time, and the returned matrices are O(V**2) in space.
 
 =head1 SEE ALSO
 
-L<Graph::TransitiveClosure>
+L<Graph::TransitiveClosure>, L<Graph::BitMatrix>
 
 =head1 AUTHOR AND COPYRIGHT
 

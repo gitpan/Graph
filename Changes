@@ -1,3 +1,18 @@
+2005-01-22
+
+	* Add unset_row(), get_row(), set_row(), and unset_row(), methods
+	  to Graph::BitMatrix and make it public (remove the "internal use
+	  only" warning from it).  Add t/82_bitmatrix.t.
+
+	* Add vertex_degree() as an alias for degree().
+
+	* One more alternative solution for spt.t from Koen.
+
+	* I seem to have this drive to misspell people's names.
+	  Sorry, Koen.
+
+	* Release as 0.55.
+
 2005-01-16  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* More bugs found in set_vertex_attribute(), fixed and tests
@@ -7,7 +22,7 @@
 	  wrong results.)
 
 	* More alternative solutions to spt.t, diameter.t, and dump.t,
-	  found by the PRNG of Koen var der Drift in Mac OS X 10.3.7,
+	  found by the PRNG of Koen van der Drift in Mac OS X 10.3.7,
 	  Perl 5.8.1.
 
 	* Release as 0.54.

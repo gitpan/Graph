@@ -108,6 +108,7 @@ t/78_unionfind.t
 t/79_isomorphic.t
 t/80_dump.t
 t/81_cycle.t
+t/82_bitmatrix.t
 t/MyDGraph.pm
 t/MyGraph.pm
 t/MyUGraph.pm
@@ -129,3 +130,4 @@ util/cover.sh
 util/grand.pl
 util/renum.pl
 util/size.pl
+util/srand.pl

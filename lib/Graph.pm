@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.54';
+$VERSION = '0.55';
 
 require 5.005;
 
@@ -923,6 +923,8 @@ sub degree {
 	}
     }
 }
+
+*vertex_degree = \&degree;
 
 sub is_sink_vertex {
     my $g = shift;
