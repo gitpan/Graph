@@ -1,6 +1,6 @@
 require 5;
 
-# $Id: Makefile.PL,v 1.1 1998/05/31 19:49:01 hietanie Exp $
+# $Id: Makefile.PL,v 1.1 1998/06/30 07:06:23 jhi Exp jhi $
 
 use ExtUtils::MakeMaker;
 

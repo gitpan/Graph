@@ -1,6 +1,6 @@
 package Graph::Edge;
 
-# $Id: Edge.pm,v 1.8 1998/06/08 22:45:25 hietanie Exp $
+# $Id: Edge.pm,v 1.1 1998/06/30 07:10:54 jhi Exp jhi $
 
 =pod
 
@@ -51,13 +51,15 @@ use overload q("") => \&as_string;
 sub as_string {
     my ( $u, $v ) = $_[0]->vertices;
 
-    return "$u-$v"; # There are no 'undirected' edges.
+    return (defined $u ? "$u" : "*UNDEF*" ) .
+	'-' . # There are no 'undirected' edges.
+	   (defined $v ? "$v" : "*UNDEF*" );
 }
 
 sub _new ($$$$;$) {
     my ( $class, $graph, $vertex_from, $vertex_to, $name ) = @_;
 
-    die "$class->_new: Usage: $class->new(graph, vertex_from, vertex_to, name)\n"
+    die "$class->_new: Usage: $class->_new(graph, vertex_from, vertex_to, name)\n"
 	unless defined $graph and defined $vertex_from and defined $vertex_to;
 
     my $edge = Graph::Element::_new( $class, $name );
@@ -98,14 +100,24 @@ originally by C<add_edge> method.
 
     if ( $graph->undirected ) {
 
+	my $edge = Graph::Element::_new( $class, $name );
+
+	$edge->_add_to_graph( $graph, '_EDGES', $name );
+
+	# Swap the endpoints.
+	( $vertex_from, $vertex_to ) = ( $vertex_to, $vertex_from );
+
+	$edge->start( $vertex_from );
+	$edge->stop ( $vertex_to   );
+
 	$graph->{ _BY_VERTICES }->
-                { $vertex_to->_id }->{ $vertex_from->_id } = $edge;
+                { $vertex_from->_id }->{ $vertex_to->_id } = $edge;
 
-	$vertex_from->{ _IN_VERTICES   }->{ $edge->_id } = $vertex_to;
-	$vertex_to  ->{ _OUT_VERTICES  }->{ $edge->_id } = $vertex_from;
+	$vertex_from->{ _OUT_VERTICES }->{ $edge->_id } = $vertex_to;
+	$vertex_to  ->{ _IN_VERTICES  }->{ $edge->_id } = $vertex_from;
 
-	$vertex_from->{ _IN_EDGES   }->{ $vertex_to->_id   } = $edge;
-	$vertex_to  ->{ _OUT_EDGES  }->{ $vertex_from->_id } = $edge;
+	$vertex_from->{ _OUT_EDGES }->{ $vertex_to->_id   } = $edge;
+	$vertex_to  ->{ _IN_EDGES  }->{ $vertex_from->_id } = $edge;
 
 	$graph->_union( $vertex_from, $vertex_to );
     }
@@ -117,6 +129,14 @@ sub vertices {
     my $edge = shift;
 
     return $edge->start, $edge->stop;
+}
+
+sub DESTROY {
+    my $edge = shift;
+
+    Graph::Element::debug "DESTROY Edge $edge, ID = ", $edge->_id;
+
+    $edge->SUPER::DESTROY;
 }
 
 =pod
@@ -135,7 +155,7 @@ L<Graph>, L<Graph::Element>.
 
 =head1 VERSION
 
-Version 0.003.
+See L<Graph>.
 
 =head1 AUTHOR
 

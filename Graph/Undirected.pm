@@ -1,6 +1,6 @@
 package Graph::Undirected;
 
-# $Id: Undirected.pm,v 1.1 1998/05/31 16:05:09 hietanie Exp $
+# $Id: Undirected.pm,v 1.1 1998/06/30 07:10:12 jhi Exp jhi $
 
 =pod
 
@@ -40,11 +40,13 @@ use Graph;
 @ISA = qw(Graph::Element Graph);
 
 sub new {
-    shift; # Throw away the 'Graph::Undirected'.
+    my $type = shift; # Save away the 'Graph::Undirected'.
 
     my $new = Graph->new( @_ );
 
     $new->undirected( 1 );
+
+    bless $new, $type;
 
     return $new;
 }

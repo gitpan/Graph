@@ -1,6 +1,6 @@
 package Graph::Element;
 
-# $Id: Element.pm,v 1.13 1998/06/09 16:32:22 hietanie Exp $
+# $Id: Element.pm,v 1.1 1998/06/30 07:16:56 jhi Exp jhi $
 
 =pod
 
@@ -26,9 +26,10 @@ methods.
 use strict;
 local $^W = 1;
 
-use vars qw($AUTOLOAD %_BY_SELF %_BY_NAME);
+use vars qw($AUTOLOAD %_BY_SELF %_BY_NAME $debug @EXPORT_OK);
 
-use Symbol;
+@EXPORT_OK = qw(debug);
+
 use Carp 'confess';
 
 =pod
@@ -59,14 +60,34 @@ sub name ($;$) {
     } 
 }
 
+my $debug = 0;
+
+sub debug (@) {
+    if ( @_ ) {
+	if ( $_[0] =~ /^[01]$/ ) {
+	    $debug = shift;
+	} elsif ( $debug ) {
+	    print @_, "\n";
+	}
+    } else {
+	return $debug;
+    }
+}
+
 sub _new ($;$) {
-    my ( $class, $name ) = @_;
+    my $class = shift;
+    my $name  = shift;
 
     my $new = { };
 
+    my $id = "$new"; # Before the bless(), before the "" overload.
+
+    debug "_new Element $class=$new, ID = $id, NAME = ",
+          defined $name ? $name : '*UNDEF*';
+
     bless $new, $class;
 
-    $new->_id( gensym );
+    $new->_id( $id );
 
     if ( defined $name ) {
 	$_BY_SELF{ $new->_id  } = $name;
@@ -79,6 +100,8 @@ sub _new ($;$) {
 sub _delete {
     my $self = shift;
 
+    debug "_delete Element $self";
+
     if ( exists $_BY_SELF{ $self->_id } ) {
 	delete $_BY_NAME{ $_BY_SELF{ $self->_id } }->{ $self->_id };
 	delete $_BY_SELF{ $self->_id };
@@ -87,7 +110,8 @@ sub _delete {
     my %a = $self->_attributes;
 
     foreach my $a ( keys %a ) {
-       $self->delete_attribute( $a );
+       $self->delete_attribute( $a )
+	   unless $a eq '_id'; # Leave this for later.
     }
 }
 
@@ -100,13 +124,14 @@ sub _add_to_graph ($$$;$) {
 }
 
 sub _delete_from_graph ($$$;$) {
-    my ( $graph, $self, $element, $name ) = @_;
+    my ( $graph, $self, $element ) = @_;
 
     my $existed = exists $graph->{ $element }->{ $self->_id };
 
     delete $graph->{ $element }->{ $self->_id };
 
-    delete $graph->{ _BY_NAME }->{ $element }->{ $name } if defined $name;
+    delete $graph->{ _BY_NAME }->{ $element }->{ $self->name }
+        if defined $self->name;
 
     return $existed;
 }
@@ -209,24 +234,37 @@ sub _virtualise {
 sub AUTOLOAD ($;@) {
     my ( $method ) = ( $AUTOLOAD =~ /::(\w+)$/ );
 
+    # Do not try to print @_ here unles you like deep recursion.
+    debug "AUTOLOAD Element ", ref $_[0], " ", $method;
+
     if ( $method eq 'DESTROY' ) {
 	return;
     } else {
-	# Either the name has to have uppercase in it in which case
-	# it is user code or there must be 'Graph' in the caller stack.
+	# Either the name has to have uppercase in it in which case it
+	# is user code or there must be 'Graph' in the caller
+	# stack right above us.
 	if ( $method =~ /[A-Z]/
 	     or
 	     (caller())[0] =~ /^Graph(::(?:Element|Edge))?$/ ) {
+
+	    # Temporary assertion.
+	    confess "OBSOLETE: $method" if $method =~ /^(edges|successors)$/;
+
 	    _virtualise( $method, @_ );
 	} else {
-	    warn <<EOW;
+	    confess <<EOW;
 AUTOLOAD failed:
 user attribute get/set methods must have uppercase letters in
-their names: method '$method' does not.  Aborting.
+their names: method '$method' does not.  Aborting at
 EOW
-	   confess "Died";
 	}
     }
+}
+
+sub DESTROY {
+    my $self = shift;
+
+    debug "DESTROY Element $self";
 }
 
 =pod
@@ -237,7 +275,7 @@ L<Graph>, L<Graph::Directed>, L<Graph::Undirected>.
 
 =head1 VERSION
 
-Version 0.003.
+See L<Graph>.
 
 =head1 AUTHOR
 

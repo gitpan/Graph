@@ -1,6 +1,6 @@
 package Graph::Directed;
 
-# $Id: Directed.pm,v 1.1 1998/05/31 16:05:07 hietanie Exp $
+# $Id: Directed.pm,v 1.1 1998/06/30 07:09:49 jhi Exp jhi $
 
 =pod
 

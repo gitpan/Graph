@@ -1,12 +1,12 @@
 package Graph::Vertex;
 
-# $Id: Vertex.pm,v 1.7 1998/06/06 13:43:33 jhi Exp $
+# $Id: Vertex.pm,v 1.1 1998/06/30 07:10:36 jhi Exp jhi $
 
 =pod
 
 =head1 NAME
 
-Graph::Vertex - a base class for graph edges
+Graph::Vertex - a base class for graph vertices
 
 =head1 SYNOPSIS
 
@@ -61,6 +61,14 @@ sub _new ($$$) {
     return $vertex;
 }
 
+sub DESTROY {
+    my $vertex = shift;
+
+    Graph::Element::debug "DESTROY Vertex $vertex, ID = ", $vertex->_id;
+
+    $vertex->SUPER::DESTROY;
+}
+
 =pod
 
 =head2 ADDING AND DELETING VERTICES
@@ -77,7 +85,7 @@ L<Graph>, L<Graph::Element>.
 
 =head1 VERSION
 
-Version 0.003.
+See L<Graph>.
 
 =head1 AUTHOR
 

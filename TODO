@@ -1,4 +1,7 @@
-# $Id: TODO,v 1.4 1998/06/04 11:28:00 hietanie Exp hietanie $
+# $Id: TODO,v 1.1 1998/10/15 18:13:38 jhi Exp jhi $
+
+breadth-first, heaps and all what they bring
+	
 
 	$was_directed = $edge->undirect;
 
@@ -19,112 +22,109 @@ Flip the edge.  No effect if the graph of the edge is undirected.
 $g->has_path:	make this short-circuiting (do not call ->path).
 $g->has_cycle:	make this short-circuiting (do not call ->cycle).
 
-# TODO:
-#
-# MULTIEDGES
-#
-# $e->multiedged($b);
-# $g->multiedged($b);
-# $n = $e->multi;
-# $e->multi($n);	# 0 will delete, <0 will fail.
-#
-# The C<multiedged()> method enables or disables the multiedgedness,
-# it affects the methods C<add_edge()>, C<add_edges()>,
-# C<delete_edge()>, and C<delete_edges()>.
-#
-# Turning off multiedgedness immediately sets the multiplicity back to one?
-# 
-# When multiedged deleting more edges than there are will cause an error
-# because that most probably indicates a logical fumble.
+MULTIEDGES
 
-# TODO:
-#
-# HYPEREDGES
-#
-# Edges between more than two vertices
-# (and also 'between' one and zero vertices?, whatever that means...)
-# Affects:
-# $e->start, $e->stop	# Multiedges are unavoidably undirected,
+$e->multiedged($b);
+$g->multiedged($b);
+$n = $e->multi;
+$e->multi($n);	# 0 will delete, <0 will fail.
+
+The C<multiedged()> method enables or disables the multiedgedness,
+it affects the methods C<add_edge()>, C<add_edges()>,
+C<delete_edge()>, and C<delete_edges()>.
+
+Turning off multiedgedness immediately sets the multiplicity back to one?
+# 
+When multiedged deleting more edges than there are will cause an error
+because that most probably indicates a logical fumble.
+
+HYPEREDGES
+
+Edges between more than two vertices
+(and also 'between' one and zero vertices?, whatever that means...)
+Affects:
+$e->start, $e->stop	# Multiedges are unavoidably undirected,
 # 			  attempting ->start or ->stop should fail.
-# $e->vertices;		# Can return != 2 vertices.
-#
-# New:
-# $e->hyperedged($b);	# Cannot be turned off unless only two vertices.
-# $e->add_vertex($v1);				# Implicit ->hyperedged.
-# $e->add_vertices($v1, $v2, ..., $vn);		# Implicit ->hyperedged.
-# $e->vertices;
-# $e->is_hyperedge;
-# $e->delete_vertex($v1);			# Implicit ->hyperedged.
-# $e->delete_vertices($v1, $v2, ..., $vn);	# Implicit ->hyperedged.
-#
-# $g->hyperedged($b);	# Cannot be turned off unless all the edges have
-#			  exactly two vertices.
-# $g->add_edge($v1, $v2, ..., $vn) # Fail if n>2 and not $g->hyperedged.
-# $g->add_hyperedge($v1, $v2, ..., $vn) # Fail if not $g->hyperedged.
-# $g->add_hyperedges($n, $e1_v1, $e1_v2, ..., $e1_vn, $e2_v1, ...)
-# $g->hyperedge($v1, $v2, ..., $vn)
-# $g->hyperedges($n, $e1_v1, $e1_v2, ..., $e1_vn, $e2_v1, ...)
-# $g->delete_hyperedge($v1, $v2, ..., $vn)
-# $g->delete_hyperedges($n, $e1_v1, $e1_v2, ..., $e1_vn, $e2_v1, ...)
+$e->vertices;		# Can return != 2 vertices.
 
-# MULTIVERTEX? A vertex that exists multiple times?
-# Does this make sense?
+New:
+$e->hyperedged($b);	# Cannot be turned off unless only two vertices.
+$e->add_vertex($v1);				# Implicit ->hyperedged.
+$e->add_vertices($v1, $v2, ..., $vn);		# Implicit ->hyperedged.
+$e->vertices;
+$e->is_hyperedge;
+$e->delete_vertex($v1);				# Implicit ->hyperedged.
+$e->delete_vertices($v1, $v2, ..., $vn);	# Implicit ->hyperedged.
 
-# HYPERVERTEX?  A vertex that consists of multiple vertices?
-# That mirror each other?
-#
-# $v->hypervertexed($b)
-# $v1->hyper($n)		# get/set the hyperiousness.
-#
-# $g->hypervertexed($b)
-# $g->add_hypervertex($v, $n)	# Fail if n>2 and not $g->hypervertexed.
-# $g->hyper($v)			# get/set the hyperiousness.
-# $g->is_hypervertex($v)	# Return whether the vertex is a hypervertex.
-# $g->delete_hypervertex($v)	# Just ->delete_vertex.
-# $g->delete_hypervertices($v)	# Just ->delete_vertices.
-#
-# add vertex v1, v2, v3
-# add edge v4 v1 -- edges v4 v2, v4 v3 are automatically added?
-# delete vertex v4 v3 -- edges v4 v1, v4 v2 are automatically deleted?
+$g->hyperedged($b);	# Cannot be turned off unless all the edges have
+			  exactly two vertices.
+$g->add_edge($v1, $v2, ..., $vn) # Fail if n>2 and not $g->hyperedged.
+$g->add_hyperedge($v1, $v2, ..., $vn) # Fail if not $g->hyperedged.
+$g->add_hyperedges($n, $e1_v1, $e1_v2, ..., $e1_vn, $e2_v1, ...)
+$g->hyperedge($v1, $v2, ..., $vn)
+$g->hyperedges($n, $e1_v1, $e1_v2, ..., $e1_vn, $e2_v1, ...)
+$g->delete_hyperedge($v1, $v2, ..., $vn)
+$g->delete_hyperedges($n, $e1_v1, $e1_v2, ..., $e1_vn, $e2_v1, ...)
 
-# TODO:
-#
-#	$v1->merge($v2, ..., $vn);
-#
-# Move the edges of v2...vn to point to/from v1.
-# Delete the v2...vn  (hyperedges?)
-#
-#	$v1->split($v2, $e1, $e2, ...);
-#
-# Move the edges from v1 to v2, delete them from v1.  (hyperedges?)
-#
-#	$e1->merge($e2, ..., $en);
-#
-# Merge the edges.  Only an edge from $e1->start to $e2->stop will remain,
-# all the intervening edges are deleted.  (hyperedges?)
-#
-#	$v = $e->split($vertex_name);
-#
-# Split an edge by introducing a new vertex, creating two new edges
-# $e->start to the new vertex and from the new vertex to $e->stop.
-# The new middle vertex is returned.  (hyperedges?)
+MULTIVERTEX? A vertex that exists multiple times?
+Does this make sense?  A vertex that must be deleted as many
+times as it it added?
 
-#	$v->rename( $new )	HARD
-#	$e->rename( $new )	EASY
-#	$g->rename( $new )	EASY
+HYPERVERTEX?  A vertex that consists of multiple vertices?
+That mirror each other?
 
-# TODO:
-# 
-# sub load {
-# }
+$v->hypervertexed($b)
+$v1->hyper($n)			# get/set the hyperiousness.
 
-# TODO:
-#
-# $graph->merge($filename, $format) -- like load() but does not
-# nuke the old contents of the graph.
-#
-# Also $graph->load($graph) and $graph->merge($graph) could be made to work.
+$g->hypervertexed($b)
+$g->add_hypervertex($v, $n)	# Fail if n>2 and not $g->hypervertexed.
+$g->hyper($v)			# get/set the hyperiousness.
+$g->is_hypervertex($v)		# Return whether the vertex is a hypervertex.
+$g->delete_hypervertex($v)	# Just ->delete_vertex.
+$g->delete_hypervertices($v)	# Just ->delete_vertices.
 
-# Graph format 'dot':
-# http://www.research.att.com/sw/tools/graphviz/
+add vertex v1, v2, v3
+add edge v4 v1 -- edges v4 v2, v4 v3 are automatically added?
+delete vertex v4 v3 -- edges v4 v1, v4 v2 are automatically deleted?
+
+TODO:
+
+	$v1->merge($v2, ..., $vn);
+
+Move the edges of v2...vn to point to/from v1.
+Delete the v2...vn  (hyperedges?)
+
+	$v1->split($v2, $e1, $e2, ...);
+
+Move the edges from v1 to v2, delete them from v1.  (hyperedges?)
+
+	$e1->merge($e2, ..., $en);
+
+Merge the edges.  Only an edge from $e1->start to $e2->stop will remain,
+all the intervening edges are deleted.  (hyperedges?)
+
+	$v = $e->split($vertex_name);
+
+Split an edge by introducing a new vertex, creating two new edges
+$e->start to the new vertex and from the new vertex to $e->stop.
+The new middle vertex is returned.  (hyperedges?)
+
+	$v->rename( $new )	HARD
+	$e->rename( $new )	EASY
+	$g->rename( $new )	EASY
+
+TODO:
+
+sub load {
+}
+
+TODO:
+
+$graph->merge($filename, $format) -- like load() but does not
+explicitly nuke all the old contents of the graph.
+
+Also $graph->load($graph) and $graph->merge($graph) could be made to work.
+
+Graph format 'dot':
+http://www.research.att.com/sw/tools/graphviz/
 
