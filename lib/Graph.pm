@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.57';
+$VERSION = '0.58';
 
 require 5.005;
 
@@ -697,14 +697,16 @@ sub _edges_at {
     my $E = $g->[ _E ];
     my @e;
     my $en = 0;
-    for my $v ( $g->vertices_at( @_ ) ) {
+    my %ev;
+    for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
 	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	while (my ($ei, $ev) = each %{ $Ei }) {
 	    if (wantarray) {
 		for my $j (@$ev) {
-		    push @e, [ $ei, $ev ] if $j == $vi;
+		    push @e, [ $ei, $ev ]
+			if $j == $vi && !$ev{$ei}++;
 		}
 	    } else {
 		for my $j (@$ev) {
@@ -721,26 +723,30 @@ sub _edges_from {
     my $V = $g->[ _V ];
     my $E = $g->[ _E ];
     my @e;
-    my $o = $g->omniedged;
+    my $o = $E->[ _f ] & _UNORD;
     my $en = 0;
-    for my $v ( $g->vertices_at( @_ ) ) {
+    my %ev;
+    for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
 	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	if (wantarray) {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
-		    push @e, [ $ei, $ev ] if $ev->[0] == $vi || $ev->[-1] == $vi;
+		    push @e, [ $ei, $ev ]
+			if ($ev->[0] == $vi || $ev->[-1] == $vi) && !$ev{$ei}++;
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
-		    push @e, [ $ei, $ev ] if $ev->[0] == $vi;
+		    push @e, [ $ei, $ev ]
+			if $ev->[0] == $vi && !$ev{$ei}++;
 		}
 	    }
 	} else {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
-		    $en++ if $ev->[0] == $vi || $ev->[-1] == $vi;
+		    $en++
+			if ($ev->[0] == $vi || $ev->[-1] == $vi);
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
@@ -765,9 +771,10 @@ sub _edges_to {
     my $V = $g->[ _V ];
     my $E = $g->[ _E ];
     my @e;
-    my $o = $g->omniedged;
+    my $o = $E->[ _f ] & _UNORD;
     my $en = 0;
-    for my $v ( $g->vertices_at( @_ ) ) {
+    my %ev;
+    for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
 	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
@@ -775,11 +782,12 @@ sub _edges_to {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
 		    push @e, [ $ei, $ev ]
-			if $ev->[-1] == $vi || $ev->[0] == $vi;
+			if ($ev->[-1] == $vi || $ev->[0] == $vi) && !$ev{$ei}++;
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
-		    push @e, [ $ei, $ev ] if $ev->[-1] == $vi;
+		    push @e, [ $ei, $ev ]
+			if $ev->[-1] == $vi && !$ev{$ei}++;
 		}
 	    }
 	} else {

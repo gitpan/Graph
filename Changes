@@ -1,3 +1,25 @@
+2005-02-19
+
+	* Document that using attributes does have a slowing down
+	  effect on other graph operations
+	  (rt.cpan.org Performance problem: edge attributes slow source_vertices)
+	  This is unlikely to get fixed any time soon, I am afraid,
+	  this is one of those working-as-designed-and-correctly-but-
+	  unfortunately-slow things.
+
+	* Document that Graph 0.2xxx edges($v) is now edges_at($v)
+	  (rt.cpan.org #11494)
+
+	* Fix rt.cpan.org #11543: self-edges reported twice by edges_at().
+
+	* Declare/document that any attributes beginning with an underscore
+	  are reserved for the internal use of Graph.
+
+	* Various inlining optimizations: should run 5-10% faster
+	  than the 0.57.
+
+	* Release as 0.58.
+
 2005-02-12
 
 	* Further 10% speedup on 'make test' on top of 0.56 by inlining
@@ -11,7 +33,7 @@
 
 	* Rewrite edges finding code (like edges_at()) to avoid a
 	  quadratic algorithm.  Shame on me.  Luckily this extremely
-	  slow path was not touched that often, but rt.cpan.or #11465
+	  slow path was not touched that often, but rt.cpan.org #11465
 	  shows one known bad case, source_vertices() for compat02
 	  graphs.  The removal of the slow path sped up 'make test'
 	  by about 5-10%.

@@ -13,16 +13,16 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 		   _HYPER _UNORD _UNIQ _REF _UNORDUNIQ _UNIONFIND _LIGHT)],
      fields => [qw(_n _f _a _i _s _p _k _u _ni _nc _na _nm)]);
 
-sub _COUNT      () { 0x00000001 }
-sub _MULTI      () { 0x00000002 }
-sub _COUNTMULTI () { 0x00000003 }
-sub _HYPER      () { 0x00000004 }
-sub _UNORD      () { 0x00000008 }
-sub _UNIQ       () { 0x00000010 }
-sub _REF        () { 0x00000020 }
-sub _UNORDUNIQ  () {_UNORD|_UNIQ}
-sub _UNIONFIND  () { 0x00000040 }
-sub _LIGHT      () { 0x00000080 }
+sub _COUNT      () {  0x00000001   }
+sub _MULTI      () {  0x00000002   }
+sub _COUNTMULTI () { _COUNT|_MULTI }
+sub _HYPER      () {  0x00000004   }
+sub _UNORD      () {  0x00000008   }
+sub _UNIQ       () {  0x00000010   }
+sub _REF        () {  0x00000020   }
+sub _UNORDUNIQ  () { _UNORD|_UNIQ  }
+sub _UNIONFIND  () {  0x00000040   }
+sub _LIGHT      () {  0x00000080   }
 
 my $_GEN_ID = 0;
 

@@ -1,4 +1,4 @@
-use Test::More tests => 9;
+use Test::More tests => 16;
 
 use Graph;
 my $g = Graph->new;
@@ -27,3 +27,25 @@ is( to("g"), "[c g] [h g]");
 is( to("h"), "[g h]");
 is( to("x"), "");
 
+{
+    use Graph::Directed;
+    my $g1 = new Graph::Directed();
+    $g1->add_edge(0,0);
+    my @e = $g1->edges_to(0);
+    is(@e, 1);
+    is("@{ $e[0] }", "0 0");
+}
+
+{
+    my $g2 = new Graph::Directed();
+    $g2->add_edge(1,1);
+    $g2->add_edge(1,2);
+    my @e1 = $g2->edges_to(1);
+    is(@e1, 1);
+    is("@{ $e1[0] }", "1 1");
+    my @e2 = $g2->edges_to(2);
+    is(@e2, 1);
+    is("@{ $e2[0] }", "1 2");
+    my @e3 = $g2->edges_to(3);
+    is(@e3, 0);
+}

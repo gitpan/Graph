@@ -1721,6 +1721,13 @@ terminating.
 
 =head2 Attributes
 
+You can attach free-form attributes (key-value pairs, in effect a full
+Perl hash) to each vertex, edge, and the graph itself.
+
+Note that attaching attributes does slow down some other operations
+on the graph by a factor of three to ten.  For example adding edge
+attributes does slow down anything that walks through all the edges.
+
 For vertex attributes:
 
 =over 4
@@ -1733,6 +1740,9 @@ Set the named vertex attribute.
 
 If the vertex does not exist, the set_...() will create it, and the
 other vertex attribute methods will return false or empty.
+
+<NOTE>: any attributes beginning with an underscore (C<_>) are
+reserved for the internal use of the Graph module.
 
 =item get_vertex_attribute
 
@@ -1757,6 +1767,9 @@ Delete the named vertex attribute.
     $g->set_vertex_attributes($v, $attr)
 
 Set all the attributes of the vertex from the anonymous hash $attr.
+
+<NOTE>: any attributes beginning with an underscore (C<_>) are
+reserved for the internal use of the Graph module.
 
 =item get_vertex_attributes
 
@@ -1840,6 +1853,9 @@ Set the named edge attribute.
 If the edge does not exist, the set_...() will create it, and the other
 edge attribute methods will return false or empty.
 
+<NOTE>: any attributes beginning with an underscore (C<_>) are
+reserved for the internal use of the Graph module.
+
 =item get_edge_attribute
 
     $value = $g->get_edge_attribute($u, $v, $name)
@@ -1863,6 +1879,9 @@ Delete the named edge attribute.
     $g->get_vertex_attributes($u, $v, $attr)
 
 Set all the attributes of the edge from the anonymous hash $attr.
+
+<NOTE>: any attributes beginning with an underscore (C<_>) are
+reserved for the internal use of the Graph module.
 
 =item get_edge_attributes
 
@@ -1943,6 +1962,9 @@ For graph attributes:
 
 Set the named graph attribute.
 
+<NOTE>: any attributes beginning with an underscore (C<_>) are
+reserved for the internal use of the Graph module.
+
 =item get_graph_attribute
 
     $value = $g->get_graph_attribute($name)
@@ -1966,6 +1988,9 @@ Delete the named graph attribute.
     $g->get_graph_attributes($attr)
 
 Set all the attributes of the graph from the anonymous hash $attr.
+
+<NOTE>: any attributes beginning with an underscore (C<_>) are
+reserved for the internal use of the Graph module.
 
 =item get_graph_attributes
 
@@ -2418,6 +2443,10 @@ Return the vertex if the graph has the vertex, undef otherwise.
 =item out_edges
 
 =item in_edges
+
+=item edges($v)
+
+This is now called edges_at($v).
 
 =back
 
