@@ -1560,7 +1560,7 @@ sub toposort {
     my $G = shift;
     my $d = Graph::DFS->new($G);
 
-    $d->postorder; # That's it.
+    reverse $d->postorder; # That's it.
 }
 
 # _strongly_connected

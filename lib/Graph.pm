@@ -8,7 +8,7 @@ use Graph::Directed;
 
 use vars qw($VERSION @ISA);
 
-$VERSION = 0.2;
+$VERSION = 0.201;
 
 @ISA = qw(Graph::Directed Graph::Base);
 

@@ -1,0 +1,4 @@
+1999-10-14  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Release 0.201: Changed the output of toposort() to
+	  comply with the one in the Wolf book.
