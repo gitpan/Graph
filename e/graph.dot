@@ -1,0 +1,19 @@
+digraph G {
+    subgraph cluster1 { A; C; G; J; L; M; }
+    subgraph cluster2 { H; I; }
+    subgraph cluster3 { K; }
+    subgraph cluster4 { D; E; F; }
+    subgraph cluster5 { B; } 
+
+    A -> B; A -> F; A -> G;
+    C -> A;
+    D -> F;
+    E -> D;
+    F -> E;
+    G -> C; G -> J; G -> H;
+    H -> I;
+    I -> H;
+    J -> K; J -> L; J -> M;
+    L -> G; L -> M;
+    M -> L;
+}

@@ -1,0 +1,57 @@
+Announcing the release of a Perl Module Graph Version 0.01
+
+Graph::Directed   - Manipulation of directed graphs
+
+This package allows the construction and manipulation of graphs. There
+is already two packages available on CPAN: one written by Neil Bowers
+and one written by Jarkko Hietaniemi. The main reason to why I didn't
+use those packages is because they didn't exist when I wrote
+this. However, there are some other differences as well: namely the
+following:
+
+  - Both are missing Tarjan's algorithm (for finding strongly
+    connected components) and computation of forward reachability
+    sets (what nodes can be reached from a given set of nodes).
+
+  - Both packages are representing the connectivity between nodes of
+    the graph as one hash per node. This wastes (for my purpose) too
+    much memory. In this package, the connectivity between nodes is
+    implemented as two hashes for all nodes together. A node is
+    uniquely defined by the scalar value used to register it.
+
+I make no claims of excessive speed: this package was used to
+implement prototypes of different state-space searching algorithms,
+which is why memory was important.
+
+6) Data Types and Data Type Utilities (see also Database Interfaces)
+
+Name           DSLI  Description                                  Info
+-----------    ----  -------------------------------------------- -----
+Graph::
+::Directed     RdpO  Manipulation of directed graphs
+
+I would suggest that pooling our efforts to develop a graph theory
+module. I would suggest that basic functionality are in the
+Graph::Directed and Graph::Undirected modules, while the real
+algorithms and concrete output formats are put into separate
+packages, i.e., something along the following lines.
+
+Module Entry
+
+6) Data Types and Data Type Utilities (see also Database Interfaces)
+
+Name           DSLI  Description                                  Info
+-----------    ----  -------------------------------------------- -----
+Graph::
+::Directed     RdpO  Manipulation of directed graphs
+::Undirected   idpO  Manipulation of undirected graphs
+
+Graph::Algorithm::
+::Base         idpO  Base module to install new algorithms
+::Tarjan       idpO  Implementation of Tarjan's algorithm
+::Topsort      idpO  Implementation of Topological sorting
+
+Graph::Format::
+::Base         idpO  Base module to install new I/O formats
+::Dot	       idpO  I/O format for the GraphWiz Dot format
+::DaVinci      idpO  I/O format for the daVinci format

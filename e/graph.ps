@@ -1,0 +1,444 @@
+%!PS-Adobe-2.0
+%%Creator: dot version uwin97 (4-15-97)
+%%For: (matkin) Mats Kindahl
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 36 36 461 379
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\\() show i str cvs show (,) show j str cvs show (\\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+/arrowhead {
+	/arrowwidth exch def
+	/arrowlength exch def
+	gsave
+		3 1 roll
+		translate
+			rotate
+			newpath
+			arrowlength arrowwidth 2 div moveto
+			0 0 lineto
+			arrowlength arrowwidth -2 div lineto
+		closepath fill
+		stroke
+	grestore
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+% /arrowlength 10 def
+% /arrowwidth 5 def
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 461 379
+gsave
+35 35 426 344 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0 0 translate 0 rotate
+0.000 0.000 0.000 graphcolor
+14.00 /Times-Roman set_font
+gsave 10 dict begin
+newpath 0 0 moveto
+164 0 lineto
+164 342 lineto
+0 342 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+newpath 252 72 moveto
+324 72 lineto
+324 198 lineto
+252 198 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+newpath 172 72 moveto
+244 72 lineto
+244 126 lineto
+172 126 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+newpath 332 144 moveto
+424 144 lineto
+424 342 lineto
+332 342 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+newpath 172 216 moveto
+244 216 lineto
+244 270 lineto
+172 270 lineto
+closepath
+stroke
+end grestore
+
+%	A
+gsave 10 dict begin
+128 315 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+128 316 moveto (A) 10 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	G
+gsave 10 dict begin
+82 243 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+82 244 moveto (G) 10 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	A -> G
+newpath 117 298 moveto
+111 289 104 277 98 267 curveto
+stroke
+93 260 54.46 10.00 5.00 arrowhead
+
+%	F
+gsave 10 dict begin
+368 243 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+368 244 moveto (F) 7 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	A -> F
+newpath 153 308 moveto
+197 295 288 267 337 252 curveto
+stroke
+343 250 161.57 10.00 5.00 arrowhead
+
+%	B
+gsave 10 dict begin
+208 243 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+208 244 moveto (B) 9 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	A -> B
+newpath 144 300 moveto
+156 290 172 275 186 263 curveto
+stroke
+192 258 140.19 10.00 5.00 arrowhead
+
+%	C
+gsave 10 dict begin
+128 171 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+128 172 moveto (C) 9 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	C -> A
+newpath 128 291 moveto
+128 262 128 215 128 189 curveto
+stroke
+128 297 -90.00 10.00 5.00 arrowhead
+
+%	G -> C
+newpath 93 226 moveto
+99 217 106 205 112 195 curveto
+stroke
+117 188 125.54 10.00 5.00 arrowhead
+
+%	J
+gsave 10 dict begin
+56 171 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+56 172 moveto (J) 5 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	G -> J
+newpath 76 225 moveto
+73 217 69 206 65 197 curveto
+stroke
+62 189 69.44 10.00 5.00 arrowhead
+
+%	H
+gsave 10 dict begin
+288 171 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+288 172 moveto (H) 10 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	G -> H
+newpath 106 235 moveto
+142 222 214 197 256 182 curveto
+stroke
+264 179 159.44 10.00 5.00 arrowhead
+
+%	L
+gsave 10 dict begin
+36 99 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+36 100 moveto (L) 8 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	J -> L
+newpath 51 153 moveto
+49 145 46 135 43 125 curveto
+stroke
+41 117 75.96 10.00 5.00 arrowhead
+
+%	M
+gsave 10 dict begin
+36 27 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+36 28 moveto (M) 12 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	J -> M
+newpath 64 154 moveto
+72 133 84 100 75 81 curveto
+72 71 63 60 56 50 curveto
+stroke
+50 43 49.40 10.00 5.00 arrowhead
+
+%	K
+gsave 10 dict begin
+208 99 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+208 100 moveto (K) 10 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	J -> K
+newpath 77 159 moveto
+81 157 86 155 89 153 curveto
+102 146 148 126 179 112 curveto
+stroke
+185 109 153.43 10.00 5.00 arrowhead
+
+%	L -> G
+newpath 56 225 moveto
+42 213 26 200 17 189 curveto
+6 172 18 137 28 116 curveto
+stroke
+63 230 -144.46 10.00 5.00 arrowhead
+
+%	L -> M
+newpath 30 81 moveto
+29 73 29 63 29 54 curveto
+stroke
+30 45 96.34 10.00 5.00 arrowhead
+
+%	M -> L
+newpath 42 75 moveto
+43 65 43 54 42 45 curveto
+stroke
+42 81 -90.00 10.00 5.00 arrowhead
+
+%	I
+gsave 10 dict begin
+288 99 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+288 100 moveto (I) 4 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	H -> I
+newpath 282 153 moveto
+281 145 281 135 281 126 curveto
+stroke
+282 117 96.34 10.00 5.00 arrowhead
+
+%	I -> H
+newpath 294 147 moveto
+295 137 295 126 294 117 curveto
+stroke
+294 153 -90.00 10.00 5.00 arrowhead
+
+%	D
+gsave 10 dict begin
+378 315 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+378 316 moveto (D) 10 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	D -> F
+newpath 375 297 moveto
+374 289 373 279 372 270 curveto
+stroke
+371 261 83.66 10.00 5.00 arrowhead
+
+%	E
+gsave 10 dict begin
+378 171 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+378 172 moveto (E) 8 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	E -> D
+newpath 393 290 moveto
+398 280 404 269 407 261 curveto
+410 249 410 236 407 225 curveto
+405 219 395 202 388 188 curveto
+stroke
+388 298 -57.99 10.00 5.00 arrowhead
+
+%	F -> E
+newpath 371 225 moveto
+372 217 373 207 374 198 curveto
+stroke
+375 189 96.34 10.00 5.00 arrowhead
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF
