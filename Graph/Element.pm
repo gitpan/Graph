@@ -216,14 +216,14 @@ sub has_attribute ($$) {
     return exists $_[0]->{ _ATTRIBUTE }->{ $_[1] };
 }
 
-# This is what implements the virtual attribute methods.
+# This implements the virtual attribute methods.
 
 sub _virtualise {
     my $attribute_name = shift;
 
     no strict 'refs';
     
-    *$AUTOLOAD = sub {
+    *$AUTOLOAD = sub ($;@) {
 	my $self = shift;
 	$self->attribute( $attribute_name, @_ )
     };
@@ -241,11 +241,12 @@ sub AUTOLOAD ($;@) {
 	return;
     } else {
 	# Either the name has to have uppercase in it in which case it
-	# is user code or there must be 'Graph' in the caller
-	# stack right above us.
+	# is user code or
+	# there must be 'Graph' in the caller stack right above us.
 	if ( $method =~ /[A-Z]/
 	     or
-	     (caller())[0] =~ /^Graph(::(?:Element|Edge))?$/ ) {
+	     (caller())[0] =~ /^Graph(::(?:Element|Edge))?$/
+	     ) {
 
 	    # Temporary assertion.
 	    confess "OBSOLETE: $method" if $method =~ /^(edges|successors)$/;

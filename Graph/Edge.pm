@@ -44,7 +44,9 @@ use Graph::Element;
 
 use vars qw(@ISA);
 
-use overload q("") => \&as_string;
+use overload
+	q("")	=> \&as_string,
+	q(cmp)	=> \&compare;
 
 @ISA = qw(Graph::Element);
 
@@ -54,6 +56,17 @@ sub as_string {
     return (defined $u ? "$u" : "*UNDEF*" ) .
 	'-' . # There are no 'undirected' edges.
 	   (defined $v ? "$v" : "*UNDEF*" );
+}
+
+# compare($edge, ...)
+#   Compare the string forms of two edges.
+
+sub compare {
+    my $edge = shift;
+    my $as   = $edge->as_string;
+    my $bs   = ref $_[0] ? $_[0]->as_string : $_[0];
+
+    return $as cmp $bs;
 }
 
 sub _new ($$$$;$) {

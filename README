@@ -2,9 +2,9 @@ As you can guess from the version number this software is
 still somewhat unstable.  The implementations may be extremely
 buggy, the APIs can change.  You have been warned.
 
-NOTE: the releases 0.003...0.004 do not contain all the algorithms
+NOTE: the releases 0.003...0.005 do not contain all the algorithms
 that 0.001 (and the never-publicly-released 0.002) had.  They are
 under reconstruction as the data structures underwent a major overhaul
 in 0.003.
 
-
+0.005 is essentially the same as 0.004, it was just Perl 5.005_5X-proofed.

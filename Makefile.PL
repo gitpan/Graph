@@ -1,8 +1,10 @@
 require 5;
 
-# $Id: Makefile.PL,v 1.1 1998/06/30 07:06:23 jhi Exp jhi $
+# $Id: Makefile.PL,v 1.1 1998/11/02 09:40:46 jhi Exp jhi $
 
 use ExtUtils::MakeMaker;
+
+require 5.004_04;
 
 sub MY::libscan
 {

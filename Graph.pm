@@ -1,8 +1,8 @@
 package Graph;
 
-# $Id: Graph.pm,v 1.1 1998/10/15 18:51:13 jhi Exp jhi $
+# $Id: Graph.pm,v 1.2 1998/11/02 08:45:41 jhi Exp jhi $
 
-$VERSION = 0.004;
+$VERSION = 0.005;
 
 =pod
 
@@ -39,7 +39,8 @@ use vars qw(@ISA);
 
 @ISA = qw(Graph::Element);
 
-use overload q("") => \&as_string;
+use overload
+	q("")	=> \&as_string;
 
 =pod
 
@@ -93,6 +94,9 @@ depending on whether the graph is directed or undirected, respectively.
 
 =cut
 
+# as_string($graph)
+#   Human-readable printable form.
+
 sub as_string {
     my $graph = shift;
     
@@ -122,6 +126,17 @@ sub as_string {
 
     return join( ",",
                  sort @e, sort $graph->unconnected_vertices );
+}
+
+# compare($graph, ...)
+#   Compare the string forms of two graphs.
+
+sub compare {
+    my $graph = shift;
+    my $as    = $graph->as_string;
+    my $bs    = ref $_[0] ? $_[0]->as_string : $_[0];
+
+    return $as cmp $bs;
 }
 
 # _make_sense($graph, $sense, $make, $concept)
