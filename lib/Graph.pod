@@ -840,6 +840,8 @@ strongly_connected_components().
 
 For the inverse, see L</strongly_connected_component_by_vertex>.
 
+For undirected graphs, see L</weakly_connected_component_by_index>.
+
 =item same_strongly_connected_components
 
     $g->same_strongly_connected_components($u, $v, ...)
@@ -890,6 +892,9 @@ component the vertex belongs to, the indexing starting from zero.
 
 For the inverse, see L</weakly_connected_component_by_index>.
 
+For undirected graphs, see L<connected_component_by_vertex>
+and L<biconnected_component_by_vertex>.
+
 =item weakly_connected_component_by_index
 
     @v = $g->weakly_connected_component_by_index($i)
@@ -900,6 +905,9 @@ undefined, while the order of the weakly connected components is
 same as from weakly_connected_components().
 
 For the inverse, see L</weakly_connected_component_by_index>.
+
+For undirected graphs, see L<connected_component_by_index>
+and L<biconnected_component_by_index>.
 
 =item same_weakly_connected_components
 
@@ -912,6 +920,8 @@ Return true if the vertices are in the same weakly connected component.
     $wcg = $g->weakly_connected_graph
 
 For a directed graph, return its weakly connected graph.
+
+For undirected graphs, see L<connected_graph> and L<biconnected_graph>.
 
 =item strongly_connected_components
 
@@ -1059,7 +1069,7 @@ In scalar context return the number of successorless vertices.
 
     @s = $g->successors($v)
 
-Return the successor vertices of the vertex.
+Return the immediate successor vertices of the vertex.
 
 =item neighbors
 
@@ -1085,7 +1095,7 @@ In scalar context return the number of predecessorless vertices.
 
     @s = $g->predecessors($v)
 
-Return the predecessor vertices of the vertex.
+Return the immediate predecessor vertices of the vertex.
 
 =item isolated_vertices
 
@@ -1149,6 +1159,12 @@ The number of incoming edges at the vertex.
     $o = $g->out_degree($v)
 
 The number of outgoing edges at the vertex.
+
+=item average_degree
+
+   my $ad = $g->average_degree;
+
+Return the average degree taken over all vertices.
 
 =back
 
@@ -1277,7 +1293,7 @@ Return true if the graph is multivertexed.
 A multiedged (either the weak or the strong kind) graph is a I<multigraph>,
 for which you can test with C<is_multi_graph()>.
 
-B<Note>: The various graph algorithms do not in general work well
+B<NOTE>: The various graph algorithms do not in general work well
 with multigraphs, and no effort has been made to test the algorithms
 with multigraphs.
 
@@ -1525,7 +1541,7 @@ attribute name is specified explicitly
 
     $g->APSP_Floyd_Warshall(attribute_name => 'height');
 
-the attribute C<'weight'> is assumed.
+the attribute C<weight> is assumed.
 
 B<If an edge has no defined weight attribute, the value of one is
 assumed when getting the attribute.>
@@ -1986,7 +2002,7 @@ Delete all the attributes of the named graph.
 =head2 Weighted
 
 As convenient shortcuts the following methods add, query, and
-manipulate the attribute C<'weight'> with the specified value to the
+manipulate the attribute C<weight> with the specified value to the
 respective Graph elements.
 
 =over 4
@@ -2060,7 +2076,7 @@ C<z x y>.
 
 In the general case determining isomorphism is I<NP-hard>, in other
 words, really hard (time-consuming), no other ways of solving the problem
-than brute force wading through of all possibilities are known.
+are known than brute force check of of all the possibilities.
 
 A B<very rough guess> at whether two graphs B<could> be isomorphic
 is possible via the method
@@ -2194,7 +2210,7 @@ Since hypervertices consist of more than one vertex:
 Return the vertices at the vertex.  This may return just the vertex
 or also other vertices.
 
-B<NOTE 1>: most usual graph algorithms (and basic concepts) break
+B<NOTE>: most usual graph algorithms (and basic concepts) break
 horribly (or at least look funny) with hyperthingies.
 
 To go with the concept of undirected in normal (non-hyper) graphs,
@@ -2377,12 +2393,6 @@ Alias for vertices() (or rather, vertices05()) since the vertices()
 now always returns the vertices in an unsorted order.  You can also
 use the unsorted_vertices import, but only with a true value (false
 values will cause an error).
-
-=item average_degree
-
-   my $ad = $g->average_degree;
-
-Return the average (edge) degree taken over all vertices.
 
 =item density_limits
 

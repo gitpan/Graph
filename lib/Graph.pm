@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.55';
+$VERSION = '0.56';
 
 require 5.005;
 
@@ -665,18 +665,19 @@ sub vertices_at {
     my $g = shift;
     my $V = $g->[ _V ];
     my %v;
-    my @i = map { $v{ $_ } = $V->_get_path_id( $_ ) } @_;
-    return if grep { ! defined $_ } @i;
-    my $I = $V->_ids;
+    my @i;
+    for my $v ( @_ ) {
+	my $i = $V->_get_path_id( $v );
+	return unless defined $i;
+	push @i, ( $v{ $v } = $i );
+    }
+    my $Vi = $V->_ids;
     my @v;
-    scalar keys %{ $I }; # Sometimes the iterator is not properly reset.
-    while (my ($i, $v) = each %{ $I }) {
+    while (my ($i, $v) = each %{ $Vi }) {
 	my %i;
 	@i{ @i } = @i if @i; # @todo: nonuniq hyper vertices?
 	for my $u (ref $v ? @$v : $v) {
-	    my $j =
-		exists $v{ $u } ?
-		    $v{ $u } : ( $v{ $u } = $V->_get_path_id( $u ) );
+	    my $j = exists $v{ $u } ? $v{ $u } : ( $v{ $u } = $i );
 	    if (defined $j && exists $i{ $j }) {
 		delete $i{ $j };
 		unless (keys %i) {
@@ -689,52 +690,37 @@ sub vertices_at {
     return @v;
 }
 
-sub __edges_at {
-    my ($v, $i, $vi, $e, $o) = @_;
-    for my $j (@$v) {
-	if ($j == $vi) {
-	    push @$e, [ $i, $v ];
-	}
-    }
-}
-
-sub __edges_from {
-    my ($v, $i, $vi, $e, $o) = @_;
-    return unless @$v == 2;
-    push @$e, [ $i, $v ] if $v->[0] == $vi || ($o && $v->[-1] == $vi);
-}
-
-sub __edges_to {
-    my ($v, $i, $vi, $e, $o) = @_;
-    return unless @$v == 2;
-    push @$e, [ $i, $v ] if $v->[-1] == $vi || ($o && $v->[0] == $vi);
-}
-
-sub _edges_find {
-    my ($g, $f) = splice @_, 0, 2;
-    my $E  = $g->[ _E ];
-    my $o  = $g->omniedged;
-    my $Ei = $E->_ids;
+sub _edges_at {
+    my $g = shift;
+    my $V = $g->[ _V ];
+    my $E = $g->[ _E ];
     my @e;
     for my $v ( $g->vertices_at( @_ ) ) {
-	my $vi = $g->[ _V ]->_get_path_id( ref $v ? @$v : $v );
-	return unless defined $vi;
+	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	my $Ei = $E->_ids;
 	while (my ($ei, $ev) = each %{ $Ei }) {
-	    $f->($ev, $ei, $vi, \@e, $o);
+	    for my $j (@$ev) {
+		push @e, [ $ei, $ev ] if $j == $vi;
+	    }
 	}
     }
     return @e;
 }
 
-sub _edges_at {
-    my $g = shift;
-    $g->_edges_find(\&__edges_at, @_);
-}
-
 sub _edges_from {
     my $g = shift;
     my $V = $g->[ _V ];
-    my @e = $g->_edges_find(\&__edges_from, @_);
+    my $E = $g->[ _E ];
+    my @e;
+    my $o = $g->omniedged;
+    for my $v ( $g->vertices_at( @_ ) ) {
+	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	my $Ei = $E->_ids;
+	while (my ($ei, $ev) = each %{ $Ei }) {
+	    push @e, [ $ei, $ev ]
+		if $ev->[0] == $vi || ($o && $ev->[-1] == $vi);
+	}
+    }
     if ($g->is_undirected) {
 	my @i = map { $V->_get_path_id( $_ ) } @_;
 	for my $e ( @e ) {
@@ -742,27 +728,34 @@ sub _edges_from {
 		$e = [ $e->[ 0 ], [ reverse @{ $e->[ 1 ] } ] ];
 	    }
 	}
-	return @e;
-    } else {
-	return @e;
     }
+    return @e;
 }
 
 sub _edges_to {
     my $g = shift;
     my $V = $g->[ _V ];
-    my @e = $g->_edges_find(\&__edges_to, @_);
+    my $E = $g->[ _E ];
+    my @e;
+    my $o = $g->omniedged;
+    for my $v ( $g->vertices_at( @_ ) ) {
+	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	my $Ei = $E->_ids;
+	while (my ($ei, $ev) = each %{ $Ei }) {
+	    push @e, [ $ei, $ev ]
+		if $ev->[-1] == $vi || ($o && $ev->[0] == $vi);
+	}
+    }
     if ($g->is_undirected) {
+	my $V = $g->[ _V ];
 	my @i = map { $V->_get_path_id( $_ ) } @_;
 	for my $e ( @e ) {
 	    unless ( $e->[ 1 ]->[ -1 ] == $i[ -1 ] ) { # @todo
 		$e = [ $e->[ 0 ], [ reverse @{ $e->[ 1 ] } ] ];
 	    }
 	}
-	return @e;
-    } else {
-	return @e;
     }
+    return @e;
 }
 
 sub _edges_id_path {

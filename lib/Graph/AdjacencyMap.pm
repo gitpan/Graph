@@ -41,6 +41,8 @@ sub _s () { 4 } # Successors / Path to Index.
 sub _p () { 5 } # Predecessors.
 sub _k () { 6 } # Keys ("kuoted references") / Graph (Light).
 
+sub _V () { 2 }  # Graph::_V()
+
 sub _new {
     my $class = shift;
     my $map = bless [ 0, @_ ], $class;
@@ -371,7 +373,7 @@ sub __arg {
 sub _successors {
     my $E = shift;
     my $g = shift;
-    my $V = $g->[ Graph::_V() ];
+    my $V = $g->[ _V ];
     map { my @v = @{ $_->[ 1 ] };
 	  shift @v;
 	  map { $V->_get_id_path($_) } @v } $g->_edges_from( @_ );

@@ -1,3 +1,19 @@
+2005-02-12
+
+	* Rewrite edges finding code (like edges_at()) to avoid a
+	  quadratic algorithm.  Shame on me.  Luckily this extremely
+	  slow path was not touched that often, but rt.cpan.or #11465
+	  shows one known bad case, source_vertices().  The removal of
+	  the slow path sped up 'make test' by about 5-10%.
+
+	* Remove a voodoo keys() from vertices_at().
+
+	* Document stubs for Graph::Directed and Graph::Undirected.
+	
+	* Tiny documentation tweaks.
+
+	* Release as 0.56.
+
 2005-01-22
 
 	* Add unset_row(), get_row(), set_row(), and unset_row(), methods
