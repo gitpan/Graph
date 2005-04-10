@@ -1,4 +1,4 @@
-use Test::More tests => 10;
+use Test::More tests => 17;
 
 use Graph;
 
@@ -40,3 +40,23 @@ like($@, qr/expected directed acyclic graph, got undirected/);
 eval '$g2->expect_dag';
 like($@, qr/expected directed acyclic graph, got cyclic/);
 
+eval 'Graph->random_graph(42)';
+like($@, qr/Graph::random_graph: argument 'vertices' missing or undef/);
+
+eval 'Graph->random_graph(vertices=>100)';
+is($@, '');
+
+eval 'Graph->random_graph(42,43,44)';
+like($@, qr/Graph::random_graph: argument 'vertices' missing or undef/);
+
+eval 'Graph::_get_options()';
+like($@, qr/internal error: should be called with only one array ref argument/);
+
+eval 'Graph::_get_options(1)';
+like($@, qr/internal error: should be called with only one array ref argument/);
+
+eval 'Graph::_get_options([])';
+is($@, '');
+
+eval 'Graph::_get_options(12,34)';
+like($@, qr/internal error: should be called with only one array ref argument/);

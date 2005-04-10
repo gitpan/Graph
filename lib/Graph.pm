@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.61';
+$VERSION = '0.62';
 
 require 5.005;
 
@@ -141,7 +141,7 @@ sub new {
     my $gflags = 0;
     my $vflags;
     my $eflags;
-    my %opt = @_;
+    my %opt = _get_options( \@_ );
 
     if (ref $class && $class->isa('Graph')) {
 	no strict 'refs';
@@ -926,7 +926,7 @@ sub delete_edges {
 sub _in_degree {
     my $g = shift;
     return undef unless @_ && $g->has_vertex( @_ );
-    my $in = 0;
+    my $in =  $g->is_undirected && $g->is_self_loop_vertex( @_ ) ? 1 : 0;
     $in += $g->get_edge_count( @$_ ) for $g->edges_to( @_ );
     return $in;
 }
@@ -939,7 +939,7 @@ sub in_degree {
 sub _out_degree {
     my $g = shift;
     return undef unless @_ && $g->has_vertex( @_ );
-    my $out = 0;
+    my $out =  $g->is_undirected && $g->is_self_loop_vertex( @_ ) ? 1 : 0;
     $out += $g->get_edge_count( @$_ ) for $g->edges_from( @_ );
     return $out;
 }
@@ -1580,7 +1580,7 @@ sub add_edges {
 
 sub copy {
     my $g = shift;
-    my %opt = @_;
+    my %opt = _get_options( \@_ );
     
     my $c = (ref $g)->new(directed => $g->directed ? 1 : 0,
 			  compat02 => $g->compat02 ? 1 : 0);
@@ -1976,17 +1976,48 @@ sub expect_multiedged {
     _expected('multiedged') unless $g->is_multiedged;
 }
 
+sub _get_options {
+    my @caller = caller(1);
+    unless (@_ == 1 && ref $_[0] eq 'ARRAY') {
+	die "$caller[3]: internal error: should be called with only one array ref argument, at $caller[1] line $caller[2].\n";
+    }
+    my @opt = @{ $_[0] };
+    unless (@opt  % 2 == 0) {
+	die "$caller[3]: expected an options hash, got a non-even number of arguments, at $caller[1] line $caller[2].\n";
+    }
+    return @opt;
+}
+
 ###
 # Random constructors and accessors.
 #
 
+sub fisher_yates_shuffle (@) {
+    # From perlfaq4, but modified to be non-modifying.
+    my @a = @_;
+    my $i = @a;
+    while ($i--) {
+	my $j = int rand ($i+1);
+	@a[$i,$j] = @a[$j,$i];
+    }
+    return @a;
+}
+
+BEGIN {
+    sub _shuffle(@);
+    # Workaround for the Perl bug [perl #32383] where -d:Dprof and
+    # List::Util::Shuffle do not like each other: if any debugging
+    # (-d) flags are on, fall back to the Fisher-Yates shuffle.
+    *_shuffle = $^P ? \&fisher_yates_shuffle : \&List::Util::shuffle;
+}
+
 sub random_graph {
-    my $class = shift;
-    my %opt = @_;
+    my $class = (@_ % 2) == 0 ? 'Graph' : shift;
+    my %opt = _get_options( \@_ );
     my $random_edge;
-    unless (exists $opt{vertices}) {
+    unless (exists $opt{vertices} && defined $opt{vertices}) {
 	require Carp;
-	Carp::croak("Graph::random_graph: argument 'vertices' missing");
+	Carp::croak("Graph::random_graph: argument 'vertices' missing or undef");
     }
     if (exists $opt{random_seed}) {
 	srand($opt{random_seed});
@@ -2033,8 +2064,8 @@ sub random_graph {
     my @V2 = @V;
     # Shuffle the vertex lists so that the pairs at
     # the beginning of the lists are not more likely.
-    @V1 = shuffle @V1;
-    @V2 = shuffle @V2;
+    @V1 = _shuffle @V1;
+    @V2 = _shuffle @V2;
  LOOP:
     while ($E) {
 	for my $v1 (@V1) {
@@ -2139,12 +2170,11 @@ sub _next_random     { shift; (values %{ $_[0] })[ rand keys %{ $_[0] } ] }
 
 sub _root_opt {
     my $g = shift;
-    my %opt;
-    %opt = @_ == 1 ? ( first_root => $_[0] ) : @_;
+    my %opt = @_ == 1 ? ( first_root => $_[0] ) : _get_options( \@_ );
     my %unseen;
     my @unseen = $g->vertices05;
     @unseen{ @unseen } = @unseen;
-    @unseen = shuffle @unseen;
+    @unseen = _shuffle @unseen;
     my $r;
     if (exists $opt{ start }) {
 	$opt{ first_root } = $opt{ start };
@@ -2396,7 +2426,7 @@ sub delete_attributes {
 
 sub topological_sort {
     my $g = shift;
-    my %opt = @_;
+    my %opt = _get_options( \@_ );
     my $eic = $opt{ empty_if_cyclic };
     my $hac;
     if ($eic) {
@@ -2863,7 +2893,7 @@ sub biconnectivity {
 	do {
 	    my $w;
 	    do {
-		$w = first { !$U{ $v }{ $_ } } shuffle keys %{ $A{ $v } };
+		$w = first { !$U{ $v }{ $_ } } _shuffle keys %{ $A{ $v } };
 		if (defined $w) {
 		    $U{ $v }{ $w }++;
 		    $U{ $w }{ $v }++;
@@ -2890,7 +2920,7 @@ sub biconnectivity {
 		}
 	    } else {
 		my $e;
-		for my $w (shuffle keys %{ $A{ $r } }) {
+		for my $w (_shuffle keys %{ $A{ $r } }) {
 		    unless ($U{ $r }{ $w }) {
 			$e = $r;
 			last;

@@ -1,4 +1,4 @@
-use Test::More tests => 150;
+use Test::More tests => 152;
 
 use Graph;
 
@@ -97,3 +97,9 @@ for my $e ($g5->edges) {
     my $b = $v < 5;
     is($a, $b, "u = $u, v = $v");
 }
+
+my $g6 = Graph::random_graph(vertices => 10);
+
+isa_ok($g6, 'Graph');
+is($g6->vertices, 10);
+

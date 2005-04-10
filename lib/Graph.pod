@@ -201,6 +201,8 @@ A complete graph has an edge (v,u) for every original edge (u,v).
 
 =back
 
+See also L</random_graph> for a random constructor.
+
 =head2 Basics
 
 =over 4
@@ -1996,7 +1998,7 @@ respective Graph elements.
 
 =item add_weighted_vertices
 
-    $g->add_weighted_vertices($u, $v, ..., $weight)
+    $g->add_weighted_vertices($v1, $weight1, $v2, $weight2, ...)
 
 =item delete_edge_weight
 

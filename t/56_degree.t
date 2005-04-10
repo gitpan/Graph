@@ -32,21 +32,21 @@ is( $g0->degree(4), 2 );
 is( $g0->degree(5), -1 );
 is( $g0->degree(6), 0 );
 
-is( $g1->in_degree(1), 3 );
+is( $g1->in_degree(1), 4 );
 is( $g1->in_degree(2), 2 );
 is( $g1->in_degree(3), 1 );
 is( $g1->in_degree(4), 2 );
 is( $g1->in_degree(5), 1 );
 is( $g1->in_degree(6), 0 );
 
-is( $g1->out_degree(1), 3 );
+is( $g1->out_degree(1), 4 );
 is( $g1->out_degree(2), 2 );
 is( $g1->out_degree(3), 1 );
 is( $g1->out_degree(4), 2 );
 is( $g1->out_degree(5), 1 );
 is( $g1->out_degree(6), 0 );
 
-is( $g1->degree(1), 3 );
+is( $g1->degree(1), 4 );
 is( $g1->degree(2), 2 );
 is( $g1->degree(3), 1 );
 is( $g1->degree(4), 2 );
@@ -54,5 +54,5 @@ is( $g1->degree(5), 1 );
 is( $g1->degree(6), 0 );
 
 is( $g0->degree, 0 );
-is( $g1->degree, 9 );
+is( $g1->degree, 10 );
 
