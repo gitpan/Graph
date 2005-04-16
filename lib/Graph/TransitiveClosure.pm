@@ -28,12 +28,17 @@ sub new {
 						     path_vertices => 1);
 	$g->set_graph_attribute('_tcg', [ $g->[ _G ], $tcg ]);
     }
+    my $tcg00 = $tcg->[0]->[0];
+    my $tcg11 = $tcg->[1]->[1];
     for my $u ($tcg->vertices) {
+	my $tcg00i = $tcg00->[ $tcg11->{ $u } ];
 	for my $v ($tcg->vertices) {
 	    next if $u eq $v && ! $opt{ reflexive };
+	    my $j = $tcg11->{ $v };
 	    if (
 		# $tcg->is_transitive($u, $v)
-		$tcg->[0]->get($u, $v)
+		# $tcg->[0]->get($u, $v)
+		vec($tcg00i, $j, 1)
 	       ) {
 		my $val = $g->_get_edge_attribute($u, $v, $attr);
 		$tcm->_set_edge_attribute($u, $v, $attr,

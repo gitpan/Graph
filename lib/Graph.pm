@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.62';
+$VERSION = '0.63';
 
 require 5.005;
 
@@ -2208,13 +2208,11 @@ sub _heap_walk {
     my ($g, $h, $add, $etc) = splice @_, 0, 4;
 
     my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) = $g->_root_opt(@_);
-    my $HF  = Heap::Fibonacci->new;
+    my $HF = Heap::Fibonacci->new;
 
-    do {
-	if (defined $r) {
-	    $add->($g, $HF, $r, $attr, $unseenh, $etc);
-	    delete $unseenh->{ $r };
-	}
+    while (defined $r) {
+	$add->($g, $HF, $r, $attr, $unseenh, $etc);
+	delete $unseenh->{ $r };
 	while (defined $HF->top) {
 	    my $t = $HF->extract_top;
 	    if (defined $t) {
@@ -2227,10 +2225,8 @@ sub _heap_walk {
 	    }
 	}
 	return $h unless defined $next;
-	$r = $next ?
-	    ($code ? $next->( $g, $unseenh ) : $next) :
-		shift @$unseena;
-    } while (keys %$unseenh || defined $HF->top);
+	$r = $code ? $next->( $g, $unseenh ) : shift @$unseena;
+    }
 
     return $h;
 }

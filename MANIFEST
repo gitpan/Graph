@@ -122,6 +122,7 @@ t/g02_06transpose.t
 t/g02_07complete.t
 t/g02_08complement.t
 t/g02_09scc.t
+t/u_jh_va.t
 t/u_mn_va.t
 t/u_ng_mst.t
 t/u_ng_path.t

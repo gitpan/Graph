@@ -14,6 +14,3 @@ is(scalar @V, 1);
 my %V; @V{ @V } = ();
 ok(exists $V{b});
 
-
-
-

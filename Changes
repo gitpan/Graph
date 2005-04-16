@@ -1,14 +1,23 @@
+2005-04-16  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* After setting a vertex attribute one could not delete
+	  non-attributed vertices, reported by Joseph Hamilton.
+
+	* Inlining to speed up path_vertices() slightly.
+
+	* Release as 0.63.
+
 2005-04-10  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* The documentation of add_weighted_vertices was wrong:
 	  the arguments are (v1, w1, v2, w2, ...) instead of (v1, v2, ..., w).
 
 	* Made calling interfaces with an "options hash" like new()
-	  and random_graph() more robust, now an "odd number of arguments"
-	  bails out earlier instead of dieing mysteriously later.
+	  and random_graph() more robust, now bails out earlier instead
+	  of dieing mysteriously later with an "odd number of arguments"
 
 	* Allow running under -d:DProf even when using random shuffling:
-	  workaround for List::Util::shuffle and not -d:DProf not working
+	  workaround for List::Util::shuffle and -d:DProf not working
 	  together ([perl #32383]) by falling back to Fisher-Yates shuffle
 	  if (any use of) the -d: is detected.
 

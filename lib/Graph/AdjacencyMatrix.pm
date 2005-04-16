@@ -39,12 +39,40 @@ sub new {
     }
     my $m = Graph::BitMatrix->new($g, connect_edges => $want_distance);
     if ($want_distance) {
-	for my $u (@V) {
-	    for my $v (@V) {
-		if ($g->has_edge($u, $v)) {
-		    $n->set($u, $v,
-			    $g->get_edge_attribute($u, $v, $d));
-		}
+	# for my $u (@V) {
+	#     for my $v (@V) {
+	#         if ($g->has_edge($u, $v)) {
+	#             $n->set($u, $v,
+	#                    $g->get_edge_attribute($u, $v, $d));
+        #        }
+        #     }
+        # }
+	my $Vi = $g->[_V]->[_i];
+	my $Ei = $g->[_E]->[_i];
+	my %V; @V{ @V } = 0 .. $#V;
+	my $n0 = $n->[0];
+	my $n1 = $n->[1];
+	if ($g->is_undirected) {
+	    for my $e (keys %{ $Ei }) {
+		my ($i0, $j0) = @{ $Ei->{ $e } };
+		my $i1 = $V{ $Vi->{ $i0 } };
+		my $j1 = $V{ $Vi->{ $j0 } };
+		my $u = $V[ $i1 ];
+		my $v = $V[ $j1 ];
+		$n0->[ $i1 ]->[ $j1 ] = 
+		    $g->get_edge_attribute($u, $v, $d);
+		$n0->[ $j1 ]->[ $i1 ] =
+		    $g->get_edge_attribute($v, $u, $d);
+	    }
+	} else {
+	    for my $e (keys %{ $Ei }) {
+		my ($i0, $j0) = @{ $Ei->{ $e } };
+		my $i1 = $V{ $Vi->{ $i0 } };
+		my $j1 = $V{ $Vi->{ $j0 } };
+		my $u = $V[ $i1 ];
+		my $v = $V[ $j1 ];
+		$n0->[ $i1 ]->[ $j1 ] =
+		    $g->get_edge_attribute($u, $v, $d);
 	    }
 	}
     }

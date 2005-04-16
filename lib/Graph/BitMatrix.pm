@@ -5,6 +5,11 @@ use strict;
 # $SIG{__DIE__ } = sub { use Carp; confess };
 # $SIG{__WARN__} = sub { use Carp; confess };
 
+sub _V () { 2 } # Graph::_V()
+sub _E () { 3 } # Graph::_E()
+sub _i () { 3 } # Index to path.
+sub _s () { 4 } # Successors / Path to Index.
+
 sub new {
     my ($class, $g, %opt) = @_;
     my @V = $g->vertices;
@@ -21,10 +26,26 @@ sub new {
     $connect_edges = 1 unless defined $connect_edges;
     Graph::_opt_unknown(\%opt);
     if ($connect_edges) {
-	for (my $i = 0; $i <= $#V; $i++) {
-	    my $u = $V[$i];
-	    for (my $j = 0; $j <= $#V; $j++) {
-		vec($bm0->[$i], $j, 1) = 1 if $g->has_edge($u, $V[$j]);
+	# for (my $i = 0; $i <= $#V; $i++) {
+	#    my $u = $V[$i];
+	#    for (my $j = 0; $j <= $#V; $j++) {
+	#	vec($bm0->[$i], $j, 1) = 1 if $g->has_edge($u, $V[$j]);
+	#    }
+	# }
+	my $Vi = $g->[_V]->[_i];
+	my $Ei = $g->[_E]->[_i];
+	if ($g->is_undirected) {
+	    for my $e (keys %{ $Ei }) {
+		my ($i0, $j0) = @{ $Ei->{ $e } };
+		my $i1 = $V{ $Vi->{ $i0 } };
+		my $j1 = $V{ $Vi->{ $j0 } };
+		vec($bm0->[$i1], $j1, 1) = 1;
+		vec($bm0->[$j1], $i1, 1) = 1;
+	    }
+	} else {
+	    for my $e (keys %{ $Ei }) {
+		my ($i0, $j0) = @{ $Ei->{ $e } };
+		vec($bm0->[$V{ $Vi->{ $i0 } }], $V{ $Vi->{ $j0 } }, 1) = 1;
 	    }
 	}
     }
