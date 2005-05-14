@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.63';
+$VERSION = '0.64';
 
 require 5.005;
 
@@ -63,11 +63,11 @@ sub stringify {
     my $g = shift;
     my $o = $g->is_undirected;
     my $e = $o ? "=" : "-";
-    my @e = map { my @v = map { ref $_ ? "[" . join(" ", @$_). "]" : $_ }
+    my @e = map { my @v = map { (ref($_) eq 'ARRAY') ? "[" . join(" ", @$_). "]" : $_ }
 		  @$_;
-		  join($e, $o ? sort @v : @v) } $g->edges05;
-    my @s = sort @e;
-    push @s, sort $g->isolated_vertices;
+		  join($e, $o ? sort { "$a" cmp "$b" } @v : @v) } $g->edges05;
+    my @s = sort { "$a" cmp "$b" } @e;
+    push @s, sort { "$a" cmp "$b" } $g->isolated_vertices;
     join(",", @s);
 }
 
@@ -677,7 +677,7 @@ sub vertices_at {
     while (my ($i, $v) = each %{ $Vi }) {
 	my %i;
 	@i{ @i } = @i if @i; # @todo: nonuniq hyper vertices?
-	for my $u (ref $v ? @$v : $v) {
+	for my $u ((ref($v) eq 'ARRAY') ? @$v : $v) {
 	    my $j = exists $v{ $u } ? $v{ $u } : ( $v{ $u } = $i );
 	    if (defined $j && exists $i{ $j }) {
 		delete $i{ $j };
@@ -699,7 +699,9 @@ sub _edges_at {
     my $en = 0;
     my %ev;
     for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+#use Carp;
+#confess("v: $v, ref=".ref($v)) unless ref($v) eq 'ARRAY'; # Added by bsb
+	my $vi = $V->_get_path_id( (ref($v) eq 'ARRAY') ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	while (my ($ei, $ev) = each %{ $Ei }) {
@@ -727,7 +729,7 @@ sub _edges_from {
     my $en = 0;
     my %ev;
     for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	my $vi = $V->_get_path_id( (ref($v) eq 'ARRAY') ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	if (wantarray) {
@@ -775,7 +777,7 @@ sub _edges_to {
     my $en = 0;
     my %ev;
     for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( ref $v ? @$v : $v );
+	my $vi = $V->_get_path_id( (ref($v) eq 'ARRAY') ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	if (wantarray) {

@@ -30,9 +30,15 @@ Graph - graph data structures and algorithms
 
 =head1 DESCRIPTION
 
-This module is not for B<drawing> any sort of I<graphics>, but instead
-it is for creating abstract data structures called graphs, and for
-doing various operations on those.
+=head2 Non-Description
+
+This module is not for B<drawing> any sort of I<graphics>, business or
+otherwise.
+
+=head2 Description
+
+Instead, this module is for creating I<abstract data structures>
+called graphs, and for doing various operations on those.
 
 =head2 Constructors
 
@@ -161,9 +167,9 @@ Create a directed shallow copy (vertices and edges) of the undirected graph
 so that for any undirected edge (u, v) there are two directed edges (u, v)
 and (v, u).
 
-=item transpose_graph
-
 =item transpose
+
+=item transpose_graph
 
     my $t = $g->transpose_graph;
 
@@ -291,8 +297,8 @@ Graphs have stringification overload, so you can do things like
     print "The graph is $g\n"
 
 One-way (directed, unidirected) edges are shown as '-', two-way
-(undirected, bidirected) edges are shown as '='.  If you want to
-you can call the stringification as the method
+(undirected, bidirected) edges are shown as '='.  If you want to,
+you can call the stringification via the method
 
 =over 4
 
@@ -1689,7 +1695,7 @@ Set the named vertex attribute.
 If the vertex does not exist, the set_...() will create it, and the
 other vertex attribute methods will return false or empty.
 
-<NOTE>: any attributes beginning with an underscore (C<_>) are
+B<NOTE>: any attributes beginning with an underscore (C<_>) are
 reserved for the internal use of the Graph module.
 
 =item get_vertex_attribute
@@ -1716,7 +1722,7 @@ Delete the named vertex attribute.
 
 Set all the attributes of the vertex from the anonymous hash $attr.
 
-<NOTE>: any attributes beginning with an underscore (C<_>) are
+B<NOTE>: any attributes beginning with an underscore (C<_>) are
 reserved for the internal use of the Graph module.
 
 =item get_vertex_attributes
@@ -1801,7 +1807,7 @@ Set the named edge attribute.
 If the edge does not exist, the set_...() will create it, and the other
 edge attribute methods will return false or empty.
 
-<NOTE>: any attributes beginning with an underscore (C<_>) are
+B<NOTE>: any attributes beginning with an underscore (C<_>) are
 reserved for the internal use of the Graph module.
 
 =item get_edge_attribute
@@ -1828,7 +1834,7 @@ Delete the named edge attribute.
 
 Set all the attributes of the edge from the anonymous hash $attr.
 
-<NOTE>: any attributes beginning with an underscore (C<_>) are
+B<NOTE>: any attributes beginning with an underscore (C<_>) are
 reserved for the internal use of the Graph module.
 
 =item get_edge_attributes
@@ -1910,7 +1916,7 @@ For graph attributes:
 
 Set the named graph attribute.
 
-<NOTE>: any attributes beginning with an underscore (C<_>) are
+B<NOTE>: any attributes beginning with an underscore (C<_>) are
 reserved for the internal use of the Graph module.
 
 =item get_graph_attribute
@@ -1937,7 +1943,7 @@ Delete the named graph attribute.
 
 Set all the attributes of the graph from the anonymous hash $attr.
 
-<NOTE>: any attributes beginning with an underscore (C<_>) are
+B<NOTE>: any attributes beginning with an underscore (C<_>) are
 reserved for the internal use of the Graph module.
 
 =item get_graph_attributes
@@ -2071,7 +2077,10 @@ What is actually returned is the maximum number of possible isomorphic
 graphs between the two graphs, after the above sanity checks have been
 conducted.  It is basically the product of the factorials of the absolute
 values of in-degrees and out-degree pairs at each vertex, with the isolated
-vertices ignored (since they could be renamed arbitrarily.)
+vertices ignored (since they could be renamed arbitrarily.)  Note that for
+large graphs the product of these factorials can overflow the maximum
+presentable number (the floating point number) in the computer and you
+might get for example I<Infinity> as the result.
 
 =head2 Miscellaneous
 
@@ -2113,6 +2122,9 @@ These size approximations are very approximate and optimistic
 factors affect these numbers, for example how Perl is configured.
 In practice you can expect at least about 200 bytes per vertex,
 and twice that for an edge.  The numbers are for a 32-bit platform.
+
+Roughly, the above numbers mean that in a megabyte you can fit
+for example a graph of about 1000 vertices and about 2500 edges.
 
 =head2 Hyperedges, hypervertices, hypergraphs
 
@@ -2184,7 +2196,7 @@ Return the vertices at the vertex.  This may return just the vertex
 or also other vertices.
 
 B<NOTE>: most usual graph algorithms (and basic concepts) break
-horribly (or at least look funny) with hyperthingies.
+horribly (or at least will look funny) with hyperthingies.
 
 To go with the concept of undirected in normal (non-hyper) graphs,
 there is a similar concept of omnidirected I<(this is my own coinage,
@@ -2422,11 +2434,16 @@ Maybe you used add_weighted_edge() with only the two vertex arguments.
 
 Not an ARRAY reference at lib/Graph.pm ...
 
-Maybe you have code based on Graph 0.2xxxx that assumes Graphs being
-blessed hash references, possibly also assuming that certain hash keys
-are available to use for your own purposes.  In Graph 0.50 none of this
-is true.  Please do not expect any particular internal implementation
-of Graphs.  Use inheritance and graph attributes.
+One possibility is that you have code based on Graph 0.2xxxx that
+assumes Graphs being blessed hash references, possibly also assuming
+that certain hash keys are available to use for your own purposes.
+In Graph 0.50 none of this is true.  Please do not expect any
+particular internal implementation of Graphs.  Use inheritance
+and graph attributes instead.
+
+Another possibility is that you meant to have objects (blessed
+references) as graph vertices, but forgot to use C<refvertexed>
+(see L</refvertexed>) when creating the graph.
 
 =back
 
