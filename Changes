@@ -1,11 +1,15 @@
+2005-05-15  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Tests added to 64_ref.t to verify that using different kinds
+	  of blessed references as vertices works okay.  Few bugs found
+	  by these tests squashed.
+
+	* Release as 0.65.
+
 2005-05-14  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Fix for [rt.cpan.org #12509] Errors using objects as nodes,
 	  patch from the reporter of the bug, add t/u/bb_rv.t.
-
-	  Note: objects that are blessed array references still
-	  won't work right (fixing this would require blessing
-	  hypervertices to a new class of their own).
 
 	* Fix for refvertexed isolated vertices not having overloaded cmp
 	  and graph string presentation failing because of that.

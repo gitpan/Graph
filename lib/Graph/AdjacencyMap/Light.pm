@@ -127,7 +127,7 @@ sub _get_id_path {
     my $m = shift;
     my ($n, $f, $a, $i) = @$m;
     my $p = $i->{ $_[ 0 ] };
-    defined $p ? ( ref $p ? @$p : $p ) : ( );
+    defined $p ? ( ref $p eq 'ARRAY' ? @$p : $p ) : ( );
 }
 
 sub del_path {

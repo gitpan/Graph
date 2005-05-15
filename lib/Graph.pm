@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.64';
+$VERSION = '0.65';
 
 require 5.005;
 
@@ -63,9 +63,14 @@ sub stringify {
     my $g = shift;
     my $o = $g->is_undirected;
     my $e = $o ? "=" : "-";
-    my @e = map { my @v = map { (ref($_) eq 'ARRAY') ? "[" . join(" ", @$_). "]" : $_ }
-		  @$_;
-		  join($e, $o ? sort { "$a" cmp "$b" } @v : @v) } $g->edges05;
+    my @e =
+	map {
+	    my @v =
+		map {
+		    ref($_) eq 'ARRAY' ? "[" . join(" ", @$_). "]" : "$_"
+		}
+	    @$_;
+	    join($e, $o ? sort { "$a" cmp "$b" } @v : @v) } $g->edges05;
     my @s = sort { "$a" cmp "$b" } @e;
     push @s, sort { "$a" cmp "$b" } $g->isolated_vertices;
     join(",", @s);
@@ -362,7 +367,8 @@ sub vertices05 {
     my $g = shift;
     my @v = $g->[ _V ]->paths( @_ );
     if (wantarray) {
-	return $g->[ _V ]->_is_HYPER ? @v : map { @$_ } @v;
+	return $g->[ _V ]->_is_HYPER ?
+	    @v : map { ref $_ eq 'ARRAY' ? @$_ : $_ } @v;
     } else {
 	return scalar @v;
     }
