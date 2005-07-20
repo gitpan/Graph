@@ -128,8 +128,10 @@ t/u_mn_va.t
 t/u_ng_mst.t
 t/u_ng_path.t
 t/u_ng_scc.t
+t/u_re_sd.t
 t/u_rb_cc.t
 t/u_sn_sva.t
+t/u_te_me.t
 util/cover.sh
 util/grand.pl
 util/renum.pl

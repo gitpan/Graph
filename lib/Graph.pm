@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.65';
+$VERSION = '0.66';
 
 require 5.005;
 
@@ -88,8 +88,6 @@ use overload
     '""' => \&stringify,
     'eq' => \&eq,
     'ne' => \&ne;
-
-require Data::Dumper; # for _dump
 
 sub _opt {
     my ($opt, $flags, %flags) = @_;
@@ -268,7 +266,7 @@ sub new {
 
     $g->[ _F ] = $gflags;
     $g->[ _G ] = 0;
-    $g->[ _V ] = ($vflags & _HYPER) ?
+    $g->[ _V ] = ($vflags & (_HYPER | _MULTI)) ?
 	Graph::AdjacencyMap::Heavy->_new($uflags, 1) :
 	    (($vflags & ~_UNORD) ?
 	     Graph::AdjacencyMap::Vertex->_new($uflags, 1) :
@@ -629,11 +627,8 @@ sub add_edge_by_id {
 
 sub add_edge_get_id {
     my $g = shift;
-    unless ($g->is_multiedged) {
-	require Carp;
-	Carp::croak("Graph::add_edge_get_id: graph not multiedged");
-    }
-    return $g->[ _E ]->set_path( $g->_add_edge( @_ ), _GEN_ID );
+    $g->expect_multiedged;
+    return $g->[ _E ]->set_path( $g->_add_edge( @_ ), _GEN_ID);
 }
 
 sub has_edge_by_id {
@@ -1600,6 +1595,7 @@ sub copy {
 *copy_graph = \&copy;
 
 sub deep_copy {
+    require Data::Dumper;
     my $g = shift;
     my $d = Data::Dumper->new([$g]);
     use vars qw($VAR1);
@@ -2225,6 +2221,7 @@ sub _heap_walk {
 	    my $t = $HF->extract_top;
 	    if (defined $t) {
 		my ($u, $v, $w) = $t->val;
+		# print "extracted top: $u $v $w\n";
 		if (exists $unseenh->{ $v }) {
 		    $h->set_edge_attribute($u, $v, $attr, $w);
 		    delete $unseenh->{ $v };
@@ -3091,6 +3088,7 @@ sub _SPT_add {
 	}
 	if (!defined($etc->{ $s }) || $etc->{ $r } + $t < $etc->{ $s }) {
 	    $etc->{ $s } = ($etc->{ $r } || 0) + $t;
+	    # print "$r - $s : setting $s to $etc->{ $s }\n";
 	    $HF->add( Graph::SPTHeapElem->new($r, $s, $t) );
 	}
     }
@@ -3411,6 +3409,7 @@ sub could_be_isomorphic {
 #
 
 sub _dump {
+    require Data::Dumper;
     my $d = Data::Dumper->new([$_[0]],[ref $_[0]]);
     defined wantarray ? $d->Dump : print $d->Dump;
 }

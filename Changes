@@ -1,3 +1,32 @@
+2005-07-20
+
+	* Fix [rt.cpan.org #13193] "Documentation error in set_edge_attributes"
+	  and [rt.cpan.org #13194] "Documentation error in set_edge_attributes"
+	  (duplicate report)
+
+	* Fixes for problems listed in [rt.cpan.org #13195]
+	  "add_vertex_get_id/add_edge_get_id() return wrong result on first call"
+	  - add_edge_get_id() was returning an array reference instead
+	    of the id with the first call (the array reference was the
+	    ids of the vertices of the edge)
+	  - add_vertex_get_id() was even more broken (a multivertexed
+	    graph was using Graph::AdjacencyMap::Vertex for the vertex
+	    map, not Graph::AdjacencyMap::Heavy)
+	  - Added test t/u_te_me.t for the two above issues.
+	  - document in which order multiedge ids are returned (random)
+	  - require Data::Dumper only for deep_copy() and _dump()
+	  (not changes for two listed items, "check directly multiedged
+	   via a flag" and "remove returns for speed" because I have
+	   issues with speed hacks without actual measurements, and even
+	   if so would fear reduced maintainability)
+
+	* Fix [rt.cpan.org #13352] "Dijkstra heap logic"
+	  Dijkstra was fine, the SPTHealElem cmp() routine was wrong
+	  in having no tie breakers in case the weights compared equal.
+	  Added test t/u_re_sd.t.
+
+	* Release as 0.66.
+
 2005-05-15  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Tests added to 64_ref.t to verify that using different kinds
@@ -8,7 +37,7 @@
 
 2005-05-14  Jarkko Hietaniemi  <jhi@iki.fi>
 
-	* Fix for [rt.cpan.org #12509] Errors using objects as nodes,
+	* Fix for [rt.cpan.org #12509] "Errors using objects as nodes",
 	  patch from the reporter of the bug, add t/u/bb_rv.t.
 
 	* Fix for refvertexed isolated vertices not having overloaded cmp
@@ -89,7 +118,7 @@
 	* Document that using attributes does have a slowing down
 	  effect on other graph operations
 	  [rt.cpan.org #11498]
-	  Performance problem: edge attributes slow source_vertices)
+	  "Performance problem: edge attributes slow source_vertices"
 	  This is unlikely to get fixed any time soon, I am afraid,
 	  this is one of those working-as-designed-and-correctly-but-
 	  unfortunately-slow things.

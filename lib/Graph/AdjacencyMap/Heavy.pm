@@ -52,8 +52,9 @@ sub __set_path_node {
     unless (exists $p->[-1]->{ $l }) {
 	my $i = $m->_new_node( \$p->[-1]->{ $l }, $id );
 	$m->[ _i ]->{ defined $i ? $i : "" } = [ @_ ];
+	return $i;
     } else {
-	$m->_inc_node( \$p->[-1]->{ $l }, $id );
+	return $m->_inc_node( \$p->[-1]->{ $l }, $id );
     }
 }
 
