@@ -10,7 +10,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.66';
+$VERSION = '0.67';
 
 require 5.005;
 
@@ -587,7 +587,10 @@ sub add_vertex_by_id {
 sub add_vertex_get_id {
     my $g = shift;
     $g->expect_multivertexed;
-    return $g->[ _V ]->set_path_by_multi_id( @_, _GEN_ID );
+    my $id = $g->[ _V ]->set_path_by_multi_id( @_, _GEN_ID );
+    $g->[ _G ]++;
+    $g->_union_find_add_vertex( @_ ) if $g->has_union_find;
+    return $id;
 }
 
 sub has_vertex_by_id {
@@ -628,7 +631,11 @@ sub add_edge_by_id {
 sub add_edge_get_id {
     my $g = shift;
     $g->expect_multiedged;
-    return $g->[ _E ]->set_path( $g->_add_edge( @_ ), _GEN_ID);
+    my @i = $g->_add_edge( @_ );
+    my $id = $g->[ _E ]->set_path_by_multi_id( @i, _GEN_ID );
+    $g->_union_find_add_edge( @i ) if $g->has_union_find;
+    $g->[ _G ]++;
+    return $id;
 }
 
 sub has_edge_by_id {
@@ -655,7 +662,9 @@ sub delete_edge_by_id {
 sub get_multiedge_ids {
     my $g = shift;
     $g->expect_multiedged;
-    $g->[ _E ]->get_multi_ids( $g->_vertex_ids( @_ ) );
+    my @id = $g->_vertex_ids( @_ );
+    return unless @id;
+    $g->[ _E ]->get_multi_ids( @id );
 }
 
 ###
@@ -1364,7 +1373,7 @@ sub set_edge_attribute_by_id {
     $g->expect_multiedged;
     my $value = pop;
     my $attr  = pop;
-    $g->add_edge_by_id( @_ ) unless $g->has_edge_by_id( @_ );
+    # $g->add_edge_by_id( @_ ) unless $g->has_edge_by_id( @_ );
     my $id = pop;
     $g->[ _E ]->_set_path_attr( $g->_vertex_ids( @_ ), $id, $attr, $value );
 }
@@ -2010,8 +2019,8 @@ sub fisher_yates_shuffle (@) {
 BEGIN {
     sub _shuffle(@);
     # Workaround for the Perl bug [perl #32383] where -d:Dprof and
-    # List::Util::Shuffle do not like each other: if any debugging
-    # (-d) flags are on, fall back to the Fisher-Yates shuffle.
+    # List::Util::shuffle do not like each other: if any debugging
+    # (-d) flags are on, fall back to our own Fisher-Yates shuffle.
     *_shuffle = $^P ? \&fisher_yates_shuffle : \&List::Util::shuffle;
 }
 

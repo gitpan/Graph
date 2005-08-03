@@ -1,4 +1,14 @@
-2005-07-20
+2005-08-03  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* The 0.66 add_edge_get_id() fix was not yet quite right, Tels
+	  found another problem with it.  Now with another fix, and
+	  another test case (t/u_te_ae.t)
+
+	* Documentation fixes from John P. Linderman.
+
+	* Release as 0.67.
+
+2005-07-20  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Fix [rt.cpan.org #13193] "Documentation error in set_edge_attributes"
 	  and [rt.cpan.org #13194] "Documentation error in set_edge_attributes"

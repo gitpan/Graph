@@ -203,7 +203,8 @@ A complete graph has an edge between every pair of vertices.
     my $c = $g->complement_graph;
 
 Create a complement graph that has the same vertices as the original graph.
-A complete graph has an edge (v,u) for every original edge (u,v).
+A complement graph has an edge (u,v) if and only if the original
+graph does not have edge (u,v).
 
 =back
 
@@ -255,17 +256,17 @@ if the vertex did not exist in the graph.
 
 If the graph has been created I<multivertexed> or I<countvertexed>
 and a vertex has been added multiple times, the vertex will require
-an equal number of deletions to become completely deleteted.
+at least an equal number of deletions to become completely deleteted.
 
 =item delete_vertices
 
-    $g->delete_vertices($v)
+    $g->delete_vertices($v1, $v2, ...)
 
 Delete the vertices from the graph.  Returns the graph.
 
 If the graph has been created I<multivertexed> or I<countvertexed>
 and a vertex has been added multiple times, the vertex will require
-an equal number of deletions to become completely deleteted.
+at least an equal number of deletions to become completely deleteted.
 
 =item delete_edge
 
@@ -276,7 +277,7 @@ if the edge did not exist in the graph.
 
 If the graph has been created I<multivertexed> or I<countedged>
 and an edge has been added multiple times, the edge will require
-an equal number of deletions to become completely deleted.
+at least an equal number of deletions to become completely deleted.
 
 =item delete_edges
 
@@ -286,7 +287,7 @@ Delete the edges from the graph.  Returns the graph.
 
 If the graph has been created I<multivertexed> or I<countedged>
 and an edge has been added multiple times, the edge will require
-an equal number of deletions to become completely deleted.
+at least an equal number of deletions to become completely deleted.
 
 =back
 
@@ -1307,8 +1308,8 @@ to use
 
 =back
 
-    $id0 = $g->add_vertex_get_id($v)
-    $id1 = $g->add_edge_get_id($u, $v)
+    $idv = $g->add_vertex_get_id($v)
+    $ide = $g->add_edge_get_id($u, $v)
 
 To return all the ids of vertices/edges in a multivertex/multiedge, use
 

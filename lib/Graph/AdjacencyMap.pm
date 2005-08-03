@@ -90,7 +90,8 @@ sub _inc_node {
     my $f = $m->[ _f ];
     if (($f & _MULTI)) {
 	if ($id eq _GEN_ID) {
-	    $$n->[ _nc ]++ while exists $$n->[ _nm ]->{ $$n->[ _nc ] };
+	    $$n->[ _nc ]++
+		while exists $$n->[ _nm ]->{ $$n->[ _nc ] };
 	    $id = $$n->[ _nc ];
 	}
 	$$n->[ _nm ]->{ $id } = { };
@@ -195,11 +196,11 @@ sub _set_path_attr {
     my $attr = pop;
     my $id   = pop if ($f & _MULTI);
     my ($p, $k);
-    $m->__attr( \@_ ); # _LIGHT maps want this to get upgraded when needed.
+    $m->__attr( \@_ ); # _LIGHT maps need this to get upgraded when needed.
     push @_, $id if ($f & _MULTI);
     if ($m->[ _a ] == 2 && @_ == 2 && !($f & (_REF|_UNIQ|_HYPER|_UNIQ))) {
 	@_ = sort @_ if ($f & _UNORD);
-	$m->[ _s ]->{ $_[0] } ||= {};
+	$m->[ _s ]->{ $_[0] } ||= { };
 	$p = [ $m->[ _s ], $m->[ _s ]->{ $_[0] } ];
 	$k = [ $_[0], $_[1] ];
     } else {
@@ -215,6 +216,7 @@ sub _set_path_attr {
 	$p->[-1]->{ $l } = [ $p->[-1]->{ $l }, 1 ] unless ref $p->[-1]->{ $l };
 	$p->[-1]->{ $l }->[ _na ]->{ $attr } = $val;
     }
+    return $val;
 }
 
 sub _get_path_attrs {
