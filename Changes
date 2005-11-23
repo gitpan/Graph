@@ -1,3 +1,26 @@
+2005-11-23  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* SPT_Dijkstra() wasn't setting the vertex attributes of
+	  the result graph, noticed by Susan Tang, only the edge
+	  attributes were being set.  SPT_Bellman_Ford() was doing neither!
+	* There was an actual typo in the SPT test case from Sedgewick,
+	  a weight of 0.32 was mistyped as 0.22, this luckily didn't
+	  affect the result graph but it of course affected the
+	  resulting vertex 'weight' attributes.
+	* Add tests to t/70_spt.t for the vertex and egde attributes
+	  of the SPT_Dijkstra() and SPT_Bellman_Ford() results.
+	* Minor documentation tweaks, most importantly clarify the
+	  return value of the SPT_Dijkstra() and SPT_Bellman_Ford().
+	* Document that Perl 5.6.0 is the minimum (because of weak references)
+	  and also make Graph.pm require that (Makefile.PL was already doing
+	  the probing using Scalar::Util qw(weaken)).
+	* Add an early test (02_trap.t) for catching the development-time-only
+	  setting of __DIE__ and __WARN__ handlers (as a result of this almost
+	  all the numbered tests were renumbered, so the diff is falsely
+	  gigantic).  (If the handlers were mistakenly left turned on,
+	  a lot of later tests that checked the $@ got confusing failures.)
+	* Release as 0.68.
+
 2005-08-03  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* The 0.66 add_edge_get_id() fix was not yet quite right, Tels

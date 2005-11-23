@@ -75,8 +75,8 @@ Graph::TransitiveClosure - create and query transitive closure of graph
     my $tcg = Graph::TransitiveClosure->new($g);
     $tcg->is_reachable($u, $v) # Identical to $tcg->has_edge($u, $v)
 
-    # Being reflexive is the default,
-    # meaning that null transitions are included.
+    # Being reflexive is the default, meaning that null transitions
+    # (transitions from a vertex to the same vertex) are included.
     my $tcg = Graph::TransitiveClosure->new($g, reflexive => 1);
     my $tcg = Graph::TransitiveClosure->new($g, reflexive => 0);
 

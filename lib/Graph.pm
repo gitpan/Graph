@@ -1,8 +1,12 @@
 package Graph;
 
-# COMMENT THESE OUT FOR TESTING AND PRODUCTION.
-# $SIG{__DIE__ } = sub { use Carp; confess };
-# $SIG{__WARN__} = sub { use Carp; confess };
+BEGIN {
+    if (0) { # SET TO ZERO FOR TESTING AND RELEASES!
+	$SIG{__DIE__ } = \&CarpConfess;
+	$SIG{__WARN__} = \&CarpConfess;
+    }
+    sub CarpConfess () { require Carp; Carp::confess }
+}
 
 use strict;
 
@@ -10,9 +14,9 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.67';
+$VERSION = '0.68';
 
-require 5.005;
+require 5.006; # Weak references are required.
 
 use Graph::AdjacencyMap::Heavy;
 use Graph::AdjacencyMap::Light;
@@ -2021,7 +2025,12 @@ BEGIN {
     # Workaround for the Perl bug [perl #32383] where -d:Dprof and
     # List::Util::shuffle do not like each other: if any debugging
     # (-d) flags are on, fall back to our own Fisher-Yates shuffle.
-    *_shuffle = $^P ? \&fisher_yates_shuffle : \&List::Util::shuffle;
+    # The bug was fixed by perl changes #26054 and #26062, which
+    # went to Perl 5.9.3.  If someone tests this with a pre-5.9.3
+    # bleadperl that calls itself 5.9.3 but doesn't yet have the
+    # patches, oh, well.
+    *_shuffle = $^P && $] < 5.009003 ?
+	\&fisher_yates_shuffle : \&List::Util::shuffle;
 }
 
 sub random_graph {
@@ -2171,7 +2180,7 @@ sub MST_Kruskal {
 }
 
 sub _MST_add {
-    my ($g, $HF, $r, $attr, $unseen) = @_;
+    my ($g, $h, $HF, $r, $attr, $unseen) = @_;
     for my $s ( grep { exists $unseen->{ $_ } } $g->successors( $r ) ) {
 	$HF->add( Graph::MSTHeapElem->new( $r, $s, $g->get_edge_attribute( $r, $s, $attr ) ) );
     }
@@ -2224,7 +2233,7 @@ sub _heap_walk {
     my $HF = Heap::Fibonacci->new;
 
     while (defined $r) {
-	$add->($g, $HF, $r, $attr, $unseenh, $etc);
+	$add->($g, $h, $HF, $r, $attr, $unseenh, $etc);
 	delete $unseenh->{ $r };
 	while (defined $HF->top) {
 	    my $t = $HF->extract_top;
@@ -2234,7 +2243,7 @@ sub _heap_walk {
 		if (exists $unseenh->{ $v }) {
 		    $h->set_edge_attribute($u, $v, $attr, $w);
 		    delete $unseenh->{ $v };
-		    $add->($g, $HF, $v, $attr, $unseenh, $etc);
+		    $add->($g, $h, $HF, $v, $attr, $unseenh, $etc);
 		}
 	    }
 	}
@@ -3088,7 +3097,7 @@ sub bridges {
 #
 
 sub _SPT_add {
-    my ($g, $HF, $r, $attr, $unseen, $etc) = @_;
+    my ($g, $h, $HF, $r, $attr, $unseen, $etc) = @_;
     for my $s ( grep { $unseen->{ $_ } } $g->successors( $r ) ) {
 	my $t = $g->get_edge_attribute( $r, $s, $attr ) || 1;
 	if ($t < 0) {
@@ -3098,6 +3107,7 @@ sub _SPT_add {
 	if (!defined($etc->{ $s }) || $etc->{ $r } + $t < $etc->{ $s }) {
 	    $etc->{ $s } = ($etc->{ $r } || 0) + $t;
 	    # print "$r - $s : setting $s to $etc->{ $s }\n";
+	    $h->set_vertex_attribute( $s, $attr, $etc->{ $s } );
 	    $HF->add( Graph::SPTHeapElem->new($r, $s, $t) );
 	}
     }
@@ -3161,9 +3171,13 @@ sub SPT_Bellman_Ford {
     }
 
     my $h = $g->new();
+
     for my $v (keys %p) {
-	$h->add_edge( $p{ $v }, $v );
-#	$h->set_vertex_attribute( $v, $attr, $d{ $v } );
+	my $u = $p{ $v };
+	$h->add_edge( $u, $v );
+	$h->set_edge_attribute( $u, $v, $attr,
+				$g->get_edge_attribute($u, $v, $attr));
+	$h->set_vertex_attribute( $v, $attr, $d{ $v } );
     }
 
     return $h;
@@ -3197,7 +3211,7 @@ sub transitive_closure_matrix {
     my $g = shift;
     my $tcm = $g->get_graph_attribute('_tcm');
     unless (defined $tcm) {
-	my $apsp = $g->APSP_Floyd_Warshall();
+	my $apsp = $g->APSP_Floyd_Warshall(@_);
 	$tcm = $apsp->get_graph_attribute('_tcm');
 	$g->set_graph_attribute('_tcm', $tcm);
     }

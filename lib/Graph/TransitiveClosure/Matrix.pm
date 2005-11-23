@@ -5,49 +5,9 @@ use strict;
 use Graph::AdjacencyMatrix;
 use Graph::Matrix;
 
-sub new {
-    my ($class, $g, %opt) = @_;
-    my %am_opt = (distance_matrix => 1);
-    if (exists $opt{attribute_name}) {
-	$am_opt{attribute_name} = $opt{attribute_name};
-	delete $opt{attribute_name};
-    }
-    if ($opt{distance_matrix}) {
-	$am_opt{distance_matrix} = $opt{distance_matrix};
-    }
-    delete $opt{distance_matrix};
-    if (exists $opt{path}) {
-	$opt{path_length}   = $opt{path};
-	$opt{path_vertices} = $opt{path};
-	delete $opt{path};
-    }
-    my $want_path_length;
-    if (exists $opt{path_length}) {
-	$want_path_length = $opt{path_length};
-	delete $opt{path_length};
-    }
-    my $want_path_vertices;
-    if (exists $opt{path_vertices}) {
-	$want_path_vertices = $opt{path_vertices};
-	delete $opt{path_vertices};
-    }
-    my $want_reflexive;
-    if (exists $opt{reflexive}) {
-	$want_reflexive = $opt{reflexive};
-	delete $opt{reflexive};
-    }
-    my $want_transitive;
-    if (exists $opt{is_transitive}) {
-	$want_transitive = $opt{is_transitive};
-	$am_opt{is_transitive} = $want_transitive;
-	delete $opt{is_transitive};
-    }
-    die "Graph::TransitiveClosure::Matrix::new: Unknown options: @{[map { qq['$_' => $opt{$_}]} keys %opt]}"
-	if keys %opt;
-    $want_reflexive = 1 unless defined $want_reflexive;
-    my $want_path = $want_path_length || $want_path_vertices;
-    # $g->expect_dag if $want_path;
-    my $m = Graph::AdjacencyMatrix->new($g, %am_opt);
+sub _new {
+    my ($g, $class, $opt, $want_transitive, $want_reflexive, $want_path, $want_path_vertices) = @_;
+    my $m = Graph::AdjacencyMatrix->new($g, %$opt);
     my @V = $g->vertices;
     my $am = $m->adjacency_matrix;
     my $dm; # The distance matrix.
@@ -248,6 +208,53 @@ sub new {
 	$pm->[1] = \%pi;
     }
     bless [ $am, $dm, $pm, \%V ], $class;
+}
+
+sub new {
+    my ($class, $g, %opt) = @_;
+    my %am_opt = (distance_matrix => 1);
+    if (exists $opt{attribute_name}) {
+	$am_opt{attribute_name} = $opt{attribute_name};
+	delete $opt{attribute_name};
+    }
+    if ($opt{distance_matrix}) {
+	$am_opt{distance_matrix} = $opt{distance_matrix};
+    }
+    delete $opt{distance_matrix};
+    if (exists $opt{path}) {
+	$opt{path_length}   = $opt{path};
+	$opt{path_vertices} = $opt{path};
+	delete $opt{path};
+    }
+    my $want_path_length;
+    if (exists $opt{path_length}) {
+	$want_path_length = $opt{path_length};
+	delete $opt{path_length};
+    }
+    my $want_path_vertices;
+    if (exists $opt{path_vertices}) {
+	$want_path_vertices = $opt{path_vertices};
+	delete $opt{path_vertices};
+    }
+    my $want_reflexive;
+    if (exists $opt{reflexive}) {
+	$want_reflexive = $opt{reflexive};
+	delete $opt{reflexive};
+    }
+    my $want_transitive;
+    if (exists $opt{is_transitive}) {
+	$want_transitive = $opt{is_transitive};
+	$am_opt{is_transitive} = $want_transitive;
+	delete $opt{is_transitive};
+    }
+    die "Graph::TransitiveClosure::Matrix::new: Unknown options: @{[map { qq['$_' => $opt{$_}]} keys %opt]}"
+	if keys %opt;
+    $want_reflexive = 1 unless defined $want_reflexive;
+    my $want_path = $want_path_length || $want_path_vertices;
+    # $g->expect_dag if $want_path;
+    _new($g, $class, \%am_opt,
+	 $want_transitive, $want_reflexive,
+	 $want_path, $want_path_vertices);
 }
 
 sub has_vertices {

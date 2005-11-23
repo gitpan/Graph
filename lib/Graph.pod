@@ -40,6 +40,11 @@ otherwise.
 Instead, this module is for creating I<abstract data structures>
 called graphs, and for doing various operations on those.
 
+=head2 Perl 5.6.0 minimum
+
+The implementation depends on a Perl feature called "weak references"
+and Perl 5.6.0 was the first to have those.
+
 =head2 Constructors
 
 =over 4
@@ -610,7 +615,7 @@ and L</is_weakly_connected>.
 For an undirected graph, returns the vertices of the connected
 components of the graph as a list of anonymous arrays.  The ordering
 of the anonymous arrays or the ordering of the vertices inside the
-anonymous arrays is undefined.
+anonymous arrays (the components) is undefined.
 
 For directed graphs, see L</strongly_connected_components>
 and L</weakly_connected_components>.
@@ -710,10 +715,10 @@ of the graph as a list of vertices.  The order is undefined.
    $g->biconnected_components
 
 For an undirected graph, return the biconnected components of the
-graph as a list of anonymous arrays of vertices in the components. The
-ordering of the anonymous arrays or the ordering of the vertices
-inside the anonymous arrays is undefined.  Also note that one vertex
-can belong to more than one biconnected component.
+graph as a list of anonymous arrays of vertices in the components.
+The ordering of the anonymous arrays or the ordering of the vertices
+inside the anonymous arrays (the components) is undefined.  Also note
+that one vertex can belong to more than one biconnected component.
 
 =item biconnected_component_by_vertex
 
@@ -733,7 +738,7 @@ and L</weakly_connected_component_by_index>.
 
 For an undirected graph, return the vertices in the ith biconnected
 component of the graph as an anonymous arrays of vertices in the
-component.  The ordering of the vertices inside the anonymous array is
+component.  The ordering of the vertices within a component is
 undefined.  Also note that one vertex can belong to more than one
 biconnected component.
 
@@ -791,9 +796,9 @@ L</biconnected_components>.
     @v = $g->strongly_connected_component_by_index($i)
 
 For a directed graph, return the vertices of the ith connected
-component, the indexing starting from zero.  The order of vertices is
-undefined, while the order of the connected components is the as from
-strongly_connected_components().
+component, the indexing starting from zero.  The order of vertices
+within a component is undefined, while the order of the connected
+components is the as from strongly_connected_components().
 
 For the inverse, see L</strongly_connected_component_by_vertex>.
 
@@ -833,7 +838,7 @@ For undirected graphs, see L</is_connected> or L</is_biconnected>.
 For a directed graph, returns the vertices of the weakly connected
 components of the graph as a list of anonymous arrays.  The ordering
 of the anonymous arrays or the ordering of the vertices inside the
-anonymous arrays is undefined.
+anonymous arrays (the components) is undefined.
 
 See also L</strongly_connected_components>.
 
@@ -857,9 +862,9 @@ and L<biconnected_component_by_vertex>.
     @v = $g->weakly_connected_component_by_index($i)
 
 For a directed graph, return the vertices of the ith weakly connected
-component, the indexing starting zero.  The order of vertices is
-undefined, while the order of the weakly connected components is
-same as from weakly_connected_components().
+component, the indexing starting zero.  The order of vertices within
+a component is undefined, while the order of the weakly connected
+components is same as from weakly_connected_components().
 
 For the inverse, see L</weakly_connected_component_by_index>.
 
@@ -898,7 +903,7 @@ or see L</biconnected_components>.
 
    my $scg = $g->strongly_connected_graph;
 
-Fof a directed graph, return the strongly connected graph of the
+For a directed graph, return the strongly connected graph of the
 graph.  The vertices in the strongly connected graph are formed from
 the strongly connected elements of the graph (currently by sorting the
 vertices of the original graph present in the strongly connected
@@ -1448,11 +1453,17 @@ edge, 1 (one) is assumed.
 
     $sptg = $g->SPT_Dijkstra(%opt)
 
-Find the single-source shortest paths using Dijkstra's algorithm.
-The graph cannot contain negative edges (negative edges cause the
-algorithm to abort).
+Return as a graph the the single-source shortest paths of the graph
+using Dijkstra's algorithm.  The graph cannot contain negative edges
+(negative edges cause the algorithm to abort with an error message
+C<Graph::SPT_Dijkstra: edge ... is negative>).
 
-You can choose the first vertex with $opt{ first_root }.
+The result weights can be retrieved from the result graph by
+
+	my $w = $sptg->get_vertex_attribute($v, 'weight');
+
+You can choose the first vertex of the result with $opt{ first_root },
+otherwise a random vertex is chosen.
 
 =item SSSP_Dijkstra
 
@@ -1464,11 +1475,17 @@ Aliases for SPT_Dijkstra.
 
     $sptg = $g->SPT_Bellman_Ford(%opt)
 
-Find the single-source shortest paths using Bellman-Ford's algorithm.
-The graph can contain negative edges but not negative cycles (negative
-cycles cause the algorithm to abort).
+Return as a graph the single-source shortest paths of the graph using
+Bellman-Ford's algorithm.  The graph can contain negative edges but
+not negative cycles (negative cycles cause the algorithm to abort
+with an error message C<Graph::SPT_Bellman_Ford: negative cycle exists/>).
 
-You can choose the first vertex with $opt{ first_root }.
+The result weights can be retrieved from the result graph by
+
+	my $w = $sptg->get_vertex_attribute($v, 'weight');
+
+You can choose the first vertex with $opt{ first_root }, otherwise
+a random vertex is chosen.
 
 =item SSSP_Bellman_Ford
 
@@ -1545,8 +1562,8 @@ the graph.  Note that this recomputes the APSP each time when called.
 
 In scalar context return the longest (shortest) path length over all
 the vertex pairs of the graph.  In list context return the vertices
-along the shortest path.  Note that this recomputes the APSP each
-time when called.
+along the shortest path.  Note that this recomputes the APSP each time
+when called.
 
 This measure is also known as the graph diameter.
 
@@ -2057,7 +2074,9 @@ C<z x y>.
 
 In the general case determining isomorphism is I<NP-hard>, in other
 words, really hard (time-consuming), no other ways of solving the problem
-are known than brute force check of of all the possibilities.
+are known than brute force check of of all the possibilities (with possible
+optimization tricks, of course, but brute force still rules at the end of
+the day).
 
 A B<very rough guess> at whether two graphs B<could> be isomorphic
 is possible via the method
@@ -2441,7 +2460,7 @@ assumes Graphs being blessed hash references, possibly also assuming
 that certain hash keys are available to use for your own purposes.
 In Graph 0.50 none of this is true.  Please do not expect any
 particular internal implementation of Graphs.  Use inheritance
-and graph attributes instead.
+and graph/vertex/edge attributes instead.
 
 Another possibility is that you meant to have objects (blessed
 references) as graph vertices, but forgot to use C<refvertexed>
@@ -2467,7 +2486,7 @@ Thanks to Nathan Goodman and Andras Salamon for bravely betatesting my
 pre-0.50 code.  If they missed something, that was only because of my
 fiendish code.
 
-The following literature for algorithm descriptions and some test cases:
+The following literature for algorithms and some test cases:
 
 =over 4
 
