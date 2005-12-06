@@ -1,3 +1,23 @@
+2005-12-06  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Add SP_Dijkstra() and SP_Bellman_Ford() to find the shortest
+	  path between any two vertices, the result is returned as
+	  the list of the vertices in the path.
+	* In addition to the SPT per vertex result weight, also add
+	  a predecessor ('p') vertex attribute (the SP_Dijkstra() and
+	  SP_Bellman_Ford() unsurprisingly use this.)
+	* Cache the SPT results for better speed.
+	* Document that the SPT also allow a single argument
+	  as the starting (root) vertex.
+	* Fix a bug in SPT_Dijkstra() which would ignore an "untrue" vertex
+	  (such as '0') if it was any other vertex than the root vertex
+	  (boolean context is dangerous, when you really mean "exists").
+	* For "components" (strongly, biconnected, and connected) graphs
+	  store the list of the original vertices as a vertex attribute
+	  'subvertices' (so there is no need to do split(/\+/, ...) tricks),
+	  the list is stored as a array reference.
+	* Release as 0.69.
+
 2005-11-23  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* SPT_Dijkstra() wasn't setting the vertex attributes of

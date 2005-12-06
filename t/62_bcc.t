@@ -1,6 +1,6 @@
 use Graph;
 
-use Test::More tests => 382;
+use Test::More tests => 385;
 
 my $N = 5;
 
@@ -362,12 +362,18 @@ ok( (grep { $_ eq 'i' } @c0a) ||
 
 is( $g3->biconnected_component_by_index(3), undef );
 
-is( $g3->biconnected_graph(), "a+b+e+f+s=c+d+g+h+s,i+j+k" );
+my $g3c = $g3->biconnected_graph();
+
+is( $g3c, "a+b+e+f+s=c+d+g+h+s,i+j+k" );
 
 ok( $g3->same_biconnected_components('a', 'b') );
 ok( $g3->same_biconnected_components('a', 'b', 'e') );
 ok(!$g3->same_biconnected_components('a', 'c') );
 ok(!$g3->same_biconnected_components('a', 'b', 'c') );
+
+is("@{[sort @{ $g3c->get_vertex_attribute('a+b+e+f+s', 'subvertices') }]}", "a b e f s");
+is("@{[sort @{ $g3c->get_vertex_attribute('i+j+k', 'subvertices') }]}", "i j k");
+is($g3c->get_vertex_attribute('i+k+j', 'subvertices'), undef);
 
 my $d = Graph->new;
 

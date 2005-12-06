@@ -670,6 +670,12 @@ and L</same_weakly_connected_components>.
 
 For an undirected graph, return its connected graph.
 
+The vertex names of the connected graph are formed from the names of
+the vertices of the original graph by (alphabetically sorting them
+and) concatenating their names with C<+>.  The vertex attribute
+C<subvertices> is also used to store the list (as an array reference)
+of the original vertices.
+
 =item biconnectivity
 
     my ($ap, $bc, $br) = $g->biconnectivity
@@ -754,6 +760,12 @@ biconnected component.
     $bcg = $g->biconnected_graph
 
 For an undirected graph, return its biconnected graph.
+
+The vertex names of the connected graph are formed from the names of
+the vertices of the original graph by (alphabetically sorting them
+and) concatenating their names with C<+>.  The vertex attribute
+C<subvertices> is also used to store the list (as an array reference)
+of the original vertices.
 
 =item bridges
 
@@ -909,7 +921,8 @@ the strongly connected elements of the graph (currently by sorting the
 vertices of the original graph present in the strongly connected
 component and concatenating the vertex names with C<+>, for example
 C<a+b+c>); the edges connect the strongly connected elements of the
-graph.
+graph.  The vertex attribute C<subvertices> is also used to store the
+list (as an array reference) of the original vertices.
 
 Strongly connected graphs are also known as I<kernel graphs>.
 
@@ -1451,6 +1464,7 @@ edge, 1 (one) is assumed.
 
 =item SPT_Dijkstra
 
+    $sptg = $g->SPT_Dijkstra($root)
     $sptg = $g->SPT_Dijkstra(%opt)
 
 Return as a graph the the single-source shortest paths of the graph
@@ -1458,18 +1472,40 @@ using Dijkstra's algorithm.  The graph cannot contain negative edges
 (negative edges cause the algorithm to abort with an error message
 C<Graph::SPT_Dijkstra: edge ... is negative>).
 
-The result weights can be retrieved from the result graph by
+You can choose the first vertex of the result with either a single
+vertex argument or with $opt{ first_root }, otherwise a random vertex
+is chosen.
+
+The result weights of vertices can be retrieved from the result graph by
 
 	my $w = $sptg->get_vertex_attribute($v, 'weight');
 
-You can choose the first vertex of the result with $opt{ first_root },
-otherwise a random vertex is chosen.
+The predecessor vertex of a vertex in the result graph
+can be retrieved by
+
+	my $u = $sptg->get_vertex_attribute($v, 'p');
+
+("A successor vertex" cannot be retrieved as simply because a single
+vertex can have several successors.  You can first find the
+C<neighbors()> vertices and then remove the predecessor vertex.)
+
+If you want to find the shortes path between two vertices,
+see L</SP_Dijkstra>.
 
 =item SSSP_Dijkstra
 
 =item single_source_shortest_paths
 
 Aliases for SPT_Dijkstra.
+
+=item SP_Dijkstra
+
+    @path = $g->SP_Dijkstra($u, $v)
+
+Return the vertices in the shortest path in the graph $g between the
+two vertices $u, $v.  If no path can be found, an empty list is returned.
+
+Uses SPT_Dijkstra().
 
 =item SPT_Bellman_Ford
 
@@ -1480,16 +1516,38 @@ Bellman-Ford's algorithm.  The graph can contain negative edges but
 not negative cycles (negative cycles cause the algorithm to abort
 with an error message C<Graph::SPT_Bellman_Ford: negative cycle exists/>).
 
-The result weights can be retrieved from the result graph by
+You can choose the first vertex of the result with either a single
+vertex argument or with $opt{ first_root }, otherwise a random vertex
+is chosen.
+
+The result weights of vertices can be retrieved from the result graph by
 
 	my $w = $sptg->get_vertex_attribute($v, 'weight');
 
-You can choose the first vertex with $opt{ first_root }, otherwise
-a random vertex is chosen.
+The predecessor vertex of a vertex in the result graph
+can be retrieved by
+
+	my $u = $sptg->get_vertex_attribute($v, 'p');
+
+("A successor vertex" cannot be retrieved as simply because a single
+vertex can have several successors.  You can first find the
+C<neighbors()> vertices and then remove the predecessor vertex.)
+
+If you want to find the shortes path between two vertices,
+see L</SP_Bellman_Ford>.
 
 =item SSSP_Bellman_Ford
 
 Alias for SPT_Bellman_Ford.
+
+=item SP_Bellman_Ford
+
+    @path = $g->SP_Dijkstra($u, $v)
+
+Return the vertices in the shortest path in the graph $g between the
+two vertices $u, $v.  If no path can be found, an empty list is returned.
+
+Uses SPT_Bellman_Ford().
 
 =back
 

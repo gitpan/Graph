@@ -1,4 +1,4 @@
-use Test::More tests => 206;
+use Test::More tests => 209;
 
 use Graph::Undirected;
 use Graph::Directed;
@@ -282,7 +282,13 @@ isnt($g3->connected_component_by_vertex('a'), $g3->connected_component_by_vertex
 ok( $g3->same_connected_components('a', 'b'));
 ok( $g3->same_connected_components('c', 'd'));
 ok(!$g3->same_connected_components('a', 'c'));
-is($g3->connected_graph, 'a+b,c+d');
+
+my $g3c = $g3->connected_graph;
+is($g3c, 'a+b,c+d');
+
+is("@{[sort @{ $g3c->get_vertex_attribute('a+b', 'subvertices') }]}", "a b");
+is("@{[sort @{ $g3c->get_vertex_attribute('c+d', 'subvertices') }]}", "c d");
+is($g3c->get_vertex_attribute('b+a', 'subvertices'), undef);
 
 my $g4 = Graph::Directed->new;
 

@@ -12,6 +12,7 @@ sub _G () { Graph::_G() }
 sub new {
     my ($class, $g, %opt) = @_;
     $g->expect_non_multiedged;
+    %opt = (path_vertices => 1) unless %opt;
     my $attr = Graph::_defattr();
     if (exists $opt{ attribute_name }) {
 	$attr = $opt{ attribute_name };
@@ -24,8 +25,7 @@ sub new {
     if (defined $tcg && $tcg->[ 0 ] == $g->[ _G ]) {
 	$tcg = $tcg->[ 1 ];
     } else {
-	$tcg = Graph::TransitiveClosure::Matrix->new($g, %opt,
-						     path_vertices => 1);
+	$tcg = Graph::TransitiveClosure::Matrix->new($g, %opt);
 	$g->set_graph_attribute('_tcg', [ $g->[ _G ], $tcg ]);
     }
     my $tcg00 = $tcg->[0]->[0];

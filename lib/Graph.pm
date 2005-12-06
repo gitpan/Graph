@@ -1,20 +1,20 @@
 package Graph;
 
-BEGIN {
-    if (0) { # SET TO ZERO FOR TESTING AND RELEASES!
-	$SIG{__DIE__ } = \&CarpConfess;
-	$SIG{__WARN__} = \&CarpConfess;
-    }
-    sub CarpConfess () { require Carp; Carp::confess }
-}
-
 use strict;
+
+BEGIN {
+    if (0) { # SET THIS TO ZERO FOR TESTING AND RELEASES!
+	$SIG{__DIE__ } = \&__carp_confess;
+	$SIG{__WARN__} = \&__carp_confess;
+    }
+    sub __carp_confess { require Carp; Carp::confess(@_) }
+}
 
 use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.68';
+$VERSION = '0.69';
 
 require 5.006; # Weak references are required.
 
@@ -59,19 +59,19 @@ sub _U () { 5 } # Union-Find.
 # - _UNORDUNIQ: just a union of _UNORD and UNIQ
 # Vertices are assumed to be _UNORDUNIQ; edges assume none of these flags.
 
-use Graph::Attribute array => _A, map => "graph";
+use Graph::Attribute array => _A, map => 'graph';
 
 sub _COMPAT02 () { 0x00000001 }
 
 sub stringify {
     my $g = shift;
     my $o = $g->is_undirected;
-    my $e = $o ? "=" : "-";
+    my $e = $o ? '=' : '-';
     my @e =
 	map {
 	    my @v =
 		map {
-		    ref($_) eq 'ARRAY' ? "[" . join(" ", @$_). "]" : "$_"
+		    ref($_) eq 'ARRAY' ? "[" . join(" ", @$_) . "]" : "$_"
 		}
 	    @$_;
 	    join($e, $o ? sort { "$a" cmp "$b" } @v : @v) } $g->edges05;
@@ -749,11 +749,13 @@ sub _edges_from {
 	if (wantarray) {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    push @e, [ $ei, $ev ]
 			if ($ev->[0] == $vi || $ev->[-1] == $vi) && !$ev{$ei}++;
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    push @e, [ $ei, $ev ]
 			if $ev->[0] == $vi && !$ev{$ei}++;
 		}
@@ -761,11 +763,12 @@ sub _edges_from {
 	} else {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
-		    $en++
-			if ($ev->[0] == $vi || $ev->[-1] == $vi);
+		    next unless @$ev;
+		    $en++ if ($ev->[0] == $vi || $ev->[-1] == $vi);
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    $en++ if $ev->[0] == $vi;
 		}
 	    }
@@ -797,11 +800,13 @@ sub _edges_to {
 	if (wantarray) {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    push @e, [ $ei, $ev ]
 			if ($ev->[-1] == $vi || $ev->[0] == $vi) && !$ev{$ei}++;
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    push @e, [ $ei, $ev ]
 			if $ev->[-1] == $vi && !$ev{$ei}++;
 		}
@@ -809,10 +814,12 @@ sub _edges_to {
 	} else {
 	    if ($o) {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    $en++ if $ev->[-1] == $vi || $ev->[0] == $vi;
 		}
 	    } else {
 		while (my ($ei, $ev) = each %{ $Ei }) {
+		    next unless @$ev;
 		    $en++ if $ev->[-1] == $vi;
 		}
 	    }
@@ -2617,7 +2624,9 @@ sub connected_graph {
 	$cg->add_vertices($g->vertices);
     } else {
 	for my $cc ( $g->connected_components() ) {
-	    $cg->add_vertex($super_component->($cc));
+	    my $sc = $super_component->($cc);
+	    $cg->add_vertex($sc);
+	    $cg->set_vertex_attribute($sc, 'subvertices', [ @$cc ]);
 	}
     }
     return $cg;
@@ -2832,6 +2841,7 @@ sub strongly_connected_graph {
     for (my $i = 0; $i <  @c; $i++) {
 	my $c = $c[$i];
 	$s->add_vertex( $s[$i] = $hypervertex->($c) );
+	$s->set_vertex_attribute($s[$i], 'subvertices', [ @$c ]);
 	for my $v (@$c) {
 	    $c{$v} = $i;
 	}
@@ -3061,7 +3071,8 @@ sub biconnected_graph {
     my ($bc, $v2bc) = ($g->biconnectivity)[1, 3];
     my $bcg = Graph::Undirected->new;
     for my $c (@$bc) {
-	$bcg->add_vertex($super_component->($c));
+	$bcg->add_vertex(my $s = $super_component->($c));
+	$bcg->set_vertex_attribute($s, 'subvertices', [ @$c ]);
     }
     my %k;
     for my $i (0..$#$bc) {
@@ -3098,7 +3109,7 @@ sub bridges {
 
 sub _SPT_add {
     my ($g, $h, $HF, $r, $attr, $unseen, $etc) = @_;
-    for my $s ( grep { $unseen->{ $_ } } $g->successors( $r ) ) {
+    for my $s ( grep { exists $unseen->{ $_ } } $g->successors( $r ) ) {
 	my $t = $g->get_edge_attribute( $r, $s, $attr ) || 1;
 	if ($t < 0) {
 	    require Carp;
@@ -3108,6 +3119,7 @@ sub _SPT_add {
 	    $etc->{ $s } = ($etc->{ $r } || 0) + $t;
 	    # print "$r - $s : setting $s to $etc->{ $s }\n";
 	    $h->set_vertex_attribute( $s, $attr, $etc->{ $s } );
+	    $h->set_vertex_attribute( $s, 'p', $r );
 	    $HF->add( Graph::SPTHeapElem->new($r, $s, $t) );
 	}
     }
@@ -3115,17 +3127,41 @@ sub _SPT_add {
 
 sub SPT_Dijkstra {
     my $g = shift;
-    my %etc;
-    $g->_heap_walk($g->new(), \&_SPT_add, \%etc, @_);
+    my %opt = @_ == 1 ? (first_root => $_[0]) : @_;
+    my $first_root = $opt{ first_root };
+    unless (defined $first_root) {
+	$opt{ first_root} = $first_root = $g->random_vertex();
+    }
+    my $spt_di = $g->get_graph_attribute('_spt_di');
+    unless (defined $spt_di && exists $spt_di->{ $first_root } && $spt_di->{ $first_root }->[ 0 ] == $g->[ _G ]) {
+	my %etc;
+	my $sptg = $g->_heap_walk($g->new(), \&_SPT_add, \%etc, %opt);
+	$spt_di->{ $first_root } = [ $g->[ _G ], $sptg ];
+	$g->set_graph_attribute('_spt_di', $spt_di);
+    }
+    return $spt_di->{ $first_root }->[ 1 ];
 }
 
 *SSSP_Dijkstra = \&SPT_Dijkstra;
 
 *single_source_shortest_paths = \&SPT_Dijkstra;
 
-sub SPT_Bellman_Ford {
-    my $g = shift;
-    my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) = $g->_root_opt(@_);
+sub SP_Dijkstra {
+    my ($g, $u, $v) = @_;
+    my $sptg = $g->SPT_Dijkstra(first_root => $u);
+    my @path = ($v);
+    my $p;
+    while (defined($p = $sptg->get_vertex_attribute($v, 'p'))) {
+	push @path, $p;
+	$v = $p;
+    }
+    @path = () if @path && $path[-1] ne $u;
+    return reverse @path;
+}
+
+sub _SPT_Bellman_Ford {
+    my ($g, $opt, $unseenh, $unseena, $r, $next, $code, $attr) = @_;
+
     my %d;
     $d{ $r } = 0;
     my %p;
@@ -3170,20 +3206,51 @@ sub SPT_Bellman_Ford {
 	}
     }
 
-    my $h = $g->new();
+    return (\%p, \%d );
+}
 
-    for my $v (keys %p) {
-	my $u = $p{ $v };
-	$h->add_edge( $u, $v );
-	$h->set_edge_attribute( $u, $v, $attr,
-				$g->get_edge_attribute($u, $v, $attr));
-	$h->set_vertex_attribute( $v, $attr, $d{ $v } );
+sub SPT_Bellman_Ford {
+    my $g = shift;
+
+    my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) = $g->_root_opt(@_);
+
+    unless (defined $r) {
+	$r = $g->random_vertex();
     }
 
-    return $h;
+    my $spt_bf = $g->get_graph_attribute('_spt_bf');
+    unless (defined $spt_bf && exists $spt_bf->{ $r } && $spt_bf->{ $r }->[ 0 ] == $g->[ _G ]) {
+	my ($p, $d) = $g->_SPT_Bellman_Ford($opt, $unseenh, $unseena, $r, $next, $code, $attr);
+	my $h = $g->new();
+	for my $v (keys %$p) {
+	    my $u = $p->{ $v };
+	    $h->add_edge( $u, $v );
+	    $h->set_edge_attribute( $u, $v, $attr,
+				    $g->get_edge_attribute($u, $v, $attr));
+	    $h->set_vertex_attribute( $v, $attr, $d->{ $v } );
+	    $h->set_vertex_attribute( $v, 'p', $u );
+	}
+	$spt_bf->{ $r } = [ $g->[ _G ], $h ];
+	$g->set_graph_attribute('_spt_bf', $spt_bf);
+    }
+
+    return $spt_bf->{ $r }->[ 1 ];
 }
 
 *SSSP_Bellman_Ford = \&SPT_Bellman_Ford;
+
+sub SP_Bellman_Ford {
+    my ($g, $u, $v) = @_;
+    my $sptg = $g->SPT_Dijkstra(first_root => $u);
+    my @path = ($v);
+    my $p;
+    while (defined($p = $sptg->get_vertex_attribute($v, 'p'))) {
+	push @path, $p;
+	$v = $p;
+    }
+    @path = () if @path && $path[-1] ne $u;
+    return reverse @path;
+}
 
 ###
 # Transitive Closure.

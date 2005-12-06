@@ -252,7 +252,8 @@ sub new {
     $want_reflexive = 1 unless defined $want_reflexive;
     my $want_path = $want_path_length || $want_path_vertices;
     # $g->expect_dag if $want_path;
-    _new($g, $class, \%am_opt,
+    _new($g, $class,
+	 \%am_opt,
 	 $want_transitive, $want_reflexive,
 	 $want_path, $want_path_vertices);
 }
@@ -400,13 +401,13 @@ the diagonal, use true for the C<reflexive> option.
 B<NOTE>: this behaviour has changed from Graph 0.2xxx: transitive
 closure graphs were by default reflexive.
 
-=item path_length => 1
+=item path_length => boolean
 
 By default the path lengths are not computed, only the boolean transitivity.
 By using true for C<path_length> also the path lengths will be computed,
 they can be retrieved using the path_length() method.
 
-=item path_vertices => 1
+=item path_vertices => boolean
 
 By default the paths are not computed, only the boolean transitivity.
 By using true for C<path_vertices> also the paths will be computed,

@@ -1,4 +1,4 @@
-use Test::More tests => 70;
+use Test::More tests => 118;
 
 use Graph;
 use Graph::Directed;
@@ -169,6 +169,34 @@ is($s2_di->get_vertex_attribute('3', 'weight'), 0.86,  "vertex 3");
 is($s2_di->get_vertex_attribute('4', 'weight'), 0.50,  "vertex 4");
 is($s2_di->get_vertex_attribute('5', 'weight'), 0.29,  "vertex 5");
 
+is($s2_di->get_vertex_attribute('0', 'p'), undef, "vertex 0 p");
+is($s2_di->get_vertex_attribute('1', 'p'),     0, "vertex 1 p");
+is($s2_di->get_vertex_attribute('2', 'p'),     4, "vertex 2 p");
+is($s2_di->get_vertex_attribute('3', 'p'),     4, "vertex 3 p");
+is($s2_di->get_vertex_attribute('4', 'p'),     5, "vertex 4 p");
+is($s2_di->get_vertex_attribute('5', 'p'),     0, "vertex 5 p");
+
+is("@{[$g2->SP_Dijkstra('0', '0')]}", "0",       "path 0 0");
+is("@{[$g2->SP_Dijkstra('0', '1')]}", "0 1",     "path 0 1");
+is("@{[$g2->SP_Dijkstra('0', '2')]}", "0 5 4 2", "path 0 2");
+is("@{[$g2->SP_Dijkstra('0', '3')]}", "0 5 4 3", "path 0 3");
+is("@{[$g2->SP_Dijkstra('0', '4')]}", "0 5 4",   "path 0 4");
+is("@{[$g2->SP_Dijkstra('0', '5')]}", "0 5",     "path 0 5");
+
+is("@{[$g2->SP_Dijkstra('1', '0')]}", "1 4 3 0", "path 1 0");
+is("@{[$g2->SP_Dijkstra('1', '1')]}", "1",       "path 1 1");
+is("@{[$g2->SP_Dijkstra('1', '2')]}", "1 2",     "path 1 2");
+is("@{[$g2->SP_Dijkstra('1', '3')]}", "1 4 3",   "path 1 3");
+is("@{[$g2->SP_Dijkstra('1', '4')]}", "1 4",     "path 1 4");
+is("@{[$g2->SP_Dijkstra('1', '5')]}", "1 4 3 5", "path 1 5");
+
+is("@{[$g2->SP_Dijkstra('0', '0')]}", "0",       "path 0 0");
+is("@{[$g2->SP_Dijkstra('0', '1')]}", "0 1",     "path 0 1");
+is("@{[$g2->SP_Dijkstra('0', '2')]}", "0 5 4 2", "path 0 2");
+is("@{[$g2->SP_Dijkstra('0', '3')]}", "0 5 4 3", "path 0 3");
+is("@{[$g2->SP_Dijkstra('0', '4')]}", "0 5 4",   "path 0 4");
+is("@{[$g2->SP_Dijkstra('0', '5')]}", "0 5",     "path 0 5");
+
 is($s2_bf->get_edge_attribute('0', '1', 'weight'), 0.41, "edge 0-1");
 is($s2_bf->get_edge_attribute('0', '5', 'weight'), 0.29, "edge 0-5");
 is($s2_bf->get_edge_attribute('5', '4', 'weight'), 0.21, "edge 5-4");
@@ -199,4 +227,32 @@ is($s2_bf->get_vertex_attribute('2', 'weight'), 0.82,  "vertex 2");
 is($s2_bf->get_vertex_attribute('3', 'weight'), 0.86,  "vertex 3");
 is($s2_bf->get_vertex_attribute('4', 'weight'), 0.50,  "vertex 4");
 is($s2_bf->get_vertex_attribute('5', 'weight'), 0.29,  "vertex 5");
+
+is($s2_bf->get_vertex_attribute('0', 'p'), undef, "vertex 0 p");
+is($s2_bf->get_vertex_attribute('1', 'p'),     0, "vertex 1 p");
+is($s2_bf->get_vertex_attribute('2', 'p'),     4, "vertex 2 p");
+is($s2_bf->get_vertex_attribute('3', 'p'),     4, "vertex 3 p");
+is($s2_bf->get_vertex_attribute('4', 'p'),     5, "vertex 4 p");
+is($s2_bf->get_vertex_attribute('5', 'p'),     0, "vertex 5 p");
+
+is("@{[$g2->SP_Bellman_Ford('0', '0')]}", "0",       "path 0 0");
+is("@{[$g2->SP_Bellman_Ford('0', '1')]}", "0 1",     "path 0 1");
+is("@{[$g2->SP_Bellman_Ford('0', '2')]}", "0 5 4 2", "path 0 2");
+is("@{[$g2->SP_Bellman_Ford('0', '3')]}", "0 5 4 3", "path 0 3");
+is("@{[$g2->SP_Bellman_Ford('0', '4')]}", "0 5 4",   "path 0 4");
+is("@{[$g2->SP_Bellman_Ford('0', '5')]}", "0 5",     "path 0 5");
+
+is("@{[$g2->SP_Bellman_Ford('1', '0')]}", "1 4 3 0", "path 1 0");
+is("@{[$g2->SP_Bellman_Ford('1', '1')]}", "1",       "path 1 1");
+is("@{[$g2->SP_Bellman_Ford('1', '2')]}", "1 2",     "path 1 2");
+is("@{[$g2->SP_Bellman_Ford('1', '3')]}", "1 4 3",   "path 1 3");
+is("@{[$g2->SP_Bellman_Ford('1', '4')]}", "1 4",     "path 1 4");
+is("@{[$g2->SP_Bellman_Ford('1', '5')]}", "1 4 3 5", "path 1 5");
+
+is("@{[$g2->SP_Bellman_Ford('0', '0')]}", "0",       "path 0 0");
+is("@{[$g2->SP_Bellman_Ford('0', '1')]}", "0 1",     "path 0 1");
+is("@{[$g2->SP_Bellman_Ford('0', '2')]}", "0 5 4 2", "path 0 2");
+is("@{[$g2->SP_Bellman_Ford('0', '3')]}", "0 5 4 3", "path 0 3");
+is("@{[$g2->SP_Bellman_Ford('0', '4')]}", "0 5 4",   "path 0 4");
+is("@{[$g2->SP_Bellman_Ford('0', '5')]}", "0 5",     "path 0 5");
 

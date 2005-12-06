@@ -1,4 +1,4 @@
-use Test::More tests => 51;
+use Test::More tests => 56;
 
 use Graph;
 use Graph::Undirected;
@@ -34,7 +34,19 @@ is("@{[sort @{$c1[1]}]}", 'd e');
 is("@{[sort @{$c1[2]}]}", 'g h');
 is("@{[sort @{$c1[3]}]}", 'a b c');
 
-is($g1->strongly_connected_graph, "a+b+c-d+e,d+e-g+h,f-a+b+c,f-d+e");
+my $g1s = $g1->strongly_connected_graph;
+
+is($g1s, "a+b+c-d+e,d+e-g+h,f-a+b+c,f-d+e");
+
+is("@{[sort @{$g1s->get_vertex_attribute('a+b+c', 'subvertices')}]}",
+   "a b c");
+is("@{[sort @{$g1s->get_vertex_attribute('d+e', 'subvertices')}]}",
+   "d e");
+is("@{[sort @{$g1s->get_vertex_attribute('f', 'subvertices')}]}",
+   "f");
+is("@{[sort @{$g1s->get_vertex_attribute('g+h', 'subvertices')}]}",
+   "g h");
+is($g1s->get_vertex_attribute('h+g', 'subvertices'), undef);
 
 ok(!$g1->is_strongly_connected);
 
@@ -84,7 +96,7 @@ is($g3->strongly_connected_graph(hypervertex =>
 eval '$g3->strongly_connected_graph(foobar => 1)';
 like($@, qr/Graph::strongly_connected_graph: Unknown option: 'foobar' /);
 
-# Example from Sedgewick Algorithms in C Third Edition 19.1 Figure 19.8 p 150
+# Example from Sedgewick Algorithms in C Third Edition 19.1 Figure 19.8 (p 150)
 my $g4 = Graph->new;
 $g4->add_edges([ 0,  1], [ 0,  5], [0,  6]);
 $g4->add_edges([ 2,  0], [ 2,  3]);
