@@ -33,7 +33,6 @@ sub __set_path {
     my @k;
     my $k = shift;
     my $q = ref $k && ($f & _REF) && overload::Method($k, '""') ? overload::StrVal($k) : $k;
-    $m->[ _k ]->{ $q } = $k if ($f & _REF);
     push @k, $q;
     return (\@p, \@k);
 }

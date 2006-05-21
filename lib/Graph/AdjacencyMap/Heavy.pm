@@ -39,7 +39,6 @@ sub __set_path {
 	    return unless $p;
 	    push @p, $p;
 	}
-	$m->[ _k ]->{ $q } = $k if ($f & _REF);
 	push @k, $q;
     }
     return (\@p, \@k);

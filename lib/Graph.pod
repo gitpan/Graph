@@ -670,11 +670,19 @@ and L</same_weakly_connected_components>.
 
 For an undirected graph, return its connected graph.
 
-The vertex names of the connected graph are formed from the names of
-the vertices of the original graph by (alphabetically sorting them
-and) concatenating their names with C<+>.  The vertex attribute
-C<subvertices> is also used to store the list (as an array reference)
-of the original vertices.
+By default, the vertex names of the connected graph are formed from
+the names of the vertices of the original graph by (alphabetically
+sorting them and) concatenating their names with C<+>.  The vertex
+attribute C<subvertices> is also used to store the list (as an array
+reference) of the original vertices.  To change the 'supercomponent'
+vertex names and the whole logic of forming these supercomponents
+use the C<supercomponent>) option:
+
+    $cg = $g->connected_graph(super_component => sub { ... });
+
+The subroutine reference gets the 'subcomponents' (the original
+vertices) as arguments, and it is supposed to return the new
+supercomponent vertex.
 
 =item biconnectivity
 
@@ -761,11 +769,19 @@ biconnected component.
 
 For an undirected graph, return its biconnected graph.
 
-The vertex names of the connected graph are formed from the names of
-the vertices of the original graph by (alphabetically sorting them
-and) concatenating their names with C<+>.  The vertex attribute
-C<subvertices> is also used to store the list (as an array reference)
-of the original vertices.
+By default, the vertex names of the connected graph are formed from
+the names of the vertices of the original graph by (alphabetically
+sorting them and) concatenating their names with C<+>.  The vertex
+attribute C<subvertices> is also used to store the list (as an array
+reference) of the original vertices.  To change the 'supercomponent'
+vertex names and the whole logic of forming these supercomponents
+use the C<supercomponent>) option:
+
+    $cg = $g->connected_graph(super_component => sub { ... });
+
+The subroutine reference gets the 'subcomponents' (the original
+vertices) as arguments, and it is supposed to return the new
+supercomponent vertex.
 
 =item bridges
 
@@ -1542,7 +1558,7 @@ Alias for SPT_Bellman_Ford.
 
 =item SP_Bellman_Ford
 
-    @path = $g->SP_Dijkstra($u, $v)
+    @path = $g->SP_Bellman_Ford($u, $v)
 
 Return the vertices in the shortest path in the graph $g between the
 two vertices $u, $v.  If no path can be found, an empty list is returned.

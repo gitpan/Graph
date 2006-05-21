@@ -1,4 +1,4 @@
-use Test::More tests => 12;
+use Test::More tests => 13;
 
 use Graph;
 my $g = Graph->new;
@@ -22,4 +22,6 @@ ok(   $h->has_cycle("b", "a", "c") );
 ok(   $h->has_cycle("b", "c", "a") );
 ok(   $h->has_cycle("c", "a", "b") );
 ok(   $h->has_cycle("c", "b", "a") );
+
+ok(!  $g->has_cycle());
 

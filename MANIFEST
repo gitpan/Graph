@@ -123,7 +123,10 @@ t/g02_06transpose.t
 t/g02_07complete.t
 t/g02_08complement.t
 t/g02_09scc.t
+t/pod.t
+t/pod-coverage.t
 t/u_bb_rv.t
+t/u_bo.t
 t/u_jh_va.t
 t/u_mn_va.t
 t/u_ng_mst.t

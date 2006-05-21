@@ -18,8 +18,6 @@ sub _V () { 2 } # Graph::_V
 sub _E () { 3 } # Graph::_E
 sub _F () { 0 } # Graph::_F
 
-sub _g () { 6 } # Graph::AdjacencyMap::_k
-
 sub _new {
     my ($class, $graph, $flags, $arity) = @_;
     my $m = bless [ ], $class;
@@ -222,8 +220,8 @@ sub __attr {
     my @V = @{ $g->[ _V ] };
     my @E = $g->edges; # TODO: Both these (ZZZ) lines are mysteriously needed!
     # ZZZ: an example of failing tests is t/51_edge_attributes.t.
-    if (ref $v) { # Edges, then.
-	# print "Reedging\n.";
+    if (ref $v eq 'ARRAY') { # Edges, then.
+	# print "Reedging.\n";
 	@E = $g->edges; # TODO: Both these (ZZZ) lines are mysteriously needed!
 	$g->[ _E ] = $m = Graph::AdjacencyMap::Heavy->_new($f, 2);
 	$g->add_edges( @E );

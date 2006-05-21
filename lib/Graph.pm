@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.69';
+$VERSION = '0.70';
 
 require 5.006; # Weak references are required.
 
@@ -1165,7 +1165,7 @@ sub delete_cycle {
 
 sub has_cycle {
     my $g = shift;
-    $g->has_path(@_, $_[0]);
+    @_ ? $g->has_path(@_, $_[0]) : 0;
 }
 
 sub has_a_cycle {
@@ -2016,7 +2016,7 @@ sub _get_options {
 # Random constructors and accessors.
 #
 
-sub fisher_yates_shuffle (@) {
+sub __fisher_yates_shuffle (@) {
     # From perlfaq4, but modified to be non-modifying.
     my @a = @_;
     my $i = @a;
@@ -2037,7 +2037,7 @@ BEGIN {
     # bleadperl that calls itself 5.9.3 but doesn't yet have the
     # patches, oh, well.
     *_shuffle = $^P && $] < 5.009003 ?
-	\&fisher_yates_shuffle : \&List::Util::shuffle;
+	\&__fisher_yates_shuffle : \&List::Util::shuffle;
 }
 
 sub random_graph {
@@ -2539,13 +2539,14 @@ sub _connected_components {
 		@cci{ keys %icci } = values %icci;
 	    }
 	} else {
-	    my %r; @r{ $g->unique_vertices } = ();
+	    my @u = $g->unique_vertices;
+	    my %r; @r{ @u } = @u;
 	    my $froot = sub {
-		wantarray ? ( keys %r ? scalar each %r: ()) : each %r;
+		(each %r)[1];
 	    };
 	    my $nroot = sub {
 		$cc++;
-		wantarray ? ( keys %r ? scalar each %r: ()) : each %r;
+		(each %r)[1];
 	    };
 	    my $t = Graph::Traversal::DFS->new($g,
 					       first_root => $froot,
@@ -2614,17 +2615,20 @@ sub same_connected_components {
     }
 }
 
-my $super_component = sub { join("+", sort @{ $_[0] }) };
+my $super_component = sub { join("+", sort @_) };
 
 sub connected_graph {
-    my $g = shift;
+    my ($g, %opt) = @_;
     $g->expect_undirected;
     my $cg = Graph->new(undirected => 1);
     if ($g->has_union_find && $g->vertices == 1) {
 	$cg->add_vertices($g->vertices);
     } else {
+	my $sc_cb =
+	    exists $opt{super_component} ?
+		$opt{super_component} : $super_component;
 	for my $cc ( $g->connected_components() ) {
-	    my $sc = $super_component->($cc);
+	    my $sc = $sc_cb->(@$cc);
 	    $cg->add_vertex($sc);
 	    $cg->set_vertex_attribute($sc, 'subvertices', [ @$cc ]);
 	}
@@ -2829,10 +2833,19 @@ sub strongly_connected_graph {
 
     $u->dfs;
 
-    my $hypervertex = $super_component;
+    my $sc_cb;
+    my $hv_cb;
 
-    _opt_get(\%attr, hypervertex => \$hypervertex);
+    _opt_get(\%attr, super_component => \$sc_cb);
+    _opt_get(\%attr, hypervertex => \$hv_cb);
     _opt_unknown(\%attr);
+
+    if (defined $hv_cb && !defined $sc_cb) {
+	$sc_cb = sub { $hv_cb->( [ @_ ] ) };
+    }
+    unless (defined $sc_cb) {
+	$sc_cb = $super_component;
+    }
 
     my $s = Graph->new;
 
@@ -2840,7 +2853,7 @@ sub strongly_connected_graph {
     my @s;
     for (my $i = 0; $i <  @c; $i++) {
 	my $c = $c[$i];
-	$s->add_vertex( $s[$i] = $hypervertex->($c) );
+	$s->add_vertex( $s[$i] = $sc_cb->(@$c) );
 	$s->set_vertex_attribute($s[$i], 'subvertices', [ @$c ]);
 	for my $v (@$c) {
 	    $c{$v} = $i;
@@ -2914,84 +2927,102 @@ sub biconnectivity {
 	my %L = ( $r => 1 );
 	my @S = ( $r );
 	my %A;
-	for my $v ($g->vertices) {
-	    @{ $A{ $v } }{ $g->successors( $v ) } = ();
+	my @V = $g->vertices;
+
+	for my $v (@V) {
+	    my @s = $g->successors( $v );
+	    @{ $A{ $v } }{ @s } = @s;
 	}
-	my @C;
-	my $Avok;
-	do {
-	    my $w;
-	    do {
-		$w = first { !$U{ $v }{ $_ } } _shuffle keys %{ $A{ $v } };
-		if (defined $w) {
-		    $U{ $v }{ $w }++;
-		    $U{ $w }{ $v }++;
-		    if ($I{ $w } == 0) {
-			$P{ $w } = $v;
-			$i++;
-			$I{ $w } = $i;
-			$L{ $w } = $i;
-			push @S, $w;
-			$v = $w;
-		    } else {
-			$L{ $v } = $I{ $w } if $I{ $w } < $L{ $v };
-		    }
-		}
-	    } while (defined $w);
-	    if (!defined $P{ $v }) {
-		# Do nothing.
-	    } elsif ($P{ $v } ne $r) {
-		if ($L{ $v } < $I{ $P{ $v } }) {
-		    $L{ $P{ $v } } = $L{ $v } if $L{ $v } < $L{ $P{ $v } };
-		} else {
-		    $AP{ $P{ $v } }++;
-		    push @C, _make_bcc(\@S, $v, $P{ $v } );
-		}
-	    } else {
-		my $e;
-		for my $w (_shuffle keys %{ $A{ $r } }) {
-		    unless ($U{ $r }{ $w }) {
-			$e = $r;
-			last;
-		    }
-		}
-		$AP{ $e }++ if defined $e;
-		push @C, _make_bcc(\@S, $v, $r);
-	    }
-	    $v = defined $P{ $v } ? $P{ $v } : $r;
-	    $Avok = 0;
-	    if (defined $v) {
-		$Avok = 0;
-		if (keys %{ $A{ $v } }) {
-		    if (!exists $P{ $v }) {
-			for my $w (keys %{ $A{ $v } }) {
-			    $Avok++ if $U{ $v }{ $w };
-			}
-			$Avok = 0 unless $Avok == keys %{ $A{ $v } };
-		    }
-		} else {
-		    $Avok = 1;
-		}
-	    }
-	} until ($Avok);
 
 	my %V2BC;
-	for (my $i = 0; $i < @C; $i++) {
-	    for my $v (@{ $C[ $i ]}) {
-		$V2BC{ $v }{ $i }++;
+	my @BR;
+	my @BC;
+
+	my @C;
+	my $Avok;
+
+	my %T; @T{ @V } = @V;
+
+	while (keys %T) {
+	    do {
+		my $w;
+		do {
+		    $w = first { !$U{ $v }{ $_ } } _shuffle values %{ $A{ $v } };
+		    if (defined $w) {
+			$U{ $v }{ $w }++;
+			$U{ $w }{ $v }++;
+			if ($I{ $w } == 0) {
+			    $P{ $w } = $v;
+			    $i++;
+			    $I{ $w } = $i;
+			    $L{ $w } = $i;
+			    push @S, $w;
+			    $v = $w;
+			} else {
+			    $L{ $v } = $I{ $w } if $I{ $w } < $L{ $v };
+			}
+		    }
+		} while (defined $w);
+		if (!defined $P{ $v }) {
+		    # Do nothing.
+		} elsif ($P{ $v } ne $r) {
+		    if ($L{ $v } < $I{ $P{ $v } }) {
+			$L{ $P{ $v } } = $L{ $v } if $L{ $v } < $L{ $P{ $v } };
+		    } else {
+			$AP{ $P{ $v } } = $P{ $v };
+			push @C, _make_bcc(\@S, $v, $P{ $v } );
+		    }
+		} else {
+		    my $e;
+		    for my $w (_shuffle keys %{ $A{ $r } }) {
+			unless ($U{ $r }{ $w }) {
+			    $e = $r;
+			    last;
+			}
+		    }
+		    $AP{ $e } = $e if defined $e;
+		    push @C, _make_bcc(\@S, $v, $r);
+		}
+		$v = defined $P{ $v } ? $P{ $v } : $r;
+		$Avok = 0;
+		if (defined $v) {
+		    $Avok = 0;
+		    if (keys %{ $A{ $v } }) {
+			if (!exists $P{ $v }) {
+			    for my $w (keys %{ $A{ $v } }) {
+				$Avok++ if $U{ $v }{ $w };
+			    }
+			    $Avok = 0 unless $Avok == keys %{ $A{ $v } };
+			}
+		    } else {
+			$Avok = 1;
+		    }
+		}
+	    } until ($Avok);
+
+	    last unless @C;
+
+	    for (my $i = 0; $i < @C; $i++) {
+		for my $v (@{ $C[ $i ]}) {
+		    $V2BC{ $v }{ $i }++;
+		    delete $T{ $v };
+		}
+	    }
+
+	    for (my $i = 0; $i < @C; $i++) {
+		if (@{ $C[ $i ] } == 2) {
+		    push @BR, $C[ $i ];
+		} else {
+		    push @BC, $C[ $i ];
+		}
+	    }
+
+	    if (keys %T) {
+		$r = $v = each %T;
 	    }
 	}
 
-	my @BR;
-	my @BC;
-	for (my $i = 0; $i < @C; $i++) {
-	    if (@{ $C[ $i ] } == 2) {
-		push @BR, $C[ $i ];
-	    } else {
-		push @BC, $C[ $i ];
-	    }
-	}
-	$bcc = [ [keys %AP], \@BC, \@BR, \%V2BC ];
+	$bcc = [ [values %AP], \@BC, \@BR, \%V2BC ];
 	$g->set_graph_attribute('_bcc', [ $g->[ _G ], $bcc ]);
     }
 
@@ -3067,11 +3098,14 @@ sub same_biconnected_components {
 }
 
 sub biconnected_graph {
-    my $g = shift;
+    my ($g, %opt) = @_;
     my ($bc, $v2bc) = ($g->biconnectivity)[1, 3];
     my $bcg = Graph::Undirected->new;
+    my $sc_cb =
+	exists $opt{super_component} ?
+	    $opt{super_component} : $super_component;
     for my $c (@$bc) {
-	$bcg->add_vertex(my $s = $super_component->($c));
+	$bcg->add_vertex(my $s = $sc_cb->(@$c));
 	$bcg->set_vertex_attribute($s, 'subvertices', [ @$c ]);
     }
     my %k;
@@ -3085,8 +3119,8 @@ sub biconnected_graph {
 		for my $u (@u) {
 		    if (exists $j{ $u }) {
 			unless ($k{ $i }{ $j }++) {
-			    $bcg->add_edge($super_component->($bc->[$i]),
-					   $super_component->($bc->[$j]));
+			    $bcg->add_edge($sc_cb->(@{$bc->[$i]}),
+					   $sc_cb->(@{$bc->[$j]}));
 			}
 			last;
 		    }
@@ -3150,12 +3184,17 @@ sub SP_Dijkstra {
     my ($g, $u, $v) = @_;
     my $sptg = $g->SPT_Dijkstra(first_root => $u);
     my @path = ($v);
+    my %seen;
+    my $V = $g->vertices;
     my $p;
     while (defined($p = $sptg->get_vertex_attribute($v, 'p'))) {
+	last if exists $seen{$p};
 	push @path, $p;
 	$v = $p;
+	$seen{$p}++;
+	last if keys %seen == $V;
     }
-    @path = () if @path && $path[-1] ne $u;
+    # @path = () if @path && $path[-1] ne $u;
     return reverse @path;
 }
 
@@ -3243,12 +3282,17 @@ sub SP_Bellman_Ford {
     my ($g, $u, $v) = @_;
     my $sptg = $g->SPT_Dijkstra(first_root => $u);
     my @path = ($v);
+    my %seen;
+    my $V = $g->vertices;
     my $p;
     while (defined($p = $sptg->get_vertex_attribute($v, 'p'))) {
+	last if exists $seen{$p};
 	push @path, $p;
 	$v = $p;
+	$seen{$p}++;
+	last if keys %seen == $V;
     }
-    @path = () if @path && $path[-1] ne $u;
+    @path = () if @path && "$path[-1]" ne "$u";
     return reverse @path;
 }
 

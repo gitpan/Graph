@@ -1,4 +1,4 @@
-use Test::More tests => 56;
+use Test::More tests => 57;
 
 use Graph;
 use Graph::Undirected;
@@ -92,6 +92,11 @@ is($g3->strongly_connected_graph(hypervertex =>
 				 sub { my @v = sort @{ $_[0] };
 				       "(" . join(",", @v) . ")" } ),
    "(a,d)-(b),(b)-(c),(e,f)");
+
+is($g3->strongly_connected_graph(super_component =>
+				 sub { my @v = sort @_;
+				       "(" . join("|", @v) . ")" } ),
+   "(a|d)-(b),(b)-(c),(e|f)");
 
 eval '$g3->strongly_connected_graph(foobar => 1)';
 like($@, qr/Graph::strongly_connected_graph: Unknown option: 'foobar' /);

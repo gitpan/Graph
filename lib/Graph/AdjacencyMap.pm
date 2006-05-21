@@ -7,11 +7,11 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter);
 @EXPORT_OK   = qw(_COUNT _MULTI _COUNTMULTI _GEN_ID
 		  _HYPER _UNORD _UNIQ _REF _UNORDUNIQ _UNIONFIND _LIGHT
-		  _n _f _a _i _s _p _k _u _ni _nc _na _nm);
+		  _n _f _a _i _s _p _g _u _ni _nc _na _nm);
 %EXPORT_TAGS =
     (flags =>  [qw(_COUNT _MULTI _COUNTMULTI _GEN_ID
 		   _HYPER _UNORD _UNIQ _REF _UNORDUNIQ _UNIONFIND _LIGHT)],
-     fields => [qw(_n _f _a _i _s _p _k _u _ni _nc _na _nm)]);
+     fields => [qw(_n _f _a _i _s _p _g _u _ni _nc _na _nm)]);
 
 sub _COUNT      () {  0x00000001   }
 sub _MULTI      () {  0x00000002   }
@@ -39,7 +39,7 @@ sub _a () { 2 } # Arity.
 sub _i () { 3 } # Index to path.
 sub _s () { 4 } # Successors / Path to Index.
 sub _p () { 5 } # Predecessors.
-sub _k () { 6 } # Keys ("kuoted references") / Graph (Light).
+sub _g () { 6 } # Graph (AdjacencyMap::Light)
 
 sub _V () { 2 }  # Graph::_V()
 
