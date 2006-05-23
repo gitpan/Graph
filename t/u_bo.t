@@ -1,15 +1,30 @@
-use Test::More tests => 81;
+use Test::More tests => 75;
 
 use strict;
 use Graph;
-use Math::Complex;
 
 sub Foo::new {
-    bless { }, $_[0];
+    bless { foo => $_[1] }, $_[0];
 }
 
-sub Foo::Im {
+sub Foo::xyz {
     1;
+}
+
+sub Bar::new {
+    bless { bar => $_[1] }, $_[0];
+}
+
+sub Bar::xyz {
+    1;
+}
+
+{
+    package Bar;
+    use overload '""' => \&str, eq => \&eq, ne => \&ne;
+    sub str { "" }
+    sub eq  { $_[0]->{bar} ne $_[1]->{bar} }
+    sub ne  { $_[0]->{bar} ne $_[1]->{bar} }
 }
 
 sub rt_17159 {
@@ -26,7 +41,7 @@ sub rt_17159 {
     }
     sub rt_17159_check {
 	my $z = shift;
-	ok($z->Im(42));
+	ok($z->xyz());
     }
 }
 
@@ -35,15 +50,15 @@ rt_17159(Foo->new(),
 	 Foo->new(),
 	 Foo->new());
 
-rt_17159(Math::Complex->new(1),
-	 Math::Complex->new(2),
-	 Math::Complex->new(3),
-	 Math::Complex->new(4));
+rt_17159(Bar->new(1),
+	 Bar->new(2),
+	 Bar->new(3),
+	 Bar->new(4));
 
-rt_17159(Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new());
+rt_17159(Bar->new(),
+	 Bar->new(),
+	 Bar->new(),
+	 Bar->new());
 
 sub rt_17160 {
     my $g = Graph::Undirected->new;
@@ -61,7 +76,7 @@ sub rt_17160 {
     }
     sub rt_17160_check {
 	my $z = shift;
-	ok($z->Im(42));
+	ok($z->xyz());
     }
 }
 
@@ -70,15 +85,15 @@ rt_17160(Foo->new(),
 	 Foo->new(),
 	 Foo->new());
 
-rt_17160(Math::Complex->new(1),
-	 Math::Complex->new(2),
-	 Math::Complex->new(3),
-	 Math::Complex->new(4));
+rt_17160(Bar->new(1),
+	 Bar->new(2),
+	 Bar->new(3),
+	 Bar->new(4));
 
-rt_17160(Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new());
+rt_17160(Bar->new(),
+	 Bar->new(),
+	 Bar->new(),
+	 Bar->new());
 
 sub rt_17161 {
     my $g = Graph::Undirected->new;
@@ -96,7 +111,7 @@ sub rt_17161 {
     }
     sub rt_17161_check {
 	my $z = shift;
-	ok($z->Im(42));
+	ok($z->xyz());
     }
 }
 
@@ -105,15 +120,15 @@ rt_17160(Foo->new(),
 	 Foo->new(),
 	 Foo->new());
 
-rt_17160(Math::Complex->new(1),
-	 Math::Complex->new(2),
-	 Math::Complex->new(3),
-	 Math::Complex->new(4));
+rt_17160(Bar->new(1),
+	 Bar->new(2),
+	 Bar->new(3),
+	 Bar->new(4));
 
-rt_17160(Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new());
+rt_17160(Bar->new(),
+	 Bar->new(),
+	 Bar->new(),
+	 Bar->new());
 
 sub rt_17162 {
     my $g = Graph::Undirected->new;
@@ -123,9 +138,9 @@ sub rt_17162 {
     for my $v ($v1, $v2, $v3, $v4) {
 	rt_17162_check($v);
     }
+    my $cl = ref $v1;
     my $cg = $g->connected_graph(super_component => sub {
-				     my @v = @_;
-				     (ref $v[0])->new();
+				     $cl->new();
 				 });
     my @cv = $cg->vertices;
     for my $ref (@cv) {
@@ -133,7 +148,7 @@ sub rt_17162 {
     }
     sub rt_17162_check {
 	my $z = shift;
-	ok($z->Im(42));
+	ok($z->xyz());
     }
 }
 
@@ -142,15 +157,15 @@ rt_17162(Foo->new(),
 	 Foo->new(),
 	 Foo->new());
 
-rt_17162(Math::Complex->new(1),
-	 Math::Complex->new(2),
-	 Math::Complex->new(3),
-	 Math::Complex->new(4));
+rt_17162(Bar->new(1),
+	 Bar->new(2),
+	 Bar->new(3),
+	 Bar->new(4));
 
-rt_17162(Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new());
+rt_17162(Bar->new(),
+	 Bar->new(),
+	 Bar->new(),
+	 Bar->new());
 
 sub rt_17163 {
     my $g = Graph::Undirected->new;
@@ -166,15 +181,15 @@ rt_17163(Foo->new(),
 	 Foo->new(),
 	 Foo->new());
 
-rt_17163(Math::Complex->new(1),
-	 Math::Complex->new(2),
-	 Math::Complex->new(3),
-	 Math::Complex->new(4));
+rt_17163(Bar->new(1),
+	 Bar->new(2),
+	 Bar->new(3),
+	 Bar->new(4));
 
-rt_17163(Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new());
+rt_17163(Bar->new(),
+	 Bar->new(),
+	 Bar->new(),
+	 Bar->new());
 
 sub rt_17164 {
     my $g = Graph::Undirected->new;
@@ -190,15 +205,15 @@ rt_17164(Foo->new(),
 	 Foo->new(),
 	 Foo->new());
 
-rt_17164(Math::Complex->new(1),
-	 Math::Complex->new(2),
-	 Math::Complex->new(3),
-	 Math::Complex->new(4));
+rt_17164(Bar->new(1),
+	 Bar->new(2),
+	 Bar->new(3),
+	 Bar->new(4));
 
-rt_17164(Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new(),
-	 Math::Complex->new());
+rt_17164(Bar->new(),
+	 Bar->new(),
+	 Bar->new(),
+	 Bar->new());
 
 {
     # rt.cpan.org: 17592: articulation_points doesn't find all vertices

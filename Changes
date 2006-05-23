@@ -1,47 +1,53 @@
+2006-05-22  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Tweak the pod-coverage.t so that it looks more like
+	  Test::Pod::Coverage documentation suggests in this case.
+	* Fix the u_bo.t not to have a test class with a broken
+	  stringification method to avoid spurious warnings and
+	  failure (also do away with the use of Math::Complex to
+	  avoid problems because of different Math::Complex releases),
+	  and more even importantly fix the "next_root" logic in
+	  connected components not to advance to the next component
+	  if there is nothing to advance to.  This seems to be prone
+	  to failure in 5.6.2, for some reason 5.8.8 works fine.
+	* Test under Perl 5.6.2.
+	* Force has_cycle() to return true/false, not the list of edges,
+	  reported by Casey Bergman.
+	* Release as 0.71.
+
 2006-05-21  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* delete_vertex() from a refvertexed graph left an unnecessary
 	  reference to the referenced vertex hanging around in the graph,
 	  reported by Christoph Lamprecht.
-
 	* Implement new 'super_component' option for connected_graph(),
 	  biconnected_graph(), and strongly_connected_graph(), to allow
 	  more complex ways of forming 'supercomponents' (and more
 	  customized ways of naming them).
-	
 	* Address rt.cpan.org #17159: "Nodes appear to unblessed after
 	  using articulation_points() - 2" (elaboration of rt.cpan.org
 	  #17108: "Nodes appear to unblessed after using
 	  articulation_points())"
-	
 	* Address rt.cpan.org #17160: "Nodes appear to unblessed after
 	  using connected_components()"
-	
 	* Address rt.cpan.org #17161: "Nodes appear to unblessed after
 	  using bridges()"
-	
 	* Address rt.cpan.org #17162: "Nodes appear to unblessed after
 	  using connected_graph()"
-	
 	* Address rt.cpan.org #17163, "SP_Dijkstra() is complaining"
-	
 	* Address rt.cpan.org #17164, "SP_Bellman_Ford() is complaining"
-	
 	* Address rt.cpan.org #17165, documentation error in
 	  SP_Bellman_Ford().	
-	
 	* Address rt.cpan.org #17405: "has_cycle with empty args
 	  should return FALSE"
-
 	* Address rt.cpan.org: #17592: "articulation_points doesn't
 	  find all vertices" (didn't find all the vertices of non-connected
 	  graphs, only the vertices of the first (randomly chosen) connected
 	  subgraph)
-
 	The rt.cpan.org cases 17159-17592 reported by Brian Obsorne.
-	
 	* Add Test::Pod and Test::Pod::Coverage tests.
-	
+	* Release as 0.70.
+
 2005-12-06  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Add SP_Dijkstra() and SP_Bellman_Ford() to find the shortest

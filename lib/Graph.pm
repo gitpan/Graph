@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.70';
+$VERSION = '0.71';
 
 require 5.006; # Weak references are required.
 
@@ -1165,7 +1165,7 @@ sub delete_cycle {
 
 sub has_cycle {
     my $g = shift;
-    @_ ? $g->has_path(@_, $_[0]) : 0;
+    @_ ? ($g->has_path(@_, $_[0]) ? 1 : 0) : 0;
 }
 
 sub has_a_cycle {
@@ -2545,7 +2545,7 @@ sub _connected_components {
 		(each %r)[1];
 	    };
 	    my $nroot = sub {
-		$cc++;
+		$cc++ if keys %r;
 		(each %r)[1];
 	    };
 	    my $t = Graph::Traversal::DFS->new($g,
@@ -2929,9 +2929,10 @@ sub biconnectivity {
 	my %A;
 	my @V = $g->vertices;
 
-	for my $v (@V) {
-	    my @s = $g->successors( $v );
-	    @{ $A{ $v } }{ @s } = @s;
+	for my $w (@V) {
+	    $w = '' unless defined $w;
+	    my @s = $g->successors( $w );
+	    @{ $A{ $w } }{ @s } = @s;
 	}
 
 	my %V2BC;
@@ -2944,10 +2945,13 @@ sub biconnectivity {
 	my %T; @T{ @V } = @V;
 
 	while (keys %T) {
+	    $v = '' unless defined $v;
 	    do {
 		my $w;
 		do {
-		    $w = first { !$U{ $v }{ $_ } } _shuffle values %{ $A{ $v } };
+		    $w = first { !$U{ $v }{ $_ } }
+		         map { defined $_ ? $_ : '' }
+		         _shuffle values %{ $A{ $v } };
 		    if (defined $w) {
 			$U{ $v }{ $w }++;
 			$U{ $w }{ $v }++;
