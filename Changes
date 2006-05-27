@@ -1,4 +1,15 @@
-2006-05-22  Jarkko Hietaniemi  <jhi@iki.fi>
+2006-05-27  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Still one bug hiding in articulation points: if the
+	  (randomly chosen) first vertex was a self-loop, an
+	  empty list was returned for articulation points.
+	  t/u_bo_ap.t now tests the test case from Brian
+	  Osborne 20 times to stress test more cases,
+	  and extra five tests testing self-loops and
+	  articulation points.
+	* Release as 0.73.
+
+2006-05-27  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Brian Osborne found a graph where articulation_points()
 	  ended up in an infinite loop.  Resolved and the graph

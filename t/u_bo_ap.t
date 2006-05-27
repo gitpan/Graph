@@ -1,4 +1,4 @@
-use Test::More tests => 1;
+use Test::More tests => 25;
 
 use Graph;
 
@@ -14,7 +14,45 @@ while (<DATA>) {
 
 my @rts = sort $g->articulation_points;
 
-is("@rts", "DIP:3047N DIP:3051N DIP:3053N DIP:3056N DIP:3059N DIP:3069N DIP:3075N DIP:3089N DIP:3095N DIP:3101N DIP:3103N DIP:3109N DIP:3120N");
+is("@rts", "DIP:3047N DIP:3051N DIP:3053N DIP:3056N DIP:3059N DIP:3069N DIP:3075N DIP:3089N DIP:3095N DIP:3101N DIP:3103N DIP:3109N DIP:3120N") for 1..20;
+
+my $h = Graph::Undirected->new;
+
+$h->add_edge(qw(a b));
+$h->add_edge(qw(a c));
+$h->add_edge(qw(b c));
+$h->add_edge(qw(b d));
+$h->add_edge(qw(d e));
+$h->add_edge(qw(d f));
+$h->add_edge(qw(e f));
+
+my @a1 = sort $h->articulation_points();
+
+is("@a1", "b d");
+
+$h->add_edge(qw(b b));
+
+my @a2 = sort $h->articulation_points();
+
+is("@a2", "b d");
+
+$h->add_edge(qw(d d));
+
+my @a3 = sort $h->articulation_points();
+
+is("@a3", "b d");
+
+$h->add_edge(qw(a a));
+
+my @a4 = sort $h->articulation_points();
+
+is("@a4", "b d");
+
+$h->add_edge(qw(f f));
+
+my @a5 = sort $h->articulation_points();
+
+is("@a5", "b d");
 
 __END__
 DIP:3048N,DIP:3047N
