@@ -14,9 +14,9 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.71';
+$VERSION = '0.72';
 
-require 5.006; # Weak references are required.
+require 5.006; # Weak references are absolutely required.
 
 use Graph::AdjacencyMap::Heavy;
 use Graph::AdjacencyMap::Light;
@@ -2929,9 +2929,17 @@ sub biconnectivity {
 	my %A;
 	my @V = $g->vertices;
 
+	my %T; @T{ @V } = @V;
+
 	for my $w (@V) {
-	    $w = '' unless defined $w;
-	    my @s = $g->successors( $w );
+	    my @s = grep {
+		if ($_ eq $w) {
+		    delete $T{$_};
+		    0;
+		} else {
+		    1;
+		}
+	    } $g->successors( $w );
 	    @{ $A{ $w } }{ @s } = @s;
 	}
 
@@ -2942,15 +2950,11 @@ sub biconnectivity {
 	my @C;
 	my $Avok;
 
-	my %T; @T{ @V } = @V;
-
 	while (keys %T) {
-	    $v = '' unless defined $v;
 	    do {
 		my $w;
-		do {
+	        do {
 		    $w = first { !$U{ $v }{ $_ } }
-		         map { defined $_ ? $_ : '' }
 		         _shuffle values %{ $A{ $v } };
 		    if (defined $w) {
 			$U{ $v }{ $w }++;

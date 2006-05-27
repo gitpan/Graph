@@ -1,5 +1,12 @@
 2006-05-22  Jarkko Hietaniemi  <jhi@iki.fi>
 
+	* Brian Osborne found a graph where articulation_points()
+	  ended up in an infinite loop.  Resolved and the graph
+	  test case added as t/u_bo_ap.t.
+	* Release as 0.72.
+
+2006-05-22  Jarkko Hietaniemi  <jhi@iki.fi>
+
 	* Tweak the pod-coverage.t so that it looks more like
 	  Test::Pod::Coverage documentation suggests in this case.
 	* Fix the u_bo.t not to have a test class with a broken

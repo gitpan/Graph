@@ -23,8 +23,18 @@ sub Bar::xyz {
     package Bar;
     use overload '""' => \&str, eq => \&eq, ne => \&ne;
     sub str { "" }
-    sub eq  { $_[0]->{bar} ne $_[1]->{bar} }
-    sub ne  { $_[0]->{bar} ne $_[1]->{bar} }
+    sub eq  {
+              my $d0 = defined $_[0]->{bar};
+	      my $d1 = defined $_[1]->{bar};
+	      $d0 && $d1 ? $_[0]->{bar} eq $_[1]->{bar} :
+              $d0 || $d0 ? 0 : 1;
+            }
+    sub ne  {
+              my $d0 = defined $_[0]->{bar};
+              my $d1 = defined $_[1]->{bar};
+	      $d0 && $d1 ? $_[0]->{bar} ne $_[1]->{bar} :
+              $d0 || $d0 ? 1 : 0;
+            }
 }
 
 sub rt_17159 {

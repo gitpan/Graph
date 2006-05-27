@@ -127,6 +127,7 @@ t/pod.t
 t/pod-coverage.t
 t/u_bb_rv.t
 t/u_bo.t
+t/u_bo_ap.t
 t/u_jh_va.t
 t/u_mn_va.t
 t/u_ng_mst.t
