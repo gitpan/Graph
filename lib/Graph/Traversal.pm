@@ -365,12 +365,12 @@ sub postorder {
 
 sub unseen {
     my $self = shift;
-    keys %{ $self->{ unseen } };
+    values %{ $self->{ unseen } };
 }
 
 sub seen {
     my $self = shift;
-    keys %{ $self->{ seen } };
+    values %{ $self->{ seen } };
 }
 
 sub seeing {

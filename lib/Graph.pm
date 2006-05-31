@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.73';
+$VERSION = '0.74';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -349,7 +349,18 @@ sub add_vertex {
 	    Carp::croak("Graph::add_vertex: use add_vertices for more than one vertex or use hypervertexed");
 	}
 	for my $v ( @_ ) {
-	    $g->[ _V ]->set_path( $v ) unless $g->has_vertex( $v );
+	    if (defined $v) {
+		$g->[ _V ]->set_path( $v ) unless $g->has_vertex( $v );
+	    } else {
+		require Carp;
+		Carp::croak("Graph::add_vertex: undef vertex");
+	    }
+	}
+    }
+    for my $v ( @_ ) {
+	unless (defined $v) {
+	    require Carp;
+	    Carp::croak("Graph::add_vertex: undef vertex");
 	}
     }
     $g->[ _V ]->set_path( @_ );
@@ -2234,16 +2245,18 @@ sub _root_opt {
 }
 
 sub _heap_walk {
-    my ($g, $h, $add, $etc) = splice @_, 0, 4;
+    my ($g, $h, $add, $etc) = splice @_, 0, 4; # Leave %opt in @_.
 
     my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) = $g->_root_opt(@_);
     my $HF = Heap::Fibonacci->new;
 
     while (defined $r) {
+	# print "r = $r\n";
 	$add->($g, $h, $HF, $r, $attr, $unseenh, $etc);
 	delete $unseenh->{ $r };
 	while (defined $HF->top) {
 	    my $t = $HF->extract_top;
+	    # use Data::Dumper; print "t = ", Dumper($t);
 	    if (defined $t) {
 		my ($u, $v, $w) = $t->val;
 		# print "extracted top: $u $v $w\n";
@@ -2622,6 +2635,7 @@ sub connected_graph {
     $g->expect_undirected;
     my $cg = Graph->new(undirected => 1);
     if ($g->has_union_find && $g->vertices == 1) {
+	# TODO: super_component?
 	$cg->add_vertices($g->vertices);
     } else {
 	my $sc_cb =
@@ -2893,10 +2907,10 @@ sub _make_bcc {
     my %b;
     while (@$S) {
 	my $t = pop @$S;
-	$b{ $t }++;
+	$b{ $t } = $t;
 	last if $t eq $v;
     }
-    return [ keys %b, $c ];
+    return [ values %b, $c ];
 }
 
 sub biconnectivity {
@@ -3153,18 +3167,21 @@ sub bridges {
 
 sub _SPT_add {
     my ($g, $h, $HF, $r, $attr, $unseen, $etc) = @_;
+    my $etc_r = $etc->{ $r } || 0;
     for my $s ( grep { exists $unseen->{ $_ } } $g->successors( $r ) ) {
-	my $t = $g->get_edge_attribute( $r, $s, $attr ) || 1;
+	my $t = $g->get_edge_attribute( $r, $s, $attr );
+	$t = 1 unless defined $t;
 	if ($t < 0) {
 	    require Carp;
 	    Carp::croak("Graph::SPT_Dijkstra: edge $r-$s is negative ($t)");
 	}
-	if (!defined($etc->{ $s }) || $etc->{ $r } + $t < $etc->{ $s }) {
-	    $etc->{ $s } = ($etc->{ $r } || 0) + $t;
-	    # print "$r - $s : setting $s to $etc->{ $s }\n";
-	    $h->set_vertex_attribute( $s, $attr, $etc->{ $s } );
+	if (!defined($etc->{ $s }) || ($etc_r + $t) < $etc->{ $s }) {
+	    my $etc_s = $etc->{ $s } || 0;
+	    $etc->{ $s } = $etc_r + $t;
+	    # print "$r - $s : setting $s to $etc->{ $s } ($etc_r, $etc_s)\n";
+	    $h->set_vertex_attribute( $s, $attr, $etc->{ $s });
 	    $h->set_vertex_attribute( $s, 'p', $r );
-	    $HF->add( Graph::SPTHeapElem->new($r, $s, $t) );
+	    $HF->add( Graph::SPTHeapElem->new($r, $s, $etc->{ $s }) );
 	}
     }
 }
@@ -3174,7 +3191,7 @@ sub SPT_Dijkstra {
     my %opt = @_ == 1 ? (first_root => $_[0]) : @_;
     my $first_root = $opt{ first_root };
     unless (defined $first_root) {
-	$opt{ first_root} = $first_root = $g->random_vertex();
+	$opt{ first_root } = $first_root = $g->random_vertex();
     }
     my $spt_di = $g->get_graph_attribute('_spt_di');
     unless (defined $spt_di && exists $spt_di->{ $first_root } && $spt_di->{ $first_root }->[ 0 ] == $g->[ _G ]) {
@@ -3202,7 +3219,7 @@ sub SP_Dijkstra {
 	push @path, $p;
 	$v = $p;
 	$seen{$p}++;
-	last if keys %seen == $V;
+	last if keys %seen == $V || $u eq $v;
     }
     # @path = () if @path && $path[-1] ne $u;
     return reverse @path;
@@ -3210,7 +3227,6 @@ sub SP_Dijkstra {
 
 sub _SPT_Bellman_Ford {
     my ($g, $opt, $unseenh, $unseena, $r, $next, $code, $attr) = @_;
-
     my %d;
     $d{ $r } = 0;
     my %p;
@@ -3302,7 +3318,7 @@ sub SP_Bellman_Ford {
 	$seen{$p}++;
 	last if keys %seen == $V;
     }
-    @path = () if @path && "$path[-1]" ne "$u";
+    # @path = () if @path && "$path[-1]" ne "$u";
     return reverse @path;
 }
 

@@ -140,9 +140,9 @@ is($sg5, "0-1,1-2");
 
 is($s2_di->get_edge_attribute('0', '1', 'weight'), 0.41, "edge 0-1");
 is($s2_di->get_edge_attribute('0', '5', 'weight'), 0.29, "edge 0-5");
-is($s2_di->get_edge_attribute('5', '4', 'weight'), 0.21, "edge 5-4");
-is($s2_di->get_edge_attribute('4', '3', 'weight'), 0.36, "edge 4-3");
-is($s2_di->get_edge_attribute('4', '2', 'weight'), 0.32, "edge 4-2");
+is($s2_di->get_edge_attribute('5', '4', 'weight'), 0.50, "edge 5-4");
+is($s2_di->get_edge_attribute('4', '3', 'weight'), 0.86, "edge 4-3");
+is($s2_di->get_edge_attribute('4', '2', 'weight'), 0.82, "edge 4-2");
 
 is($s2_di->get_edge_attribute('0', '3', 'weight'), undef, "edge 0-3");
 is($s2_di->get_edge_attribute('3', '5', 'weight'), undef, "edge 3-5");

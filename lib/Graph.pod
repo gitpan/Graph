@@ -229,6 +229,8 @@ By default idempotent, but a graph can be created I<countvertexed>.
 
 A vertex is also known as a I<node>.
 
+Adding C<undef> as vertex is not allowed.
+
 =item add_edge
 
     $g->add_edge($u, $v)
@@ -670,19 +672,7 @@ and L</same_weakly_connected_components>.
 
 For an undirected graph, return its connected graph.
 
-By default, the vertex names of the connected graph are formed from
-the names of the vertices of the original graph by (alphabetically
-sorting them and) concatenating their names with C<+>.  The vertex
-attribute C<subvertices> is also used to store the list (as an array
-reference) of the original vertices.  To change the 'supercomponent'
-vertex names and the whole logic of forming these supercomponents
-use the C<supercomponent>) option:
-
-    $cg = $g->connected_graph(super_component => sub { ... });
-
-The subroutine reference gets the 'subcomponents' (the original
-vertices) as arguments, and it is supposed to return the new
-supercomponent vertex.
+See L</"Connected Graphs and Their Components"> for further discussion.
 
 =item biconnectivity
 
@@ -769,19 +759,7 @@ biconnected component.
 
 For an undirected graph, return its biconnected graph.
 
-By default, the vertex names of the connected graph are formed from
-the names of the vertices of the original graph by (alphabetically
-sorting them and) concatenating their names with C<+>.  The vertex
-attribute C<subvertices> is also used to store the list (as an array
-reference) of the original vertices.  To change the 'supercomponent'
-vertex names and the whole logic of forming these supercomponents
-use the C<supercomponent>) option:
-
-    $cg = $g->connected_graph(super_component => sub { ... });
-
-The subroutine reference gets the 'subcomponents' (the original
-vertices) as arguments, and it is supposed to return the new
-supercomponent vertex.
+See L</"Connected Graphs and Their Components"> for further discussion.
 
 =item bridges
 
@@ -931,14 +909,7 @@ or see L</biconnected_components>.
 
    my $scg = $g->strongly_connected_graph;
 
-For a directed graph, return the strongly connected graph of the
-graph.  The vertices in the strongly connected graph are formed from
-the strongly connected elements of the graph (currently by sorting the
-vertices of the original graph present in the strongly connected
-component and concatenating the vertex names with C<+>, for example
-C<a+b+c>); the edges connect the strongly connected elements of the
-graph.  The vertex attribute C<subvertices> is also used to store the
-list (as an array reference) of the original vertices.
+See L</"Connected Graphs and Their Components"> for further discussion.
 
 Strongly connected graphs are also known as I<kernel graphs>.
 
@@ -1119,6 +1090,35 @@ In scalar context return the number of self-loop vertices.
 See L</is_self_loop_vertex> for the definition of a self-loop vertex.
 
 =back
+
+=head2 Connected Graphs and Their Components
+
+In this discussion I<connected graph> refers to any of
+I<connected graphs>, I<biconnected graphs>, and I<strongly
+connected graphs>.
+
+B<NOTE>: if the vertices of the original graph are Perl objects,
+(in other words, references, so you must be using C<refvertexed>) 
+the vertices of the I<connected graph> are NOT by default usable
+as Perl objects because they are blessed into a package with
+a rather unusable name.
+
+By default, the vertex names of the I<connected graph> are formed from
+the names of the vertices of the original graph by (alphabetically
+sorting them and) concatenating their names with C<+>.  The vertex
+attribute C<subvertices> is also used to store the list (as an array
+reference) of the original vertices.  To change the 'supercomponent'
+vertex names and the whole logic of forming these supercomponents
+use the C<super_component>) option to the method calls:
+
+  $g->connected_graph(super_component => sub { ... })
+  $g->biconnected_graph(super_component => sub { ... })
+  $g->strongly_connected_graph(super_component => sub { ... })
+
+The subroutine reference gets the 'subcomponents' (the vertices of the
+original graph) as arguments, and it is supposed to return the new
+supercomponent vertex, the "stringified" form of which is used as the
+vertex name.
 
 =head2 Degree
 
@@ -1788,8 +1788,8 @@ Set the named vertex attribute.
 If the vertex does not exist, the set_...() will create it, and the
 other vertex attribute methods will return false or empty.
 
-B<NOTE>: any attributes beginning with an underscore (C<_>) are
-reserved for the internal use of the Graph module.
+B<NOTE: any attributes beginning with an underscore/underline (_)
+are reserved for the internal use of the Graph module.>
 
 =item get_vertex_attribute
 

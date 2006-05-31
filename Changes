@@ -1,3 +1,16 @@
+2006-05-31  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Bug in SP_Dijkstra() found by Andree Tonk.  The edge weights
+	  of the Dijkstra shortest paths were not cumulative (a-b = 1,
+	  b-c = 2, a-c should be 3), which caused the SP_Dijsktra()
+	  results sometimes to be nonsense.  Two test cases, one of
+	  them rather large (about 5000 edges).
+	* Bugs when using references as vertices in bridges()
+	  and (Traversal) seen() found by Brian Osborne.
+	* Added another articulation_points() test by Brian Obsorne.
+	* Explicitly disallow adding undef as a vertex.
+	* Release as 0.74.
+
 2006-05-27  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Still one bug hiding in articulation points: if the
