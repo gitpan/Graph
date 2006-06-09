@@ -1621,35 +1621,69 @@ Returns the predecessor of vertex $v in the all-pairs shortest paths.
 
 =item average_path_length
 
-    my $apl = $g->average_path_length;
+    my $apl = $g->average_path_length; # All vertex pairs.
+
+    my $apl = $g->average_path_length($u); # From $u.
+    my $apl = $g->average_path_length($u, undef); # From $u.
+
+    my $apl = $g->average_path_length($u, $v); # From $u to $v.
+
+    my $apl = $g->average_path_length(undef, $v); # To $v.
 
 Return the average (shortest) path length over all the vertex pairs of
-the graph.  Note that this recomputes the APSP each time when called.
+the graph, from a vertex, between two vertices, and to a vertex.
 
 =item longest_path
 
-=item graph_diameter
-
     my @lp = $g->longest_path;
     my $lp = $g->longest_path;
-    my $dm = $g->graph_diameter;
 
-In scalar context return the longest (shortest) path length over all
+In scalar context return the I<longest shortest> path length over all
 the vertex pairs of the graph.  In list context return the vertices
-along the shortest path.  Note that this recomputes the APSP each time
-when called.
+along a I<longest shortest> path.  Note that there might be more than
+one such path; this interfaces return a random one of them.
 
-This measure is also known as the graph diameter.
+=item diameter
+
+=item graph_diameter
+
+    my $gd = $g->diameter;
+
+The longest path over all the vertex pairs is known as the
+I<graph diameter>.
 
 =item shortest_path
 
     my @sp = $g->shortest_path;
     my $sp = $g->shortest_path;
 
-In scalar context return the shortest (shortest) length over all the
-vertex pairs of the graph.  In list context return the vertices
-along the shortest path.  Note that this recomputes the APSP each
-time when called.
+In scalar context return the shortest length over all the vertex pairs
+of the graph.  In list context return the vertices along a shortest
+path.  Note that there might be more than one such path; this
+interface returns a random one of them.
+
+=item radius
+
+    my $gr = $g->radius;
+
+The I<shortest longest> path over all the vertex pairs is known as the
+I<graph radius>.  See also L</diameter>.
+
+=item center_vertices
+
+    my @c = $g->center_vertices;
+    my @c = $g->center_vertices($delta);
+
+The I<graph center> is the set of vertices for which the I<vertex
+eccentricity> is equal to the I<graph radius>.  The vertices are
+returned in random order.  By specifying a delta value you can widen
+the criterion from strict equality (handy for non-integer edge weights).
+
+=item vertex_eccentricity
+
+    my $ve = $g->vertex_eccentricity($v);
+
+The longest path to a vertex is known as the I<vertex eccentricity>.
 
 =back
 

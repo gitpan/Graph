@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.74';
+$VERSION = '0.75';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -2943,6 +2943,9 @@ sub biconnectivity {
 	my %A;
 	my @V = $g->vertices;
 
+	# print "V : @V\n";
+	# print "r : $r\n";
+
 	my %T; @T{ @V } = @V;
 	my %S; # Self-loops.
 
@@ -2959,6 +2962,10 @@ sub biconnectivity {
 	    @{ $A{ $w } }{ @s } = @s;
 	}
 
+	# use Data::Dumper;
+	# print "T : ", Dumper(\%T);
+	# print "A : ", Dumper(\%A);
+
 	my %V2BC;
 	my @BR;
 	my @BC;
@@ -2967,12 +2974,15 @@ sub biconnectivity {
 	my $Avok;
 
 	while (keys %T) {
+	    # print "T = ", Dumper(\%T);
 	    do {
 		my $w;
 	        do {
 		    my @w = _shuffle values %{ $A{ $v } };
+		    # print "w = @w\n";
 		    $w = first { !$U{ $v }{ $_ } } @w;
 		    if (defined $w) {
+			# print "w = $w\n";
 			$U{ $v }{ $w }++;
 			$U{ $w }{ $v }++;
 			if ($I{ $w } == 0) {
@@ -2987,6 +2997,9 @@ sub biconnectivity {
 			}
 		    }
 		} while (defined $w);
+		# print "U = ", Dumper(\%U);
+		# print "P = ", Dumper(\%P);
+		# print "L = ", Dumper(\%L);
 		if (!defined $P{ $v }) {
 		    # Do nothing.
 		} elsif ($P{ $v } ne $r) {
@@ -2999,27 +3012,35 @@ sub biconnectivity {
 		} else {
 		    my $e;
 		    for my $w (_shuffle keys %{ $A{ $r } }) {
+			# print "w = $w\n";
 			unless ($U{ $r }{ $w }) {
 			    $e = $r;
+			    # print "e = $e\n";
 			    last;
 			}
 		    }
 		    $AP{ $e } = $e if defined $e;
 		    push @C, _make_bcc(\@S, $v, $r);
 		}
+		# print "AP = ", Dumper(\%AP);
+		# print "C  = ", Dumper(\@C);
+		# print "L  = ", Dumper(\%L);
 		$v = defined $P{ $v } ? $P{ $v } : $r;
+		# print "v = $v\n";
 		$Avok = 0;
 		if (defined $v) {
-		    $Avok = 0;
 		    if (keys %{ $A{ $v } }) {
 			if (!exists $P{ $v }) {
 			    for my $w (keys %{ $A{ $v } }) {
 				$Avok++ if $U{ $v }{ $w };
 			    }
+			    # print "Avok/1 = $Avok\n";
 			    $Avok = 0 unless $Avok == keys %{ $A{ $v } };
+			    # print "Avok/2 = $Avok\n";
 			}
 		    } else {
 			$Avok = 1;
+			# print "Avok/3 = $Avok\n";
 		    }
 		}
 	    } until ($Avok);
@@ -3382,7 +3403,7 @@ sub is_reachable {
 sub for_shortest_paths {
     my $g = shift;
     my $c = shift;
-    my $t = Graph::TransitiveClosure->new($g, path => 1);
+    my $t = $g->transitive_closure_matrix;
     my @v = $g->vertices;
     my $n = 0;
     for my $u (@v) {
@@ -3398,14 +3419,15 @@ sub for_shortest_paths {
 sub _minmax_path {
     my $g = shift;
     my $min;
-    my $max = 0;
+    my $max;
     my $minp;
     my $maxp;
     $g->for_shortest_paths(sub {
 			       my ($t, $u, $v, $n) = @_;
 			       my $l = $t->path_length($u, $v);
+			       return unless defined $l;
 			       my $p;
-			       if ($l > $max) {
+			       if ($u ne $v && (!defined $max || $l > $max)) {
 				   $max = $l;
 				   $maxp = $p = [ $t->path_vertices($u, $v) ];
 			       }
@@ -3417,22 +3439,127 @@ sub _minmax_path {
     return ($min, $max, $minp, $maxp);
 }
 
-sub graph_diameter {
-    my $g = shift;
-    my ($min, $max, $minp, $maxp) = $g->_minmax_path(@_);
-    return $max;
-}
-
-sub longest_path {
+sub diameter {
     my $g = shift;
     my ($min, $max, $minp, $maxp) = $g->_minmax_path(@_);
     return defined $maxp ? (wantarray ? @$maxp : $max) : undef;
 }
 
+*graph_diameter = \&diameter;
+
+sub longest_path {
+    my ($g, $u, $v) = @_;
+    my $t = $g->transitive_closure_matrix;
+    if (defined $u) {
+	if (defined $v) {
+	    return wantarray ?
+		$t->path_vertices($u, $v) : $t->path_length($u, $v);
+	} else {
+	    my $max;
+	    my @max;
+	    for my $v ($g->vertices) {
+		next if $u eq $v;
+		my $l = $t->path_length($u, $v);
+		if (defined $l && (!defined $max || $l > $max)) {
+		    $max = $l;
+		    @max = $t->path_vertices($u, $v);
+		}
+	    }
+	    return wantarray ? @max : $max;
+	}
+    } else {
+	if (defined $v) {
+	    my $max;
+	    my @max;
+	    for my $u ($g->vertices) {
+		next if $u eq $v;
+		my $l = $t->path_length($u, $v);
+		if (defined $l && (!defined $max || $l > $max)) {
+		    $max = $l;
+		    @max = $t->path_vertices($u, $v);
+		}
+	    }
+	    return wantarray ? @max : @max - 1;
+	} else {
+	    my ($min, $max, $minp, $maxp) = $g->_minmax_path(@_);
+	    return defined $maxp ? (wantarray ? @$maxp : $max) : undef;
+	}
+    }
+}
+
+sub vertex_eccentricity {
+    my ($g, $u) = @_;
+    my $max;
+    for my $v ($g->vertices) {
+	next if $u eq $v;
+	my $l = $g->path_length($u, $v);
+	if (defined $l && (!defined $max || $l > $max)) {
+	    $max = $l;
+	}
+    }
+    return $max;
+}
+
 sub shortest_path {
+    my ($g, $u, $v) = @_;
+    my $t = $g->transitive_closure_matrix;
+    if (defined $u) {
+	if (defined $v) {
+	    return wantarray ?
+		$t->path_vertices($u, $v) : $t->path_length($u, $v);
+	} else {
+	    my $min;
+	    my @min;
+	    for my $v ($g->vertices) {
+		next if $u eq $v;
+		my $l = $t->path_length($u, $v);
+		if (defined $l && (!defined $min || $l < $min)) {
+		    $min = $l;
+		    @min = $t->path_vertices($u, $v);
+		}
+	    }
+	    return wantarray ? @min : $min;
+	}
+    } else {
+	if (defined $v) {
+	    my $min;
+	    my @min;
+	    for my $u ($g->vertices) {
+		next if $u eq $v;
+		my $l = $t->path_length($u, $v);
+		if (defined $l && (!defined $min || $l < $min)) {
+		    $min = $l;
+		    @min = $t->path_vertices($u, $v);
+		}
+	    }
+	    return wantarray ? @min : $min;
+	} else {
+	    my ($min, $max, $minp, $maxp) = $g->_minmax_path(@_);
+	    return defined $minp ? (wantarray ? @$minp : $min) : undef;
+	}
+    }
+}
+
+sub radius {
     my $g = shift;
     my ($min, $max, $minp, $maxp) = $g->_minmax_path(@_);
     return defined $minp ? (wantarray ? @$minp : $min) : undef;
+}
+
+sub center_vertices {
+    my ($g, $delta) = @_;
+    $delta = 0 unless defined $delta;
+    $delta = abs($delta);
+    my @c;
+    my $r = $g->radius;
+    if (defined $r) {
+	for my $v ($g->vertices) {
+	    my $e = $g->vertex_eccentricity($v);
+	    next unless defined $e;
+	    push @c, $v if abs($e - $r) <= $delta;
+	}
+    }
+    return @c;
 }
 
 sub average_path_length {

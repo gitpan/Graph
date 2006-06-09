@@ -1,6 +1,8 @@
-use Test::More tests => 12;
+use Test::More tests => 45;
 
 use Graph;
+use Graph::Directed;
+use Graph::Undirected;
 
 my $g = Graph->new;
 
@@ -18,8 +20,15 @@ $g->add_edge(qw(b o));
 $g->add_edge(qw(o v));
 $g->add_edge(qw(v e));
 
-is($g->graph_diameter, 7);
-is($g->longest_path, 7);
+is($g->diameter, 7);
+is($g->longest_path,   7);
+is($g->shortest_path,  1);
+is($g->radius,   1);
+
+{
+    my @c = sort $g->center_vertices;
+    is(@c, 0);
+}
 
 my @p = $g->longest_path;
 my $min = 0;
@@ -53,10 +62,99 @@ is($g->average_path_length('b', undef), 33 / 9);
 is($g->average_path_length(undef, 'a'), 27 / 9);
 is($g->average_path_length(undef, 'b'), 33 / 9);
 
+is($g->vertex_eccentricity('a'), 4);
+is($g->vertex_eccentricity('b'), 7);
+is($g->vertex_eccentricity('e'), 5);
+is($g->diameter, 7);
+is($g->radius,   1);
+
+{
+    my @c;
+    @c = sort $g->center_vertices;
+    is(@c, 0);
+    @c = sort $g->center_vertices(3);
+    is("@c", "a r");
+}
+
+sub gino {
+    my $gi = $_[0];
+    my $m = (sort @$gi)[0];
+    for (my $i = 0; $i < @$gi && $gi->[0] ne $m; $i++) {
+	push @$gi, shift @$gi;
+    }
+    return @$gi;
+}
+
 my $h = Graph->new;
 
 $h->add_weighted_edge(qw(a b 2.3));
 $h->add_weighted_edge(qw(a c 1.7));
 
-is($h->shortest_path, 1.7);
+is($h->longest_path,   2.3);
+is($h->shortest_path,  1.7);
+is($h->diameter, 2.3);
+is($h->radius,   1.7);
+
+my $i = Graph::Directed->new;
+
+$i->add_edge(qw(k a));
+$i->add_edge(qw(a l));
+$i->add_edge(qw(l e));
+$i->add_edge(qw(e v));
+$i->add_edge(qw(v a));
+$i->add_edge(qw(a l));
+$i->add_edge(qw(l a));
+$i->add_edge(qw(a n));
+
+is($i->vertex_eccentricity('k'), 4);
+is($i->vertex_eccentricity('a'), 3);
+is($i->vertex_eccentricity('l'), 2);
+is($i->vertex_eccentricity('e'), 3);
+is($i->vertex_eccentricity('v'), 3);
+is($i->vertex_eccentricity('n'), undef);
+
+{
+    my @c = sort $i->center_vertices;
+    is(@c, 0);
+}
+
+my $j = Graph::Undirected->new;
+
+$j->add_edge(qw(k a));
+$j->add_edge(qw(a l));
+$j->add_edge(qw(l e));
+$j->add_edge(qw(e v));
+$j->add_edge(qw(v a));
+$j->add_edge(qw(a l));
+$j->add_edge(qw(l a));
+$j->add_edge(qw(a n));
+
+is($j->vertex_eccentricity('k'), 3);
+is($j->vertex_eccentricity('a'), 2);
+is($j->vertex_eccentricity('l'), 2);
+is($j->vertex_eccentricity('e'), 3);
+is($j->vertex_eccentricity('v'), 2);
+is($j->vertex_eccentricity('n'), 3);
+
+{
+    my @c = sort $j->center_vertices;
+    is(@c, 0);
+}
+
+my $k = Graph::Undirected->new;
+
+$k->add_edge(qw(s t));
+$k->add_edge(qw(s a));
+$k->add_edge(qw(s r));
+
+is($k->vertex_eccentricity('s'), 1);
+is($k->vertex_eccentricity('t'), 2);
+is($k->vertex_eccentricity('a'), 2);
+is($k->vertex_eccentricity('r'), 2);
+
+{
+    my @c = sort $k->center_vertices;
+    is(@c, 1);
+    is($c[0], 's');
+}
 
