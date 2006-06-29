@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More tests => 4;
 
 use strict;
 use Graph;
@@ -22,20 +22,21 @@ my @u = qw(NRTPZ5WOkg
 	   bnDd3VuBpJ
 	   ObpULOKHH0);
 
-print "# finding SP_Dijkstra path between $src and $dst\n";
-my @v = $g->SP_Dijkstra($src, $dst);
-is_deeply(\@v, \@u);
-foreach (@v) {
-    print "# $_\n";
-}
-
-{
-    print "# finding APSP_Floyd_Warshall path between $src and $dst\n";
-    my $apsp = $g->APSP_Floyd_Warshall();
-    my @v = $apsp->path_vertices($src, $dst);
+for (1, 2) {
+    print "# finding SP_Dijkstra path between $src and $dst\n";
+    my @v = $g->SP_Dijkstra($src, $dst);
     is_deeply(\@v, \@u);
     foreach (@v) {
 	print "# $_\n";
+    }
+    {
+	print "# finding APSP_Floyd_Warshall path between $src and $dst\n";
+	my $apsp = $g->APSP_Floyd_Warshall();
+	my @v = $apsp->path_vertices($src, $dst);
+	is_deeply(\@v, \@u);
+	foreach (@v) {
+	    print "# $_\n";
+	}
     }
 }
 

@@ -231,6 +231,10 @@ A vertex is also known as a I<node>.
 
 Adding C<undef> as vertex is not allowed.
 
+Note that unless you have isolated vertices (or I<countvertexed>
+vertices), you do not need to explicitly use C<add_vertex> since
+L</add_edge> will implicitly add its vertices.
+
 =item add_edge
 
     $g->add_edge($u, $v)
@@ -1582,9 +1586,10 @@ graph.  If no weight is defined for an edge, 1 (one) is assumed.
     my $apsp = $g->APSP_Floyd_Warshall(...);
 
 Return the all-pairs shortest path object computed from the graph
-using Floyd-Warshall's algorithm.  The length is the sum of weight
-attribute of the edges along the shortest path.  If no weight
-attribute name is specified explicitly
+using Floyd-Warshall's algorithm.  The length of a path between two
+vertices is the sum of weight attribute of the edges along the
+shortest path between the two vertices.  If no weight attribute name
+is specified explicitly
 
     $g->APSP_Floyd_Warshall(attribute_name => 'height');
 
@@ -2204,12 +2209,13 @@ Otherwise, true is returned.
 
 What is actually returned is the maximum number of possible isomorphic
 graphs between the two graphs, after the above sanity checks have been
-conducted.  It is basically the product of the factorials of the absolute
-values of in-degrees and out-degree pairs at each vertex, with the isolated
-vertices ignored (since they could be renamed arbitrarily.)  Note that for
-large graphs the product of these factorials can overflow the maximum
-presentable number (the floating point number) in the computer and you
-might get for example I<Infinity> as the result.
+conducted.  It is basically the product of the factorials of the
+absolute values of in-degrees and out-degree pairs at each vertex,
+with the isolated vertices ignored (since they could be reshuffled and
+renamed arbitrarily).  Note that for large graphs the product of these
+factorials can overflow the maximum presentable number (the floating
+point number) in your computer (in Perl) and you might get for example
+I<Infinity> as the result.
 
 =head2 Miscellaneous
 
@@ -2252,14 +2258,18 @@ factors affect these numbers, for example how Perl is configured.
 In practice you can expect at least about 200 bytes per vertex,
 and twice that for an edge.  The numbers are for a 32-bit platform.
 
-Roughly, the above numbers mean that in a megabyte you can fit
-for example a graph of about 1000 vertices and about 2500 edges.
+Roughly, the above numbers mean that in a megabyte of memory you can
+fit for example a graph of about 1000 vertices and about 2500 edges.
 
 =head2 Hyperedges, hypervertices, hypergraphs
 
 B<BEWARE>: this is a rather thinly tested feature, and the theory
 is even less so.  Do not expect this to stay as it is (or at all)
 in future releases.
+
+B<NOTE>: most usual graph algorithms (and basic concepts) break
+horribly (or at least will look funny) with these hyperthingies.
+Caveat emptor.
 
 Hyperedges are edges that connect a number of vertices different
 from the usual two.
@@ -2324,9 +2334,6 @@ Since hypervertices consist of more than one vertex:
 Return the vertices at the vertex.  This may return just the vertex
 or also other vertices.
 
-B<NOTE>: most usual graph algorithms (and basic concepts) break
-horribly (or at least will look funny) with hyperthingies.
-
 To go with the concept of undirected in normal (non-hyper) graphs,
 there is a similar concept of omnidirected I<(this is my own coinage,
 "all-directions")> for hypergraphs, and you can naturally test for it by
@@ -2359,9 +2366,11 @@ didn't the "undirected" work for me?  Well, because of this:
 
    $g = Graph->new(hypervertexed => 1, omnivertexed => 1);
 
-That's right, vertices can be omni, too - and that is indeed the default.
-You can turn it off and then $g->add_vertex(qw(a b)) no more means adding
-also a vertex qw(b a).
+That's right, vertices can be omni, too - and that is indeed the
+default.  You can turn it off and then $g->add_vertex(qw(a b)) no
+more means adding also the (hyper)vertex qw(b a).  In other words,
+the "directivity" is orthogonal to (or independent of) the number of
+vertices in the vertex/edge.
 
 =over 4
 
@@ -2374,7 +2383,9 @@ also a vertex qw(b a).
 Another oddity that fell out of the implementation is the uniqueness
 attribute, that comes naturally in C<uniqedged> and C<uniqvertexed>
 flavours.  It does what it sounds like, to unique or not the vertices
-participating in edges and vertices.  Without too much explanation:
+participating in edges and vertices (is the hypervertex qw(a b a) the
+same as the hypervertex qw(a b), for example).  Without too much
+explanation:
 
 =over 4
 

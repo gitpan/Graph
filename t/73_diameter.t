@@ -1,4 +1,4 @@
-use Test::More tests => 45;
+use Test::More tests => 54;
 
 use Graph;
 use Graph::Directed;
@@ -156,5 +156,37 @@ is($k->vertex_eccentricity('r'), 2);
     my @c = sort $k->center_vertices;
     is(@c, 1);
     is($c[0], 's');
+}
+
+{
+    # These tests inspired by Xiaoli Zheng.
+
+    my $g = Graph::Directed->new();
+
+    is($g->diameter, undef);
+
+    $g->add_edge('a', 'b');
+    is($g->diameter, 1);
+
+    $g->add_edge('b', 'c');
+    is($g->diameter, 2);
+
+    $g->add_edge('c', 'd');
+    is($g->diameter, 3);
+
+    $g->add_edge('e', 'f');
+    is($g->diameter, 3);
+
+    $g->add_edge('d', 'e');
+    is($g->diameter, 5);
+
+    $g->add_edge('g', 'f');
+    is($g->diameter, 5);
+
+    $g->delete_edge('c', 'b');
+    is($g->diameter, 5);
+
+    $g->delete_edge('b', 'c');
+    is($g->diameter, 3);
 }
 

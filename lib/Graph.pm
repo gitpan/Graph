@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.75';
+$VERSION = '0.76';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -2950,16 +2950,23 @@ sub biconnectivity {
 	my %S; # Self-loops.
 
 	for my $w (@V) {
-	    my @s = grep {
-		if ($_ eq $w) {
-		    $S{$w} = $w;
-		    delete $T{$_};
-		    0;
-		} else {
-		    1;
+	    my @s = $g->successors( $w );
+	    if (@s) {
+		@s = grep { $_ eq $w ? ( delete $T{ $w }, 0 ) : 1 } @s;
+		@{ $A{ $w } }{ @s } = @s;
+	    } elsif ($g->predecessors( $w ) == 0) {
+		delete $T{ $w };
+		if ($w eq $r) {
+		    delete $I { $r };
+		    $r = $v = each %T;
+		    if (defined $r) {
+			%L = ( $r => 1 );
+			@S = ( $r );
+			$I{ $r } = 1;
+			# print "r : $r\n";
+		    }
 		}
-	    } $g->successors( $w );
-	    @{ $A{ $w } }{ @s } = @s;
+	    }
 	}
 
 	# use Data::Dumper;
@@ -3242,7 +3249,7 @@ sub SP_Dijkstra {
 	$seen{$p}++;
 	last if keys %seen == $V || $u eq $v;
     }
-    # @path = () if @path && $path[-1] ne $u;
+    @path = () if @path && $path[-1] ne $u;
     return reverse @path;
 }
 
@@ -3368,11 +3375,21 @@ sub APSP_Floyd_Warshall {
 sub transitive_closure_matrix {
     my $g = shift;
     my $tcm = $g->get_graph_attribute('_tcm');
+    if (defined $tcm) {
+	if (ref $tcm eq 'ARRAY') { # YECHHH!
+	    if ($tcm->[ 0 ] == $g->[ _G ]) {
+		$tcm = $tcm->[ 1 ];
+	    } else {
+		undef $tcm;
+	    }
+	}
+    }
     unless (defined $tcm) {
 	my $apsp = $g->APSP_Floyd_Warshall(@_);
 	$tcm = $apsp->get_graph_attribute('_tcm');
-	$g->set_graph_attribute('_tcm', $tcm);
+	$g->set_graph_attribute('_tcm', [ $g->[ _G ], $tcm ]);
     }
+
     return $tcm;
 }
 

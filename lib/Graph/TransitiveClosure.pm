@@ -48,7 +48,7 @@ sub new {
 	    }
 	}
     }
-    $tcm->set_graph_attribute('_tcm', $tcg); # Duplicate?
+    $tcm->set_graph_attribute('_tcm', $tcg);
     bless $tcm, $class;
 }
 

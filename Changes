@@ -1,3 +1,20 @@
+2006-06-28  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Problem found by Xiaoli Zheng in diameter(): adding vertices
+	  did not change diameter, this was due to a deeper bug where
+	  the transitive closure matrix was being cached wrong:
+	  sometimes saved too long, sometimes recomputed too often.
+	* Problem found by Andree Toonk and Ronald van der Pol:
+	  SP_Dijkstra() tried too hard to find a path between
+	  vertices even if there was none - and returned rubbish.
+	* Address rt.cpan.org #20021: "bridges() sometimes returns
+	  empty list when isolated vertices present".  biconnectivity()
+	  did not work right if isolated vertices were picked as roots,
+	  it either hung or returned empty.
+	* Document that add_vertex() is often unnecessary.
+	* Directed.pm and Undirected.pm were missing "use strict".
+	* Release as 0.76.
+
 2006-06-09  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Had accidentally removed Digest::MD5 from the Makefile.PL

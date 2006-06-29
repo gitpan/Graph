@@ -1,4 +1,5 @@
 Note that these are possibilities, not plans nor promises.
+- graph periphery: the subgraph of graph center vertices
 1. separate external and internal attributes?
 2. biconn: add next_root
 3. DAG SSSP

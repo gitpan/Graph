@@ -2,6 +2,7 @@ package Graph::Directed;
 
 use Graph;
 use base 'Graph';
+use strict;
 
 =pod
 
@@ -11,12 +12,14 @@ Graph::Directed - directed graphs
 
 =head1 SYNOPSIS
 
-	use Graph::Directed;
-	my $g = Graph::Directed->new;
+    use Graph::Directed;
+    my $g = Graph::Directed->new;
 
-	use Graph;
-	my $g = Graph->new(directed => 1);
-	my $g = Graph->new(undirected => 0);
+    # Or alternatively:
+
+    use Graph;
+    my $g = Graph->new(directed => 1);
+    my $g = Graph->new(undirected => 0);
 
 =head1 DESCRIPTION
 
