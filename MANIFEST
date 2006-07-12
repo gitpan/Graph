@@ -131,6 +131,7 @@ t/u_at2.t
 t/u_at3.t
 t/u_bill.t
 t/u_bb_rv.t
+t/u_bf.t
 t/u_bo.t
 t/u_bo1.t
 t/u_bo_ap1.t

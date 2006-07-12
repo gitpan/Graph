@@ -533,9 +533,12 @@ Add zero or more vertices to the graph.
 =item add_edges
 
     $g->add_edges(['d', 'e'], ['f', 'g'])
+    $g->add_edges(qw(d e f g));
 
 Add zero or more edges to the graph.  The edges are specified as
-a list of array references.
+a list of array references, or as a list of vertices where the
+even (0th, 2nd, 4th, ...) items are start vertices and the odd
+(1st, 3rd, 5th, ...) are the corresponding end vertices.
 
 =back
 
@@ -857,7 +860,7 @@ L</biconnected_components>.
 
 =item weakly_connected_component_by_vertex
 
-    $i = $g->weakly_connected_component($v)
+    $i = $g->weakly_connected_component_by_vertex($v)
 
 For a directed graph, return an index identifying the weakly connected
 component the vertex belongs to, the indexing starting from zero.
@@ -876,7 +879,7 @@ component, the indexing starting zero.  The order of vertices within
 a component is undefined, while the order of the weakly connected
 components is same as from weakly_connected_components().
 
-For the inverse, see L</weakly_connected_component_by_index>.
+For the inverse, see L</weakly_connected_component_by_vertex>.
 
 For undirected graphs, see L<connected_component_by_index>
 and L<biconnected_component_by_index>.
@@ -1496,6 +1499,12 @@ You can choose the first vertex of the result with either a single
 vertex argument or with $opt{ first_root }, otherwise a random vertex
 is chosen.
 
+B<NOTE>: note that all the vertices might not be reachable from the
+selected (explicit or random) start vertex.
+
+The start vertex is be available as the graph attribute
+C<SPT_Dijsktra_root>).
+
 The result weights of vertices can be retrieved from the result graph by
 
 	my $w = $sptg->get_vertex_attribute($v, 'weight');
@@ -1536,9 +1545,15 @@ Bellman-Ford's algorithm.  The graph can contain negative edges but
 not negative cycles (negative cycles cause the algorithm to abort
 with an error message C<Graph::SPT_Bellman_Ford: negative cycle exists/>).
 
-You can choose the first vertex of the result with either a single
+You can choose the start vertex of the result with either a single
 vertex argument or with $opt{ first_root }, otherwise a random vertex
 is chosen.
+
+B<NOTE>: note that all the vertices might not be reachable from the
+selected (explicit or random) start vertex.
+
+The start vertex is be available as the graph attribute
+C<SPT_Bellman_Ford_root>).
 
 The result weights of vertices can be retrieved from the result graph by
 

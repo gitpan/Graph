@@ -1,18 +1,44 @@
+2006-07-08  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #20185: "problem with SPT_Bellman_Ford",
+	  SPT_Bellman_Ford() was broken for undirected graphs
+	  (they were handled as directed ones, therefore missing vertices).
+
+	* weakly_connected_component_by_vertex() usage example
+	  was wrong, was using weakly_connected_component(),
+	  noted by 'yanick' in annocpan.org.
+
+	* Implement and document the saving of the SPT_Dijkstra()
+	  and SPT_Bellman_Ford() start vertices.
+
+	* Document add_edges() alternative API.
+
+	* Aerate the Changes by adding empty lines between the * items.
+
+	* Release as 0.77.
+
 2006-06-28  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Problem found by Xiaoli Zheng in diameter(): adding vertices
 	  did not change diameter, this was due to a deeper bug where
 	  the transitive closure matrix was being cached wrong:
 	  sometimes saved too long, sometimes recomputed too often.
+          Enhanced 73_diameter.t to detect this.
+
 	* Problem found by Andree Toonk and Ronald van der Pol:
 	  SP_Dijkstra() tried too hard to find a path between
 	  vertices even if there was none - and returned rubbish.
+          Added t/u_at3.t to detect this.
+
 	* Address rt.cpan.org #20021: "bridges() sometimes returns
 	  empty list when isolated vertices present".  biconnectivity()
 	  did not work right if isolated vertices were picked as roots,
-	  it either hung or returned empty.
+	  it either hung or returned empty.  Added t/u_bill.t to detect this.
+
 	* Document that add_vertex() is often unnecessary.
+
 	* Directed.pm and Undirected.pm were missing "use strict".
+
 	* Release as 0.76.
 
 2006-06-09  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -21,12 +47,15 @@
 	  prereq list, found by Anton Berezin (using Perl 5.6.2, which
 	  doesn't include that), solved by removing the dependency
 	  to Digest::MD5.
+
 	* Speeded up repeated longest/shortest paths computations
 	  by using a cached (Floyd-Warshall) transitive closure.
+
 	* Implemented:
 	  - graph radius
 	  - graph center (vertices)
 	  - vertex eccentricity
+
 	* Release as 0.75.
 
 2006-05-31  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -37,10 +66,14 @@
 	  a-c should be 3), which caused the SP_Dijsktra() results
 	  sometimes to be nonsense.  Two test cases, one of them rather
 	  large (about 5000 edges).
+
 	* Bugs when using references as vertices in bridges()
 	  and (Traversal) seen() found by Brian Osborne.
+
 	* Added another articulation_points() test by Brian Obsorne.
+
 	* Explicitly disallow adding undef as a vertex.
+
 	* Release as 0.74.
 
 2006-05-27  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -52,6 +85,7 @@
 	  Osborne 20 times to stress test more cases,
 	  and extra five tests testing self-loops and
 	  articulation points.
+
 	* Release as 0.73.
 
 2006-05-27  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -59,12 +93,14 @@
 	* Brian Osborne found a graph where articulation_points()
 	  ended up in an infinite loop.  Resolved and the graph
 	  test case added as t/u_bo_ap.t.
+
 	* Release as 0.72.
 
 2006-05-22  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Tweak the pod-coverage.t so that it looks more like
 	  Test::Pod::Coverage documentation suggests in this case.
+
 	* Fix the u_bo.t not to have a test class with a broken
 	  stringification method to avoid spurious warnings and
 	  failure (also do away with the use of Math::Complex to
@@ -73,9 +109,12 @@
 	  connected components not to advance to the next component
 	  if there is nothing to advance to.  This seems to be prone
 	  to failure in 5.6.2, for some reason 5.8.8 works fine.
+
 	* Test under Perl 5.6.2.
+
 	* Force has_cycle() to return true/false, not the list of edges,
 	  reported by Casey Bergman.
+
 	* Release as 0.71.
 
 2006-05-21  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -83,32 +122,45 @@
 	* delete_vertex() from a refvertexed graph left an unnecessary
 	  reference to the referenced vertex hanging around in the graph,
 	  reported by Christoph Lamprecht.
+
 	* Implement new 'super_component' option for connected_graph(),
 	  biconnected_graph(), and strongly_connected_graph(), to allow
 	  more complex ways of forming 'supercomponents' (and more
 	  customized ways of naming them).
+
 	* Address rt.cpan.org #17159: "Nodes appear to unblessed after
 	  using articulation_points() - 2" (elaboration of rt.cpan.org
 	  #17108: "Nodes appear to unblessed after using
 	  articulation_points())"
+
 	* Address rt.cpan.org #17160: "Nodes appear to unblessed after
 	  using connected_components()"
+
 	* Address rt.cpan.org #17161: "Nodes appear to unblessed after
 	  using bridges()"
+
 	* Address rt.cpan.org #17162: "Nodes appear to unblessed after
 	  using connected_graph()"
+
 	* Address rt.cpan.org #17163, "SP_Dijkstra() is complaining"
+
 	* Address rt.cpan.org #17164, "SP_Bellman_Ford() is complaining"
+
 	* Address rt.cpan.org #17165, documentation error in
 	  SP_Bellman_Ford().	
+
 	* Address rt.cpan.org #17405: "has_cycle with empty args
 	  should return FALSE"
+
 	* Address rt.cpan.org: #17592: "articulation_points doesn't
 	  find all vertices" (didn't find all the vertices of non-connected
 	  graphs, only the vertices of the first (randomly chosen) connected
 	  subgraph)
+
 	The rt.cpan.org cases 17159-17592 reported by Brian Obsorne.
+
 	* Add Test::Pod and Test::Pod::Coverage tests.
+
 	* Release as 0.70.
 
 2005-12-06  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -116,19 +168,25 @@
 	* Add SP_Dijkstra() and SP_Bellman_Ford() to find the shortest
 	  path between any two vertices, the result is returned as
 	  the list of the vertices in the path.
+
 	* In addition to the SPT per vertex result weight, also add
 	  a predecessor ('p') vertex attribute (the SP_Dijkstra() and
 	  SP_Bellman_Ford() unsurprisingly use this.)
+
 	* Cache the SPT results for better speed.
+
 	* Document that the SPT also allow a single argument
 	  as the starting (root) vertex.
+
 	* Fix a bug in SPT_Dijkstra() which would ignore an "untrue" vertex
 	  (such as '0') if it was any other vertex than the root vertex
 	  (boolean context is dangerous, when you really mean "exists").
+
 	* For "components" (strongly, biconnected, and connected) graphs
 	  store the list of the original vertices as a vertex attribute
 	  'subvertices' (so there is no need to do split(/\+/, ...) tricks),
 	  the list is stored as a array reference.
+
 	* Release as 0.69.
 
 2005-11-23  Jarkko Hietaniemi  <jhi@iki.fi>
@@ -136,22 +194,28 @@
 	* SPT_Dijkstra() wasn't setting the vertex attributes of
 	  the result graph, noticed by Susan Tang, only the edge
 	  attributes were being set.  SPT_Bellman_Ford() was doing neither!
+
 	* There was an actual typo in the SPT test case from Sedgewick,
 	  a weight of 0.32 was mistyped as 0.22, this luckily didn't
 	  affect the result graph but it of course affected the
 	  resulting vertex 'weight' attributes.
+
 	* Add tests to t/70_spt.t for the vertex and egde attributes
 	  of the SPT_Dijkstra() and SPT_Bellman_Ford() results.
+
 	* Minor documentation tweaks, most importantly clarify the
 	  return value of the SPT_Dijkstra() and SPT_Bellman_Ford().
+
 	* Document that Perl 5.6.0 is the minimum (because of weak references)
 	  and also make Graph.pm require that (Makefile.PL was already doing
 	  the probing using Scalar::Util qw(weaken)).
+
 	* Add an early test (02_trap.t) for catching the development-time-only
 	  setting of __DIE__ and __WARN__ handlers (as a result of this almost
 	  all the numbered tests were renumbered, so the diff is falsely
 	  gigantic).  (If the handlers were mistakenly left turned on,
 	  a lot of later tests that checked the $@ got confusing failures.)
+
 	* Release as 0.68.
 
 2005-08-03  Jarkko Hietaniemi  <jhi@iki.fi>

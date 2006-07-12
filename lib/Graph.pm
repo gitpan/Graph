@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.76';
+$VERSION = '0.77';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -1485,7 +1485,7 @@ sub get_edge_attribute {
     my $g = shift;
     $g->expect_non_multiedged;
     my $attr = pop;
-    return unless $g->has_edge( @_ );
+    return undef unless $g->has_edge( @_ );
     my @i = $g->_vertex_ids( @_ );
     return undef if @i == 0 && @_;
     my $E = $g->[ _E ];
@@ -1574,14 +1574,14 @@ sub vertex {
 
 sub out_edges {
     my $g = shift;
-    return undef unless @_ && $g->has_vertex( @_ );
+    return unless @_ && $g->has_vertex( @_ );
     my @e = $g->edges_from( @_ );
     wantarray ? map { @$_ } @e : @e;
 }
 
 sub in_edges {
     my $g = shift;
-    return undef unless @_ && $g->has_vertex( @_ );
+    return unless @_ && $g->has_vertex( @_ );
     my @e = $g->edges_to( @_ );
     wantarray ? map { @$_ } @e : @e;
 }
@@ -1599,7 +1599,8 @@ sub add_edges {
 	    $g->add_edge( @$u );
 	} else {
 	    if (@_) {
-		$g->add_edge( $u, shift @_ );
+		my $v = shift @_;
+		$g->add_edge( $u, $v );
 	    } else {
 		require Carp;
 		Carp::croak("Graph::add_edges: missing end vertex");
@@ -2747,7 +2748,7 @@ sub strongly_connected_component_by_vertex {
 	    return $i if $scc[$i]->[$j] eq $v;
 	}
     }
-    return undef;
+    return;
 }
 
 sub strongly_connected_component_by_index {
@@ -3228,7 +3229,12 @@ sub SPT_Dijkstra {
 	$spt_di->{ $first_root } = [ $g->[ _G ], $sptg ];
 	$g->set_graph_attribute('_spt_di', $spt_di);
     }
-    return $spt_di->{ $first_root }->[ 1 ];
+
+    my $spt = $spt_di->{ $first_root }->[ 1 ];
+
+    $spt->set_graph_attribute('SPT_Dijsktra_root', $first_root);
+
+    return $spt;
 }
 
 *SSSP_Dijkstra = \&SPT_Dijkstra;
@@ -3253,9 +3259,33 @@ sub SP_Dijkstra {
     return reverse @path;
 }
 
+sub __SPT_Bellman_Ford {
+    my ($g, $u, $v, $attr, $d, $p, $c0, $c1) = @_;
+    return unless $c0->{ $u };
+    my $w = $g->get_edge_attribute($u, $v, $attr);
+    $w = 1 unless defined $w;
+    if (defined $d->{ $v }) {
+	if (defined $d->{ $u }) {
+	    if ($d->{ $v } > $d->{ $u } + $w) {
+		$d->{ $v } = $d->{ $u } + $w;
+		$p->{ $v } = $u;
+		$c1->{ $v }++;
+	    }
+	} # else !defined $d->{ $u } &&  defined $d->{ $v }
+    } else {
+	if (defined $d->{ $u }) {
+	    #  defined $d->{ $u } && !defined $d->{ $v }
+	    $d->{ $v } = $d->{ $u } + $w;
+	    $p->{ $v } = $u;
+	    $c1->{ $v }++;
+	} # else !defined $d->{ $u } && !defined $d->{ $v }
+    }
+}
+
 sub _SPT_Bellman_Ford {
     my ($g, $opt, $unseenh, $unseena, $r, $next, $code, $attr) = @_;
     my %d;
+    return unless defined $r;
     $d{ $r } = 0;
     my %p;
     my $V = $g->vertices;
@@ -3265,24 +3295,9 @@ sub _SPT_Bellman_Ford {
 	my %c1;
 	for my $e ($g->edges) {
 	    my ($u, $v) = @$e;
-	    next unless $c0{ $u };
-	    my $w = $g->get_edge_attribute($u, $v, $attr);
-	    $w = 1 unless defined $w;
-	    if (defined $d{ $v }) {
-		if (defined $d{ $u }) {
-		    if ($d{ $v } > $d{ $u } + $w) {
-			$d{ $v } = $d{ $u } + $w;
-			$p{ $v } = $u;
-			$c1{ $v }++;
-		    }
-		} # else !defined $d{ $u } &&  defined $d{ $v }
-	    } else {
-		if (defined $d{ $u }) {
-		    #  defined $d{ $u } && !defined $d{ $v }
-		    $d{ $v } = $d{ $u } + $w;
-		    $p{ $v } = $u;
-		    $c1{ $v }++;
-		} # else !defined $d{ $u } && !defined $d{ $v }
+	    __SPT_Bellman_Ford($g, $u, $v, $attr, \%d, \%p, \%c0, \%c1);
+	    if ($g->undirected) {
+		__SPT_Bellman_Ford($g, $v, $u, $attr, \%d, \%p, \%c0, \%c1);
 	    }
 	}
 	%c0 = %c1 unless $i == $V - 1;
@@ -3299,7 +3314,7 @@ sub _SPT_Bellman_Ford {
 	}
     }
 
-    return (\%p, \%d );
+    return (\%p, \%d);
 }
 
 sub SPT_Bellman_Ford {
@@ -3309,11 +3324,15 @@ sub SPT_Bellman_Ford {
 
     unless (defined $r) {
 	$r = $g->random_vertex();
+	return unless defined $r;
     }
 
     my $spt_bf = $g->get_graph_attribute('_spt_bf');
-    unless (defined $spt_bf && exists $spt_bf->{ $r } && $spt_bf->{ $r }->[ 0 ] == $g->[ _G ]) {
-	my ($p, $d) = $g->_SPT_Bellman_Ford($opt, $unseenh, $unseena, $r, $next, $code, $attr);
+    unless (defined $spt_bf &&
+	    exists $spt_bf->{ $r } && $spt_bf->{ $r }->[ 0 ] == $g->[ _G ]) {
+	my ($p, $d) =
+	    $g->_SPT_Bellman_Ford($opt, $unseenh, $unseena,
+				  $r, $next, $code, $attr);
 	my $h = $g->new();
 	for my $v (keys %$p) {
 	    my $u = $p->{ $v };
@@ -3327,7 +3346,11 @@ sub SPT_Bellman_Ford {
 	$g->set_graph_attribute('_spt_bf', $spt_bf);
     }
 
-    return $spt_bf->{ $r }->[ 1 ];
+    my $spt = $spt_bf->{ $r }->[ 1 ];
+
+    $spt->set_graph_attribute('SPT_Bellman_Ford_root', $r);
+
+    return $spt;
 }
 
 *SSSP_Bellman_Ford = \&SPT_Bellman_Ford;
