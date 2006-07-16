@@ -1,3 +1,10 @@
+2006-07-16  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #20476: "SPT_Bellman_Ford does not respect
+	  refvertexed" - now fixed, and SPT_Dijkstra() had the same problem.
+
+	* Release as 0.78.
+
 2006-07-08  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Address rt.cpan.org #20185: "problem with SPT_Bellman_Ford",

@@ -1691,6 +1691,8 @@ I<graph radius>.  See also L</diameter>.
 
 =item center_vertices
 
+=item centre_vertices
+
     my @c = $g->center_vertices;
     my @c = $g->center_vertices($delta);
 

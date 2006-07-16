@@ -7,6 +7,8 @@ Note that these are possibilities, not plans nor promises.
   twice the current depth of the BFS has been found; no cycles => V + 1 (Inf)
 - bipartite aka 2-colourable: again, BFS:
   http://www.cs.auckland.ac.nz/~ute/220ft/graphalg/node15.html
+- Eulerian circuit: Fleury's algorithm:
+  http://planetmath.org/encyclopedia/FleurysAlgorithm.html
 - could_be_isomorphic() - second degree?
 
 1. separate external and internal attributes?

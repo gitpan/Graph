@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.77';
+$VERSION = '0.78';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -440,8 +440,9 @@ sub _add_edge {
 	    push @e, $V->[ _s ]->{ $v };
 	}
     } else {
+	my $h = $g->[ _V ]->_is_HYPER;
 	for my $v ( @_ ) {
-	    my @v = ref $v eq 'ARRAY' ? @$v : $v;
+	    my @v = ref $v eq 'ARRAY' && $h ? @$v : $v;
 	    $g->add_vertex( @v ) unless $V->has_path( @v );
 	    push @e, $V->_get_path_id( @v );
 	}
@@ -486,8 +487,9 @@ sub _vertex_ids {
 	    push @e, $V->[ _s ]->{ $v };
 	}
     } else {
+	my $h = $g->[ _V ]->_is_HYPER;
 	for my $v ( @_ ) {
-	    my @v = ref $v eq 'ARRAY' ? @$v : $v;
+	    my @v = ref $v eq 'ARRAY' && $h ? @$v : $v;
 	    return () unless $V->has_path( @v );
 	    push @e, $V->_get_path_id( @v );
 	}
@@ -701,8 +703,9 @@ sub vertices_at {
     my @v;
     while (my ($i, $v) = each %{ $Vi }) {
 	my %i;
+	my $h = $V->[_f ] & _HYPER;
 	@i{ @i } = @i if @i; # @todo: nonuniq hyper vertices?
-	for my $u ((ref($v) eq 'ARRAY') ? @$v : $v) {
+	for my $u (ref $v eq 'ARRAY' && $h ? @$v : $v) {
 	    my $j = exists $v{ $u } ? $v{ $u } : ( $v{ $u } = $i );
 	    if (defined $j && exists $i{ $j }) {
 		delete $i{ $j };
@@ -723,10 +726,9 @@ sub _edges_at {
     my @e;
     my $en = 0;
     my %ev;
-    for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
-#use Carp;
-#confess("v: $v, ref=".ref($v)) unless ref($v) eq 'ARRAY'; # Added by bsb
-	my $vi = $V->_get_path_id( (ref($v) eq 'ARRAY') ? @$v : $v );
+    my $h = $V->[_f ] & _HYPER;
+    for my $v ( $h ? $g->vertices_at( @_ ) : @_ ) {
+	my $vi = $V->_get_path_id( ref $v eq 'ARRAY' && $h ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	while (my ($ei, $ev) = each %{ $Ei }) {
@@ -753,8 +755,9 @@ sub _edges_from {
     my $o = $E->[ _f ] & _UNORD;
     my $en = 0;
     my %ev;
-    for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( (ref($v) eq 'ARRAY') ? @$v : $v );
+    my $h = $V->[_f ] & _HYPER;
+    for my $v ( $h ? $g->vertices_at( @_ ) : @_ ) {
+	my $vi = $V->_get_path_id( ref $v eq 'ARRAY' && $h ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	if (wantarray) {
@@ -804,8 +807,9 @@ sub _edges_to {
     my $o = $E->[ _f ] & _UNORD;
     my $en = 0;
     my %ev;
-    for my $v ( ($V->[_f ] & _HYPER) ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( (ref($v) eq 'ARRAY') ? @$v : $v );
+    my $h = $V->[_f ] & _HYPER;
+    for my $v ( $h ? $g->vertices_at( @_ ) : @_ ) {
+	my $vi = $V->_get_path_id( ref $v eq 'ARRAY' && $h ? @$v : $v );
 	next unless defined $vi;
 	my $Ei = $E->_ids;
 	if (wantarray) {
@@ -3225,7 +3229,7 @@ sub SPT_Dijkstra {
     my $spt_di = $g->get_graph_attribute('_spt_di');
     unless (defined $spt_di && exists $spt_di->{ $first_root } && $spt_di->{ $first_root }->[ 0 ] == $g->[ _G ]) {
 	my %etc;
-	my $sptg = $g->_heap_walk($g->new(), \&_SPT_add, \%etc, %opt);
+	my $sptg = $g->_heap_walk($g->new, \&_SPT_add, \%etc, %opt);
 	$spt_di->{ $first_root } = [ $g->[ _G ], $sptg ];
 	$g->set_graph_attribute('_spt_di', $spt_di);
     }
@@ -3333,7 +3337,7 @@ sub SPT_Bellman_Ford {
 	my ($p, $d) =
 	    $g->_SPT_Bellman_Ford($opt, $unseenh, $unseena,
 				  $r, $next, $code, $attr);
-	my $h = $g->new();
+	my $h = $g->new;
 	for my $v (keys %$p) {
 	    my $u = $p->{ $v };
 	    $h->add_edge( $u, $v );
@@ -3601,6 +3605,8 @@ sub center_vertices {
     }
     return @c;
 }
+
+*centre_vertices = \&center_vertices;
 
 sub average_path_length {
     my $g = shift;

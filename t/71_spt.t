@@ -1,4 +1,4 @@
-use Test::More tests => 118;
+use Test::More tests => 124;
 
 use Graph;
 use Graph::Directed;
@@ -255,4 +255,32 @@ is("@{[$g2->SP_Bellman_Ford('0', '2')]}", "0 5 4 2", "path 0 2");
 is("@{[$g2->SP_Bellman_Ford('0', '3')]}", "0 5 4 3", "path 0 3");
 is("@{[$g2->SP_Bellman_Ford('0', '4')]}", "0 5 4",   "path 0 4");
 is("@{[$g2->SP_Bellman_Ford('0', '5')]}", "0 5",     "path 0 5");
+
+{
+    my $g = Graph::Directed->new(refvertexed => 1);
+    
+    $g->add_edge(qw(a b));
+    $g->add_edge(qw(a c));
+    $g->add_edge(qw(c d));
+    $g->add_edge(qw(c e));
+    $g->add_edge(qw(e f));
+
+    my $r = [1, 2, 3];
+
+    $g->add_edge('f', $r);
+
+    my $s0 = $g->SPT_Dijkstra(first_root => 'a');
+    
+    ok($s0->has_vertex('f'));
+    my @e0 = $s0->successors('f');
+    is(@e0, 1);
+    is_deeply($e0[0], $r);
+
+    my $s1 = $g->SPT_Bellman_Ford(first_root => 'a');
+    
+    ok($s1->has_vertex('f'));
+    my @e1 = $s1->successors('f');
+    is(@e1, 1);
+    is($e1[0], $r);
+}
 
