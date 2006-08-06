@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.78';
+$VERSION = '0.79';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -2521,6 +2521,55 @@ sub directed_copy {
 *directed_copy_graph = \&directed_copy;
 
 ###
+# Cache or not.
+#
+
+my %_cache_type =
+    (
+     'connectivity'        => '_ccc',
+     'strong_connectivity' => '_scc',
+     'biconnectivity'      => '_bcc',
+     'SPT_Dijkstra'        => '_spt_di',
+     'SPT_Bellman_Ford'    => '_spt_bf',
+    );
+
+sub _clear_cache {
+    my ($g, $type) = @_;
+    my $c = $_cache_type{$type};
+    if (defined $c) {
+	$g->delete_graph_attribute($c);
+    } else {
+	Carp::croak("Graph: unknown cache type '$type'");
+    }
+}
+
+sub connectivity_clear_cache {
+    my $g = shift;
+    _clear_cache($g, 'connectivity');
+}
+
+sub strong_connectivity_clear_cache {
+    my $g = shift;
+    _clear_cache($g, 'strong_connectivity');
+}
+
+sub biconnectivity_clear_cache {
+    my $g = shift;
+    _clear_cache($g, 'biconnectivity');
+}
+
+sub SPT_Dijkstra_clear_cache {
+    my $g = shift;
+    _clear_cache($g, 'SPT_Dijkstra');
+    $g->delete_graph_attribute('SPT_Dijkstra_first_root');
+}
+
+sub SPT_Bellman_Ford_clear_cache {
+    my $g = shift;
+    _clear_cache($g, 'SPT_Bellman_Ford');
+}
+
+###
 # Connected components.
 #
 
@@ -2740,13 +2789,14 @@ sub _strongly_connected_components {
 sub strongly_connected_components {
     my $g = shift;
     $g->expect_directed;
-    $g->_strongly_connected_components;
+    $g->_strongly_connected_components(@_);
 }
 
 sub strongly_connected_component_by_vertex {
-    my ($g, $v) = @_;
+    my $g = shift;
+    my $v = shift;
     $g->expect_directed;
-    my @scc = $g->_strongly_connected_components( next_alphabetic => 1);
+    my @scc = $g->_strongly_connected_components( next_alphabetic => 1, @_ );
     for (my $i = 0; $i <= $#scc; $i++) {
 	for (my $j = 0; $j <= $#{ $scc[$i] }; $j++) {
 	    return $i if $scc[$i]->[$j] eq $v;
@@ -2756,16 +2806,17 @@ sub strongly_connected_component_by_vertex {
 }
 
 sub strongly_connected_component_by_index {
-    my ($g, $i) = @_;
+    my $g = shift;
+    my $i = shift;
     $g->expect_directed;
-    my $c = ( $g->_strongly_connected_components )[ $i ];
+    my $c = ( $g->_strongly_connected_components(@_) )[ $i ];
     return defined $c ? @{ $c } : ();
 }
 
 sub same_strongly_connected_components {
     my $g = shift;
     $g->expect_directed;
-    my @scc = $g->_strongly_connected_components( next_alphabetic => 1);
+    my @scc = $g->_strongly_connected_components( next_alphabetic => 1, @_ );
     my @i;
     while (@_) {
 	my $v = shift;
@@ -2935,10 +2986,12 @@ sub biconnectivity {
 	}
 	$I{ $r } = 1;
 	my %U;
+	my %S; # Self-loops.
 	for my $e ($g->edges) {
 	    my ($u, $v) = @$e;
 	    $U{ $u }{ $v } = 0;
 	    $U{ $v }{ $u } = 0;
+	    $S{ $u } = 1 if $u eq $v;
 	}
 	my $i = 1;
 	my $v = $r;
@@ -2952,7 +3005,6 @@ sub biconnectivity {
 	# print "r : $r\n";
 
 	my %T; @T{ @V } = @V;
-	my %S; # Self-loops.
 
 	for my $w (@V) {
 	    my @s = $g->successors( $w );
@@ -3088,13 +3140,13 @@ sub biconnectivity {
 
 sub is_biconnected {
     my $g = shift;
-    my ($ap, $bc) = ($g->biconnectivity)[0, 1];
+    my ($ap, $bc) = ($g->biconnectivity(@_))[0, 1];
     return defined $ap ? @$ap == 0 && $g->vertices >= 3 : undef;
 }
 
 sub is_edge_connected {
     my $g = shift;
-    my ($br) = ($g->biconnectivity)[2];
+    my ($br) = ($g->biconnectivity(@_))[2];
     return defined $br ? @$br == 0 && $g->edges : undef;
 }
 
@@ -3106,7 +3158,7 @@ sub is_edge_separable {
 
 sub articulation_points {
     my $g = shift;
-    my ($ap) = ($g->biconnectivity)[0];
+    my ($ap) = ($g->biconnectivity(@_))[0];
     return defined $ap ? @$ap : ();
 }
 
@@ -3114,26 +3166,28 @@ sub articulation_points {
 
 sub biconnected_components {
     my $g = shift;
-    my ($bc) = ($g->biconnectivity)[1];
+    my ($bc) = ($g->biconnectivity(@_))[1];
     return defined $bc ? @$bc : ();
 }
 
 sub biconnected_component_by_index {
-    my ($g, $i) = @_;
-    my ($bc) = ($g->biconnectivity)[1];
+    my $g = shift;
+    my $i = shift;
+    my ($bc) = ($g->biconnectivity(@_))[1];
     return defined $bc ? $bc->[ $i ] : undef;
 }
 
 sub biconnected_component_by_vertex {
-    my ($g, $v) = @_;
-    my ($v2bc) = ($g->biconnectivity)[3];
+    my $g = shift;
+    my $v = shift;
+    my ($v2bc) = ($g->biconnectivity(@_))[3];
     return defined $v2bc->{ $v } ? keys %{ $v2bc->{ $v } } : ();
 }
 
 sub same_biconnected_components {
     my $g = shift;
     my $u = shift;
-    my @u = $g->biconnected_component_by_vertex($u);
+    my @u = $g->biconnected_component_by_vertex($u, @_);
     return 0 unless @u;
     my %ubc; @ubc{ @u } = ();
     while (@_) {
@@ -3156,7 +3210,7 @@ sub same_biconnected_components {
 
 sub biconnected_graph {
     my ($g, %opt) = @_;
-    my ($bc, $v2bc) = ($g->biconnectivity)[1, 3];
+    my ($bc, $v2bc) = ($g->biconnectivity, %opt)[1, 3];
     my $bcg = Graph::Undirected->new;
     my $sc_cb =
 	exists $opt{super_component} ?
@@ -3190,7 +3244,7 @@ sub biconnected_graph {
 
 sub bridges {
     my $g = shift;
-    my ($br) = ($g->biconnectivity)[2];
+    my ($br) = ($g->biconnectivity(@_))[2];
     return defined $br ? @$br : ();
 }
 
@@ -3236,7 +3290,7 @@ sub SPT_Dijkstra {
 
     my $spt = $spt_di->{ $first_root }->[ 1 ];
 
-    $spt->set_graph_attribute('SPT_Dijsktra_root', $first_root);
+    $spt->set_graph_attribute('SPT_Dijkstra_root', $first_root);
 
     return $spt;
 }

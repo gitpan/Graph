@@ -1,4 +1,4 @@
-use Test::More tests => 20;
+use Test::More;
 
 use Graph;
 
@@ -12,9 +12,19 @@ while (<DATA>) {
     $g->add_edge($v1, $v2);
 }
 
-my @rts = sort $g->articulation_points;
+my $R = 3;
 
-is("@rts", "DIP:3047N DIP:3051N DIP:3053N DIP:3056N DIP:3059N DIP:3069N DIP:3075N DIP:3089N DIP:3095N DIP:3101N DIP:3103N DIP:3109N DIP:3120N") for 1..20;
+plan tests => $R * scalar $g->vertices;
+
+my @exp = "DIP:3047N DIP:3051N DIP:3053N DIP:3056N DIP:3059N DIP:3069N DIP:3075N DIP:3089N DIP:3095N DIP:3101N DIP:3103N DIP:3109N DIP:3120N";
+
+for my $v ($g->vertices) {
+    for (1..$R) {
+	my @rts = sort $g->articulation_points(first_root => $v);
+	is("@rts", "@exp");
+	$g->biconnectivity_clear_cache;
+    }
+}
 
 __END__
 DIP:3048N,DIP:3047N

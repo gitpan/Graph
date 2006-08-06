@@ -679,6 +679,12 @@ and L</same_weakly_connected_components>.
 
 For an undirected graph, return its connected graph.
 
+=item connectivity_clear_cache
+
+    $g->connectivity_clear_cache
+
+See L</"Clearing cached results">.
+
 See L</"Connected Graphs and Their Components"> for further discussion.
 
 =item biconnectivity
@@ -776,6 +782,12 @@ For an undirected graph, return the bridges of the graph as a list of
 anonymous arrays of vertices in the bridges.  The order of bridges and
 the order of vertices in them is undefined.
 
+=item biconnectivity_clear_cache
+
+    $g->biconnectivity_clear_cache
+
+See L</"Clearing cached results">.
+
 =item strongly_connected
 
 =item is_strongly_connected
@@ -828,6 +840,12 @@ See also L</same_weakly_connected_components>.
 
 For undirected graphs, see L</same_connected_components> or
 L</same_biconnected_components>.
+
+=item strong_connectivity_clear_cache
+
+    $g->strong_connectivity_clear_cache
+
+See L</"Clearing cached results">.
 
 =item weakly_connected
 
@@ -1503,7 +1521,7 @@ B<NOTE>: note that all the vertices might not be reachable from the
 selected (explicit or random) start vertex.
 
 The start vertex is be available as the graph attribute
-C<SPT_Dijsktra_root>).
+C<SPT_Dijkstra_root>).
 
 The result weights of vertices can be retrieved from the result graph by
 
@@ -1535,6 +1553,12 @@ Return the vertices in the shortest path in the graph $g between the
 two vertices $u, $v.  If no path can be found, an empty list is returned.
 
 Uses SPT_Dijkstra().
+
+=item SPT_Dijkstra_clear_cache
+
+    $g->SPT_Dijkstra_clear_cache
+
+See L</"Clearing cached results">.
 
 =item SPT_Bellman_Ford
 
@@ -1583,6 +1607,12 @@ Return the vertices in the shortest path in the graph $g between the
 two vertices $u, $v.  If no path can be found, an empty list is returned.
 
 Uses SPT_Bellman_Ford().
+
+=item SPT_Bellman_Ford_clear_cache
+
+    $g->SPT_Bellman_Ford_clear_cache
+
+See L</"Clearing cached results">.
 
 =back
 
@@ -1725,6 +1755,72 @@ vertices, and the index to the current shortest paths (0..V*V-1).
 =back
 
 =back
+
+=head2 Clearing cached results
+
+For many graph algorithms there are several different but equally valid
+results.  (Pseudo)Randomness is used internally by the Graph module to
+for example pick a random starting vertex, and to select random edges
+from a vertex.
+
+For efficiency the computed result is often cached to avoid
+recomputing the potentially expensive operation, and this also gives
+additional determinism (once a correct result has been computed, the
+same result will always be given).
+
+However, sometimes the exact opposite is desireable, and the possible
+alternative results are wanted.  To do this, the following methods are
+available:
+
+=over 4
+
+=item *
+
+connectivity_clear_cache
+
+Affects connected_components(), connected_component_by_vertex(),
+connected_component_by_index(), same_connected_components(),
+connected_graph(), is_connected(), is_weakly_connected(),
+weakly_connected_components(), weakly_connected_component_by_vertex(),
+weakly_connected_component_by_index(), same_weakly_connected_components(),
+weakly_connected_graph().
+
+=item *
+
+biconnectivity_clear_cache
+
+Affects biconnected_components(), biconnected_component_by_vertex(),
+biconnected_component_by_index(), is_edge_connected(), is_edge_separable(),
+articulation_points(), cut_vertices(), is_biconnected(), biconnected_graph(),
+same_biconnected_components(), bridges().
+
+=item *
+
+strong_connectivity_clear_cache
+
+Affects strongly_connected_components(),
+strongly_connected_component_by_vertex(),
+strongly_connected_component_by_index(),
+same_strongly_connected_components(), is_strongly_connected(),
+strongly_connected(), strongly_connected_graph().
+
+=item *
+
+SPT_Dijkstra_clear_cache
+
+Affects SPT_Dijkstra(), SSSP_Dijkstra(), single_source_shortest_paths(),
+SP_Dijkstra().
+
+=item *
+
+SPT_Bellman_Ford_clear_cache
+
+Affects SPT_Bellman_Ford(), SSSP_Bellman_Ford(), SP_Bellman_Ford().
+
+=back
+
+Note that any such computed and cached results are of course discarded
+if the graph is modified.
 
 =head2 Random
 

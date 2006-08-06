@@ -1,3 +1,18 @@
+2006-08-06  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* The u_bo_ap1.t wasn't really testing the same for 20 times,
+	  which meant that one bug was waiting for Koen van der Drift.
+	  (If one start vertex of biconnectivity search was a self-loop,
+	  an empty list of articulation points was returned.)
+
+	* Add a new API family: $g->..._clear_cache(), which allows
+	  one to forget a cached value such as biconnectivity(),
+	  and randomness was used in computing the cached result.
+	  Without clearing the cache once the result has been computed
+	  it stays the same (until the graph is modified, of course).
+
+	* Release as 0.79.
+
 2006-07-16  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Address rt.cpan.org #20476: "SPT_Bellman_Ford does not respect
