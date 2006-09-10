@@ -9,7 +9,7 @@ Note that these are possibilities, not plans nor promises.
   http://www.cs.auckland.ac.nz/~ute/220ft/graphalg/node15.html
 - Eulerian circuit: Fleury's algorithm:
   http://planetmath.org/encyclopedia/FleurysAlgorithm.html
-- could_be_isomorphic() - second degree?
+- could_be_isomorphic() - go second degree?
 
 1. separate external and internal attributes?
 2. biconn: add next_root

@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.79';
+$VERSION = '0.80';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -3415,7 +3415,7 @@ sub SPT_Bellman_Ford {
 
 sub SP_Bellman_Ford {
     my ($g, $u, $v) = @_;
-    my $sptg = $g->SPT_Dijkstra(first_root => $u);
+    my $sptg = $g->SPT_Bellman_Ford(first_root => $u);
     my @path = ($v);
     my %seen;
     my $V = $g->vertices;
@@ -3775,7 +3775,6 @@ sub could_be_isomorphic {
 		       $d0{$da}{$db} == $d1{$da}{$db};
 	}
     }
-    my $f = 1;
     for my $da (keys %d0) {
 	for my $db (keys %{ $d0{$da} }) {
 	    return 0 unless $d1{$da}{$db} == $d0{$da}{$db};
@@ -3783,9 +3782,10 @@ sub could_be_isomorphic {
 	delete $d1{$da};
     }
     return 0 unless keys %d1 == 0;
+    my $f = 1;
     for my $da (keys %d0) {
 	for my $db (keys %{ $d0{$da} }) {
-	    $f *= _factorial(abs($d0{$da}{$db})) if $d0{$da}{$db} > 1;
+	    $f *= _factorial(abs($d0{$da}{$db}));
 	}
     }
     return $f;

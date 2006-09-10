@@ -346,6 +346,8 @@ operator and the method
 
 =item ne
 
+    $g->ne("a-b,a-c,d")
+
 =back
 
 See also L</Isomorphism>.
@@ -611,8 +613,8 @@ to reach every other vertex.
 If the graph has been created with a true C<unionfind> parameter,
 the time complexity is (essentially) O(V), otherwise O(V log V).
 
-See also L</connected_components>, L<connected_component>, and
-L<same_connected_components>, and L</biconnectivity>.
+See also L</connected_components>, L</connected_component>, and
+L</same_connected_components>, and L</biconnectivity>.
 
 For directed graphs, see L</is_strongly_connected>
 and L</is_weakly_connected>.
@@ -885,8 +887,8 @@ component the vertex belongs to, the indexing starting from zero.
 
 For the inverse, see L</weakly_connected_component_by_index>.
 
-For undirected graphs, see L<connected_component_by_vertex>
-and L<biconnected_component_by_vertex>.
+For undirected graphs, see L</connected_component_by_vertex>
+and L</biconnected_component_by_vertex>.
 
 =item weakly_connected_component_by_index
 
@@ -914,7 +916,7 @@ Return true if the vertices are in the same weakly connected component.
 
 For a directed graph, return its weakly connected graph.
 
-For undirected graphs, see L<connected_graph> and L<biconnected_graph>.
+For undirected graphs, see L</connected_graph> and L</biconnected_graph>.
 
 =item strongly_connected_components
 

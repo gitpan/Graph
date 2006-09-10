@@ -18,8 +18,9 @@ sub Bar::xyz {
 
 {
     package Bar;
+    use Scalar::Util qw(refaddr);
     use overload '""' => \&str, eq => \&eq, ne => \&ne;
-    sub str { "" }
+    sub str { refaddr $_[0] }
     sub eq  {
               my $d0 = defined $_[0]->{bar};
 	      my $d1 = defined $_[1]->{bar};

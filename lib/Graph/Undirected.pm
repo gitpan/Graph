@@ -8,7 +8,7 @@ use strict;
 
 =head1 NAME
 
-Graph::Undirected - directed graphs
+Graph::Undirected - undirected graphs
 
 =head1 SYNOPSIS
 

@@ -1,4 +1,4 @@
-use Test::More tests => 75;
+use Test::More tests => 95;
 
 use strict;
 use Graph;
@@ -177,6 +177,8 @@ sub rt_17164 {
     $g->add_edges([$v1,$v2],[$v3,$v4],[$v3,$v2]);
     my @spbf = $g->SP_Bellman_Ford($v1,$v4);
     ok(@spbf >= 2);
+    is($spbf[ 0], $v1);
+    is($spbf[-1], $v4);
 }
 
 rt_17164(Foo->new(),

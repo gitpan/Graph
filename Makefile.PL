@@ -17,6 +17,7 @@ WriteMakefile(
 	      	{
 		    'Heap'		=> 0,
 		    'List::Util'	=> 0,
+		    'Scalar::Util'	=> 0,
 		    'Math::Complex'	=> 0,
 		    'Test::More'	=> 0,
 		},

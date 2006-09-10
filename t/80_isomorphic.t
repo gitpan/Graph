@@ -65,6 +65,13 @@ $g5b->add_edges(qw(h i h j h k));
 is($g5a->could_be_isomorphic($g5b), 80640); # 8! * 2!
 is($g5b->could_be_isomorphic($g5a), 80640);
 
+my $g6a = Graph->new;
+my $g6b = Graph->new;
+my $g6c = Graph->new;
 
+$g6a->add_vertices(qw(a b c d e f));
+$g6a->add_edges(qw(a b b c b d));
 
+$g6b->add_vertices(qw(a b c d e f));
+$g6b->add_edges(qw(a b b c b e));
 

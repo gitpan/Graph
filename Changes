@@ -1,3 +1,21 @@
+2006-09-10  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* SP_Bellman_Ford() used actually SPT_Dijkstra(), not
+	  SPT_Bellman_Ford(), noticed by "aramos".  This changed
+	  some regression test results a bit.
+
+	* The NAME line of Graph::Undirected said "directed graphs",
+	  noticed by "Ruslan", the first one to notice this in two
+	  years, including the author yours truly...
+
+	* Add Scalar::Util to the prereqs listed in Makefile.PL since
+	  one of the tests uses refaddr, shouldn't be a problem because
+	  List::Util already is a prereq.
+
+	* Fix few broken intra-pod links.
+
+	* Release as 0.80.
+
 2006-08-06  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* The u_bo_ap1.t wasn't really testing the same for 20 times,
