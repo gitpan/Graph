@@ -267,7 +267,7 @@ if the vertex did not exist in the graph.
 
 If the graph has been created I<multivertexed> or I<countvertexed>
 and a vertex has been added multiple times, the vertex will require
-at least an equal number of deletions to become completely deleteted.
+at least an equal number of deletions to become completely deleted.
 
 =item delete_vertices
 
@@ -613,8 +613,9 @@ to reach every other vertex.
 If the graph has been created with a true C<unionfind> parameter,
 the time complexity is (essentially) O(V), otherwise O(V log V).
 
-See also L</connected_components>, L</connected_component>, and
-L</same_connected_components>, and L</biconnectivity>.
+See also L</connected_components>, L</connected_component_by_index>,
+L</connected_component_by_vertex>, and L</same_connected_components>,
+and L</biconnectivity>.
 
 For directed graphs, see L</is_strongly_connected>
 and L</is_weakly_connected>.
@@ -1242,10 +1243,12 @@ There are two kinds or degrees of creating multiedges and multivertices.
 The two kinds are mutually exclusive.
 
 The weaker kind is called I<counted>, in which the edge or vertex has
-a count on it: add operations increase the count, and delete operations
-decrease the count, and once the count goes to zero, the edge or vertex
-is deleted.  You can think of this as the graph elements being I<refcounted>,
-or I<reference counted>, if that sounds more familiar.
+a count on it: add operations increase the count, and delete
+operations decrease the count, and once the count goes to zero, the
+edge or vertex is deleted.  If there are attributes, they all are
+attached to the same vertex.  You can think of this as the graph
+elements being I<refcounted>, or I<reference counted>, if that sounds
+more familiar.
 
 The stronger kind is called (true) I<multi>, in which the edge or vertex
 really has multiple separate identities, so that you can for example
@@ -1305,12 +1308,13 @@ Return true if the graph is multivertexed.
 
 =back
 
-A multiedged (either the weak or the strong kind) graph is a I<multigraph>,
-for which you can test with C<is_multi_graph()>.
+A multiedged (either the weak kind or the strong kind) graph is
+a I<multigraph>, for which you can test with C<is_multi_graph()>.
 
-B<NOTE>: The various graph algorithms do not in general work well
-with multigraphs, and no effort has been made to test the algorithms
-with multigraphs.
+B<NOTE>: The various graph algorithms do not in general work well with
+multigraphs (they often assume I<simple graphs>, that is, no
+multiedges or loops), and no effort has been made to test the
+algorithms with multigraphs.
 
 vertices() and edges() will return the multiple elements: if you want
 just the unique elements, use
@@ -1538,7 +1542,7 @@ can be retrieved by
 vertex can have several successors.  You can first find the
 C<neighbors()> vertices and then remove the predecessor vertex.)
 
-If you want to find the shortes path between two vertices,
+If you want to find the shortest path between two vertices,
 see L</SP_Dijkstra>.
 
 =item SSSP_Dijkstra
@@ -1780,49 +1784,51 @@ available:
 
 connectivity_clear_cache
 
-Affects connected_components(), connected_component_by_vertex(),
-connected_component_by_index(), same_connected_components(),
-connected_graph(), is_connected(), is_weakly_connected(),
-weakly_connected_components(), weakly_connected_component_by_vertex(),
-weakly_connected_component_by_index(), same_weakly_connected_components(),
-weakly_connected_graph().
+Affects L</connected_components>, L</connected_component_by_vertex>,
+L</connected_component_by_index>, L</same_connected_components>,
+L</connected_graph>, L</is_connected>, L</is_weakly_connected>,
+L</weakly_connected_components>, L</weakly_connected_component_by_vertex>,
+L</weakly_connected_component_by_index>, L</same_weakly_connected_components>,
+L</weakly_connected_graph>.
 
 =item *
 
 biconnectivity_clear_cache
 
-Affects biconnected_components(), biconnected_component_by_vertex(),
-biconnected_component_by_index(), is_edge_connected(), is_edge_separable(),
-articulation_points(), cut_vertices(), is_biconnected(), biconnected_graph(),
-same_biconnected_components(), bridges().
+Affects L</biconnected_components>,
+L</biconnected_component_by_vertex>,
+L</biconnected_component_by_index>, L</is_edge_connected>,
+L</is_edge_separable>, L</articulation_points>, L</cut_vertices>,
+L</is_biconnected>, L</biconnected_graph>,
+L</same_biconnected_components>, L</bridges>.
 
 =item *
 
 strong_connectivity_clear_cache
 
-Affects strongly_connected_components(),
-strongly_connected_component_by_vertex(),
-strongly_connected_component_by_index(),
-same_strongly_connected_components(), is_strongly_connected(),
-strongly_connected(), strongly_connected_graph().
+Affects L</strongly_connected_components>,
+L</strongly_connected_component_by_vertex>,
+L</strongly_connected_component_by_index>,
+L</same_strongly_connected_components>, L</is_strongly_connected>,
+L</strongly_connected>, L</strongly_connected_graph>.
 
 =item *
 
 SPT_Dijkstra_clear_cache
 
-Affects SPT_Dijkstra(), SSSP_Dijkstra(), single_source_shortest_paths(),
-SP_Dijkstra().
+Affects L</SPT_Dijkstra>, L</SSSP_Dijkstra>, L</single_source_shortest_paths>,
+L</SP_Dijkstra>.
 
 =item *
 
 SPT_Bellman_Ford_clear_cache
 
-Affects SPT_Bellman_Ford(), SSSP_Bellman_Ford(), SP_Bellman_Ford().
+Affects L</SPT_Bellman_Ford>, L</SSSP_Bellman_Ford>, L</SP_Bellman_Ford>.
 
 =back
 
-Note that any such computed and cached results are of course discarded
-if the graph is modified.
+Note that any such computed and cached results are of course always
+automatically discarded whenever the graph is modified.
 
 =head2 Random
 
@@ -1855,8 +1861,8 @@ are no successors.
 
     my $u = $g->random_predecessor($v);
 
-Return a random predeceessor of the vertex in the graph, or undef if there
-are no predeceessors.
+Return a random predecessor of the vertex in the graph, or undef if there
+are no predecessors.
 
 =item random_graph
 

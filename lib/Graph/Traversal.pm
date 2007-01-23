@@ -144,7 +144,7 @@ sub configure {
 		     tree_edge non_tree_edge
 		     back_edge down_edge cross_edge seen_edge
 		     start get_next_root
-		     next_root next_alphabetic next_numeric next_random
+		     next_root next_alphabetic next_numeric next_random next_successor
 		     first_root
 		     has_a_cycle find_a_cycle
 		    ) };
@@ -563,6 +563,13 @@ alphabetic order (and leave first_root/next_root undefined).
 
 Set this to true if you want the vertices to be processed in
 numeric order (and leave first_root/next_root undefined).
+
+=item next_successor
+
+Called when choosing the next vertex to visit.  Called with arguments
+($self, $next) where $next is a hash reference with the possible
+next vertices as keys.  Use this to provide a custom ordering for
+choosing vertices, as opposed to C<next_numeric> or C<next_alphabetic>.
 
 =back
 

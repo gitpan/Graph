@@ -1,3 +1,14 @@
+2007-01-21  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #24417: "next_successor unavailable in
+	  Traversal (PATCH)", from Ted Carnahan.
+
+	* Small pod tweaks.
+
+	* Minor internal cleanup for the caching code.
+
+	* Release as 0.81.
+
 2006-09-10  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* SP_Bellman_Ford() used actually SPT_Dijkstra(), not
@@ -24,10 +35,11 @@
 	  an empty list of articulation points was returned.)
 
 	* Add a new API family: $g->..._clear_cache(), which allows
-	  one to forget a cached value such as biconnectivity(),
-	  and randomness was used in computing the cached result.
+	  one to forget a cached value such as biconnectivity().
 	  Without clearing the cache once the result has been computed
 	  it stays the same (until the graph is modified, of course).
+	  If the cache is cleared, (pseudo)randomness is applied again,
+	  and the algorithm results may become different.
 
 	* Release as 0.79.
 

@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.80';
+$VERSION = '0.81';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -2533,6 +2533,22 @@ my %_cache_type =
      'SPT_Bellman_Ford'    => '_spt_bf',
     );
 
+sub _check_cache {
+    my ($g, $type, $code) = splice @_, 0, 3;
+    my $c = $_cache_type{$type};
+    if (defined $c) {
+	my $a = $g->get_graph_attribute($c);
+	unless (defined $a && $a->[ 0 ] == $g->[ _G ]) {
+	    $a->[ 0 ] = $g->[ _G ];
+	    $a->[ 1 ] = $code->( $g, @_ );
+	    $g->set_graph_attribute($c, $a);
+	}
+	return $a->[ 1 ];
+    } else {
+	Carp::croak("Graph: unknown cache type '$type'");
+    }
+}
+
 sub _clear_cache {
     my ($g, $type) = @_;
     my $c = $_cache_type{$type};
@@ -2573,64 +2589,62 @@ sub SPT_Bellman_Ford_clear_cache {
 # Connected components.
 #
 
+sub _connected_components_compute {
+    my $g = shift;
+    my %cce;
+    my %cci;
+    my $cc = 0;
+    if ($g->has_union_find) {
+	my $UF = $g->_get_union_find();
+	my $V  = $g->[ _V ];
+	my %icce; # Isolated vertices.
+	my %icci;
+	my $icc = 0;
+	for my $v ( $g->unique_vertices ) {
+	    $cc = $UF->find( $V->_get_path_id( $v ) );
+	    if (defined $cc) {
+		$cce{ $v } = $cc;
+		push @{ $cci{ $cc } }, $v;
+	    } else {
+		$icce{ $v } = $icc;
+		push @{ $icci{ $icc } }, $v;
+		$icc++;
+	    }
+	}
+	if ($icc) {
+	    @cce{ keys %icce } = values %icce;
+	    @cci{ keys %icci } = values %icci;
+	}
+    } else {
+	my @u = $g->unique_vertices;
+	my %r; @r{ @u } = @u;
+	my $froot = sub {
+	    (each %r)[1];
+	};
+	my $nroot = sub {
+	    $cc++ if keys %r;
+	    (each %r)[1];
+	};
+	my $t = Graph::Traversal::DFS->new($g,
+					   first_root => $froot,
+					   next_root  => $nroot,
+					   pre => sub {
+					       my ($v, $t) = @_;
+					       $cce{ $v } = $cc;
+					       push @{ $cci{ $cc } }, $v;
+					       delete $r{ $v };
+					   },
+					   @_);
+	$t->dfs;
+    }
+    return [ \%cce, \%cci ];
+}
+
 sub _connected_components {
     my $g = shift;
-    my $cce;
-    my $cci;
-    my $ccc = $g->get_graph_attribute('_ccc');
-    if (defined $ccc && $ccc->[ 0 ] == $g->[ _G ]) {
-	($cce, $cci) = @{ $ccc->[ 1 ] };
-    } else {
-	my %cce;
-	my %cci;
-	my $cc = 0;
-	if ($g->has_union_find) {
-	    my $UF = $g->_get_union_find();
-	    my $V  = $g->[ _V ];
-	    my %icce; # Isolated vertices.
-	    my %icci;
-	    my $icc = 0;
-	    for my $v ( $g->unique_vertices ) {
-		$cc = $UF->find( $V->_get_path_id( $v ) );
-		if (defined $cc) {
-		    $cce{ $v } = $cc;
-		    push @{ $cci{ $cc } }, $v;
-		} else {
-		    $icce{ $v } = $icc;
-		    push @{ $icci{ $icc } }, $v;
-		    $icc++;
-		}
-	    }
-	    if ($icc) {
-		@cce{ keys %icce } = values %icce;
-		@cci{ keys %icci } = values %icci;
-	    }
-	} else {
-	    my @u = $g->unique_vertices;
-	    my %r; @r{ @u } = @u;
-	    my $froot = sub {
-		(each %r)[1];
-	    };
-	    my $nroot = sub {
-		$cc++ if keys %r;
-		(each %r)[1];
-	    };
-	    my $t = Graph::Traversal::DFS->new($g,
-					       first_root => $froot,
-					       next_root  => $nroot,
-					       pre => sub {
-						   my ($v, $t) = @_;
-						   $cce{ $v } = $cc;
-						   push @{ $cci{ $cc } }, $v;
-						   delete $r{ $v };
-					       },
-					       @_);
-	    $t->dfs;
-	}
-	($cce, $cci) = (\%cce, \%cci);
-	$g->set_graph_attribute('_ccc', [ $g->[ _G ], [ $cce, $cci ] ]);
-    }
-    return ( $cce, $cci );
+    my $ccc = _check_cache($g, 'connectivity',
+			   \&_connected_components_compute, @_);
+    return @{ $ccc };
 }
 
 sub connected_component_by_vertex {
@@ -2749,41 +2763,41 @@ sub weakly_connected_graph {
     $g->undirected_copy->connected_graph(@_);
 }
 
+sub _strongly_connected_components_compute {
+    my $g = shift;
+    my $t = Graph::Traversal::DFS->new($g);
+    my @d = reverse $t->dfs;
+    my @c;
+    my $h = $g->transpose_graph;
+    my $u =
+	Graph::Traversal::DFS->new($h,
+				   next_root => sub {
+				       my ($t, $u) = @_;
+				       my $root;
+				       while (defined($root = shift @d)) {
+					   last if exists $u->{ $root };
+				       }
+				       if (defined $root) {
+					   push @c, [];
+					   return $root;
+				       } else {
+					   return;
+				       }
+				   },
+				   pre => sub {
+				       my ($v, $t) = @_;
+				       push @{ $c[-1] }, $v;
+				   },
+				   @_);
+    $u->dfs;
+    return \@c;
+}
+
 sub _strongly_connected_components {
     my $g = shift;
-    my $scc = $g->get_graph_attribute('_scc');
-    if (defined $scc && $scc->[ 0 ] == $g->[ _G ]) {
-	$scc = $scc->[ 1 ];
-    } else {
-	my $t = Graph::Traversal::DFS->new($g);
-	my @d = reverse $t->dfs;
-	my @c;
-	my $h = $g->transpose_graph;
-	my $u =
-	    Graph::Traversal::DFS->new($h,
-				       next_root => sub {
-					   my ($t, $u) = @_;
-					   my $root;
-					   while (defined($root = shift @d)) {
-					       last if exists $u->{ $root };
-					   }
-					   if (defined $root) {
-					       push @c, [];
-					       return $root;
-					   } else {
-					       return;
-					   }
-				       },
-				       pre => sub {
-					   my ($v, $t) = @_;
-					   push @{ $c[-1] }, $v;
-				       },
-				       @_);
-	$u->dfs;
-	$scc = \@c;
-	$g->set_graph_attribute('_scc', [ $g->[ _G ], $scc ]);
-    }
-    return @$scc;
+    my $scc = _check_cache($g, 'strong_connectivity',
+			   \&_strongly_connected_components_compute, @_);
+    return defined $scc ? @$scc : ( );
 }
 
 sub strongly_connected_components {
@@ -2969,173 +2983,172 @@ sub _make_bcc {
     return [ values %b, $c ];
 }
 
+sub _biconnectivity_compute {
+    my $g = shift;
+    my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) =
+	$g->_root_opt(@_);
+    return () unless defined $r;
+    my %P;
+    my %I;
+    for my $v ($g->vertices) {
+	$I{ $v } = 0;
+    }
+    $I{ $r } = 1;
+    my %U;
+    my %S; # Self-loops.
+    for my $e ($g->edges) {
+	my ($u, $v) = @$e;
+	$U{ $u }{ $v } = 0;
+	$U{ $v }{ $u } = 0;
+	$S{ $u } = 1 if $u eq $v;
+    }
+    my $i = 1;
+    my $v = $r;
+    my %AP;
+    my %L = ( $r => 1 );
+    my @S = ( $r );
+    my %A;
+    my @V = $g->vertices;
+
+    # print "V : @V\n";
+    # print "r : $r\n";
+
+    my %T; @T{ @V } = @V;
+
+    for my $w (@V) {
+	my @s = $g->successors( $w );
+	if (@s) {
+	    @s = grep { $_ eq $w ? ( delete $T{ $w }, 0 ) : 1 } @s;
+	    @{ $A{ $w } }{ @s } = @s;
+	} elsif ($g->predecessors( $w ) == 0) {
+	    delete $T{ $w };
+	    if ($w eq $r) {
+		delete $I { $r };
+		$r = $v = each %T;
+		if (defined $r) {
+		    %L = ( $r => 1 );
+		    @S = ( $r );
+		    $I{ $r } = 1;
+		    # print "r : $r\n";
+		}
+	    }
+	}
+    }
+
+    # use Data::Dumper;
+    # print "T : ", Dumper(\%T);
+    # print "A : ", Dumper(\%A);
+
+    my %V2BC;
+    my @BR;
+    my @BC;
+
+    my @C;
+    my $Avok;
+
+    while (keys %T) {
+	# print "T = ", Dumper(\%T);
+	do {
+	    my $w;
+	    do {
+		my @w = _shuffle values %{ $A{ $v } };
+		# print "w = @w\n";
+		$w = first { !$U{ $v }{ $_ } } @w;
+		if (defined $w) {
+		    # print "w = $w\n";
+		    $U{ $v }{ $w }++;
+		    $U{ $w }{ $v }++;
+		    if ($I{ $w } == 0) {
+			$P{ $w } = $v;
+			$i++;
+			$I{ $w } = $i;
+			$L{ $w } = $i;
+			push @S, $w;
+			$v = $w;
+		    } else {
+			$L{ $v } = $I{ $w } if $I{ $w } < $L{ $v };
+		    }
+		}
+	    } while (defined $w);
+	    # print "U = ", Dumper(\%U);
+	    # print "P = ", Dumper(\%P);
+	    # print "L = ", Dumper(\%L);
+	    if (!defined $P{ $v }) {
+		# Do nothing.
+	    } elsif ($P{ $v } ne $r) {
+		if ($L{ $v } < $I{ $P{ $v } }) {
+		    $L{ $P{ $v } } = $L{ $v } if $L{ $v } < $L{ $P{ $v } };
+		} else {
+		    $AP{ $P{ $v } } = $P{ $v };
+		    push @C, _make_bcc(\@S, $v, $P{ $v } );
+		}
+	    } else {
+		my $e;
+		for my $w (_shuffle keys %{ $A{ $r } }) {
+		    # print "w = $w\n";
+		    unless ($U{ $r }{ $w }) {
+			$e = $r;
+			# print "e = $e\n";
+			last;
+		    }
+		}
+		$AP{ $e } = $e if defined $e;
+		push @C, _make_bcc(\@S, $v, $r);
+	    }
+	    # print "AP = ", Dumper(\%AP);
+	    # print "C  = ", Dumper(\@C);
+	    # print "L  = ", Dumper(\%L);
+	    $v = defined $P{ $v } ? $P{ $v } : $r;
+	    # print "v = $v\n";
+	    $Avok = 0;
+	    if (defined $v) {
+		if (keys %{ $A{ $v } }) {
+		    if (!exists $P{ $v }) {
+			for my $w (keys %{ $A{ $v } }) {
+			    $Avok++ if $U{ $v }{ $w };
+			}
+			# print "Avok/1 = $Avok\n";
+			$Avok = 0 unless $Avok == keys %{ $A{ $v } };
+			# print "Avok/2 = $Avok\n";
+		    }
+		} else {
+		    $Avok = 1;
+		    # print "Avok/3 = $Avok\n";
+		}
+	    }
+	} until ($Avok);
+
+	last if @C == 0 && !exists $S{$v};
+
+	for (my $i = 0; $i < @C; $i++) {
+	    for my $v (@{ $C[ $i ]}) {
+		$V2BC{ $v }{ $i }++;
+		delete $T{ $v };
+	    }
+	}
+
+	for (my $i = 0; $i < @C; $i++) {
+	    if (@{ $C[ $i ] } == 2) {
+		push @BR, $C[ $i ];
+	    } else {
+		push @BC, $C[ $i ];
+	    }
+	}
+
+	if (keys %T) {
+	    $r = $v = each %T;
+	}
+    }
+    
+    return [ [values %AP], \@BC, \@BR, \%V2BC ];
+}
+
 sub biconnectivity {
     my $g = shift;
     $g->expect_undirected;
-    my $bcc = $g->get_graph_attribute('_bcc');
-    if (defined $bcc && $bcc->[ 0 ] == $g->[ _G ]) {
-	$bcc = $bcc->[ 1 ];
-    } else {
-	my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) =
-	    $g->_root_opt(@_);
-	return () unless defined $r;
-	my %P;
-	my %I;
-	for my $v ($g->vertices) {
-	    $I{ $v } = 0;
-	}
-	$I{ $r } = 1;
-	my %U;
-	my %S; # Self-loops.
-	for my $e ($g->edges) {
-	    my ($u, $v) = @$e;
-	    $U{ $u }{ $v } = 0;
-	    $U{ $v }{ $u } = 0;
-	    $S{ $u } = 1 if $u eq $v;
-	}
-	my $i = 1;
-	my $v = $r;
-	my %AP;
-	my %L = ( $r => 1 );
-	my @S = ( $r );
-	my %A;
-	my @V = $g->vertices;
-
-	# print "V : @V\n";
-	# print "r : $r\n";
-
-	my %T; @T{ @V } = @V;
-
-	for my $w (@V) {
-	    my @s = $g->successors( $w );
-	    if (@s) {
-		@s = grep { $_ eq $w ? ( delete $T{ $w }, 0 ) : 1 } @s;
-		@{ $A{ $w } }{ @s } = @s;
-	    } elsif ($g->predecessors( $w ) == 0) {
-		delete $T{ $w };
-		if ($w eq $r) {
-		    delete $I { $r };
-		    $r = $v = each %T;
-		    if (defined $r) {
-			%L = ( $r => 1 );
-			@S = ( $r );
-			$I{ $r } = 1;
-			# print "r : $r\n";
-		    }
-		}
-	    }
-	}
-
-	# use Data::Dumper;
-	# print "T : ", Dumper(\%T);
-	# print "A : ", Dumper(\%A);
-
-	my %V2BC;
-	my @BR;
-	my @BC;
-
-	my @C;
-	my $Avok;
-
-	while (keys %T) {
-	    # print "T = ", Dumper(\%T);
-	    do {
-		my $w;
-	        do {
-		    my @w = _shuffle values %{ $A{ $v } };
-		    # print "w = @w\n";
-		    $w = first { !$U{ $v }{ $_ } } @w;
-		    if (defined $w) {
-			# print "w = $w\n";
-			$U{ $v }{ $w }++;
-			$U{ $w }{ $v }++;
-			if ($I{ $w } == 0) {
-			    $P{ $w } = $v;
-			    $i++;
-			    $I{ $w } = $i;
-			    $L{ $w } = $i;
-			    push @S, $w;
-			    $v = $w;
-			} else {
-			    $L{ $v } = $I{ $w } if $I{ $w } < $L{ $v };
-			}
-		    }
-		} while (defined $w);
-		# print "U = ", Dumper(\%U);
-		# print "P = ", Dumper(\%P);
-		# print "L = ", Dumper(\%L);
-		if (!defined $P{ $v }) {
-		    # Do nothing.
-		} elsif ($P{ $v } ne $r) {
-		    if ($L{ $v } < $I{ $P{ $v } }) {
-			$L{ $P{ $v } } = $L{ $v } if $L{ $v } < $L{ $P{ $v } };
-		    } else {
-			$AP{ $P{ $v } } = $P{ $v };
-			push @C, _make_bcc(\@S, $v, $P{ $v } );
-		    }
-		} else {
-		    my $e;
-		    for my $w (_shuffle keys %{ $A{ $r } }) {
-			# print "w = $w\n";
-			unless ($U{ $r }{ $w }) {
-			    $e = $r;
-			    # print "e = $e\n";
-			    last;
-			}
-		    }
-		    $AP{ $e } = $e if defined $e;
-		    push @C, _make_bcc(\@S, $v, $r);
-		}
-		# print "AP = ", Dumper(\%AP);
-		# print "C  = ", Dumper(\@C);
-		# print "L  = ", Dumper(\%L);
-		$v = defined $P{ $v } ? $P{ $v } : $r;
-		# print "v = $v\n";
-		$Avok = 0;
-		if (defined $v) {
-		    if (keys %{ $A{ $v } }) {
-			if (!exists $P{ $v }) {
-			    for my $w (keys %{ $A{ $v } }) {
-				$Avok++ if $U{ $v }{ $w };
-			    }
-			    # print "Avok/1 = $Avok\n";
-			    $Avok = 0 unless $Avok == keys %{ $A{ $v } };
-			    # print "Avok/2 = $Avok\n";
-			}
-		    } else {
-			$Avok = 1;
-			# print "Avok/3 = $Avok\n";
-		    }
-		}
-	    } until ($Avok);
-
-	    last if @C == 0 && !exists $S{$v};
-
-	    for (my $i = 0; $i < @C; $i++) {
-		for my $v (@{ $C[ $i ]}) {
-		    $V2BC{ $v }{ $i }++;
-		    delete $T{ $v };
-		}
-	    }
-
-	    for (my $i = 0; $i < @C; $i++) {
-		if (@{ $C[ $i ] } == 2) {
-		    push @BR, $C[ $i ];
-		} else {
-		    push @BC, $C[ $i ];
-		}
-	    }
-
-	    if (keys %T) {
-		$r = $v = each %T;
-	    }
-	}
-
-	$bcc = [ [values %AP], \@BC, \@BR, \%V2BC ];
-	$g->set_graph_attribute('_bcc', [ $g->[ _G ], $bcc ]);
-    }
-
-    return @$bcc;
+    my $bcc = _check_cache($g, 'biconnectivity',
+			   \&_biconnectivity_compute, @_);
+    return defined $bcc ? @$bcc : ( );
 }
 
 sub is_biconnected {
@@ -3273,6 +3286,9 @@ sub _SPT_add {
     }
 }
 
+sub _SPT_Dijkstra_compute {
+}
+
 sub SPT_Dijkstra {
     my $g = shift;
     my %opt = @_ == 1 ? (first_root => $_[0]) : @_;
@@ -3375,6 +3391,9 @@ sub _SPT_Bellman_Ford {
     return (\%p, \%d);
 }
 
+sub _SPT_Bellman_Ford_compute {
+}
+
 sub SPT_Bellman_Ford {
     my $g = shift;
 
@@ -3452,6 +3471,9 @@ sub APSP_Floyd_Warshall {
 }
 
 *all_pairs_shortest_paths = \&APSP_Floyd_Warshall;
+
+sub _transitive_closure_matrix_compute {
+}
 
 sub transitive_closure_matrix {
     my $g = shift;

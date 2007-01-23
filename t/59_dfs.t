@@ -1,4 +1,4 @@
-use Test::More tests => 253;
+use Test::More tests => 272;
 
 use Graph::Directed;
 use Graph::Undirected;
@@ -622,4 +622,36 @@ is($td1->get_state('zot'), undef, "get_state");
     $h->add_edge(qw(a b));
     $h->add_edge(qw(a c));
     ok(!$h->has_a_cycle);
+}
+
+{
+    my @pre;
+    my @post;
+    my $t = Graph::Traversal::DFS->new($g0,
+					   first_root => 'a',
+				       pre  => sub { push @pre,  $_[0] },
+				       post => sub { push @post, $_[0] },
+				       next_successor => sub { shift; (reverse sort keys %{ $_[0] })[0] });
+    my @t0 = $t->preorder;
+    my @t1 = $t->postorder;
+    my @t2 = $t->postorder;
+
+    simple($g1, @t0);
+    simple($g1, @t1);
+    simple($g1, @t2);
+
+    is("@pre",  "a e f b d c", "pre");
+    is("@post", "f e d c b a", "post");
+    is("@t0",   "@pre",        "t0");
+    is("@t1",   "@post",       "t1");
+    is("@t2",   "@post",       "t2");
+
+    is($t->unseen, 0, "unseen none");
+    is($t->seen,   6, "seen all");
+    is($t->seeing, 0, "seeing none");
+    is("@{[sort $t->seen]}", "a b c d e f", "seen all");
+    is("@{[$t->roots]}", "a", "roots");
+    ok( $t->is_root('a') );
+    ok(!$t->is_root('b') );
+    ok(!$t->is_root('c') );
 }

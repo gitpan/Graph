@@ -1,4 +1,4 @@
-use Test::More tests => 77;
+use Test::More tests => 93;
 
 use Graph::Directed;
 use Graph::Undirected;
@@ -176,3 +176,31 @@ sub simple {
     is("@{[$t->roots]}", "a d", "roots");
 }
 
+{
+    my @pre;
+    my @post;
+    my $t = Graph::Traversal::BFS->new($g0,
+					   first_root => 'a',
+				       pre  => sub { push @pre,  $_[0] },
+				       post => sub { push @post, $_[0] },
+				       next_successor => sub { shift; (reverse sort keys %{ $_[0] })[0] });
+    my @t0 = $t->preorder;
+    my @t1 = $t->postorder;
+    my @t2 = $t->bfs;
+
+    simple($g1, @t0);
+    simple($g1, @t1);
+    simple($g1, @t2);
+
+    is("@pre",  "a e b f d c", "pre");
+    is("@post", "a e b f d c", "post");
+    is("@t0",   "@pre",        "t0");
+    is("@t1",   "@post",       "t1");
+    is("@t2",   "@post",       "t2");
+
+    is($t->unseen, 0, "unseen none");
+    is($t->seen,   6, "seen all");
+    is($t->seeing, 0, "seeing none");
+    is("@{[sort $t->seen]}", "a b c d e f", "seen all");
+    is("@{[$t->roots]}", "a", "roots");
+}
