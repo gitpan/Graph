@@ -15,7 +15,7 @@ WriteMakefile(
 	      VERSION_FROM    => 'lib/Graph.pm',
 	      PREREQ_PM	      =>
 	      	{
-		    'Heap'		=> 0,
+#		    'Heap071'		=> 0.71,
 		    'List::Util'	=> 0,
 		    'Scalar::Util'	=> 0,
 		    'Math::Complex'	=> 0,

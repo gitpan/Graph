@@ -1,3 +1,17 @@
+2007-08-11  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Since Heap 0.80 broke Graph, as a stop-gap measure
+	  I will include the Heap::Elem and Heap::Fibonacci
+	  of Heap 0.71, renamed as 'Heap071', addresses rt.cpan.org
+	  #26943: "Heap 0.80 breaks Graph", and numerous bug reports
+	  by email
+
+	* Address rt.cpan.org #27840: "add-edge_attributes() on
+	  undirected graph wrongly depends on node order", from Tels
+
+	* Address rt.cpan.org #27959: "radius method incorrect",
+	  code and test case from ROSULEK.
+
 2007-01-21  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Address rt.cpan.org #24417: "next_successor unavailable in

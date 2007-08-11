@@ -1,10 +1,10 @@
-use Test::More tests => 54;
+use Test::More tests => 60;
 
 use Graph;
 use Graph::Directed;
 use Graph::Undirected;
 
-my $g = Graph->new;
+my $g = Graph->new(undirected => 1);
 
 $g->add_edge(qw(e a));
 $g->add_edge(qw(a r));
@@ -20,14 +20,15 @@ $g->add_edge(qw(b o));
 $g->add_edge(qw(o v));
 $g->add_edge(qw(v e));
 
-is($g->diameter, 7);
-is($g->longest_path,   7);
+is($g->diameter, 4);
+is($g->longest_path,   4);
 is($g->shortest_path,  1);
-is($g->radius,   1);
+is($g->radius,   2);
 
 {
     my @c = sort $g->center_vertices;
-    is(@c, 0);
+    is(@c, 1);
+    is("@c", "r");
 }
 
 my @p = $g->longest_path;
@@ -39,10 +40,9 @@ if ($min) {
     push @p, splice @p, 0, $min;
 }
 print "# p = @p\n";
-ok("@p" eq "a b t h f r o m" ||
-   "@p" eq "a r t h f b o m");
+is("@p", "h m o r t");
 
-is($g->average_path_length(),           293 / 90);
+is($g->average_path_length(),           19 / 9);
 
 # a-b: a-b       : 1
 # a-e: a-r-o-v-e : 4
@@ -54,26 +54,28 @@ is($g->average_path_length(),           293 / 90);
 # a-t: a-r-t     : 2
 # a-v: a-r-o-v   : 3
 #                  23 / 9 = 2.56
-is($g->average_path_length('a'),        23 / 9);
-is($g->average_path_length('b'),        33 / 9);
+is($g->average_path_length('a'),        15 / 9);
+is($g->average_path_length('b'),        20 / 9);
 is($g->average_path_length('c'),        undef );
-is($g->average_path_length('a', undef), 23 / 9);
-is($g->average_path_length('b', undef), 33 / 9);
-is($g->average_path_length(undef, 'a'), 27 / 9);
-is($g->average_path_length(undef, 'b'), 33 / 9);
+is($g->average_path_length('a', undef), 15 / 9);
+is($g->average_path_length('b', undef), 20 / 9);
+is($g->average_path_length(undef, 'a'), 15 / 9);
+is($g->average_path_length(undef, 'b'), 20 / 9);
 
-is($g->vertex_eccentricity('a'), 4);
-is($g->vertex_eccentricity('b'), 7);
-is($g->vertex_eccentricity('e'), 5);
-is($g->diameter, 7);
-is($g->radius,   1);
+is($g->vertex_eccentricity('a'), 3);
+is($g->vertex_eccentricity('b'), 4);
+is($g->vertex_eccentricity('e'), 4);
+is($g->diameter, 4);
+is($g->radius,   2);
 
 {
     my @c;
     @c = sort $g->center_vertices;
-    is(@c, 0);
-    @c = sort $g->center_vertices(3);
-    is("@c", "a r");
+    is(@c, 1);
+    is("@c", "r");
+    @c = sort $g->center_vertices(1);
+    is(@c, 5);
+    is("@c", "a f o r t");
 }
 
 sub gino {
@@ -85,17 +87,17 @@ sub gino {
     return @$gi;
 }
 
-my $h = Graph->new;
+my $h = Graph->new(undirected => 1);
 
 $h->add_weighted_edge(qw(a b 2.3));
 $h->add_weighted_edge(qw(a c 1.7));
 
-is($h->longest_path,   2.3);
+is($h->longest_path,   4.0);
 is($h->shortest_path,  1.7);
-is($h->diameter, 2.3);
-is($h->radius,   1.7);
+is($h->diameter, 4.0);
+is($h->radius,   2.3);
 
-my $i = Graph::Directed->new;
+my $i = Graph::Directed->new(undirected => 1);
 
 $i->add_edge(qw(k a));
 $i->add_edge(qw(a l));
@@ -106,19 +108,20 @@ $i->add_edge(qw(a l));
 $i->add_edge(qw(l a));
 $i->add_edge(qw(a n));
 
-is($i->vertex_eccentricity('k'), 4);
-is($i->vertex_eccentricity('a'), 3);
+is($i->vertex_eccentricity('k'), 3);
+is($i->vertex_eccentricity('a'), 2);
 is($i->vertex_eccentricity('l'), 2);
 is($i->vertex_eccentricity('e'), 3);
-is($i->vertex_eccentricity('v'), 3);
-is($i->vertex_eccentricity('n'), undef);
+is($i->vertex_eccentricity('v'), 2);
+is($i->vertex_eccentricity('n'), 3);
 
 {
     my @c = sort $i->center_vertices;
-    is(@c, 0);
+    is(@c, 3);
+    is("@c", "a l v");
 }
 
-my $j = Graph::Undirected->new;
+my $j = Graph::Undirected->new(undirected => 1);
 
 $j->add_edge(qw(k a));
 $j->add_edge(qw(a l));
@@ -138,10 +141,11 @@ is($j->vertex_eccentricity('n'), 3);
 
 {
     my @c = sort $j->center_vertices;
-    is(@c, 0);
+    is(@c, 3);
+    is("@c", "a l v");
 }
 
-my $k = Graph::Undirected->new;
+my $k = Graph::Undirected->new(undirected => 1);
 
 $k->add_edge(qw(s t));
 $k->add_edge(qw(s a));
@@ -161,7 +165,7 @@ is($k->vertex_eccentricity('r'), 2);
 {
     # These tests inspired by Xiaoli Zheng.
 
-    my $g = Graph::Directed->new();
+    my $g = Graph::Directed->new(undirected => 1);
 
     is($g->diameter, undef);
 
@@ -181,12 +185,20 @@ is($k->vertex_eccentricity('r'), 2);
     is($g->diameter, 5);
 
     $g->add_edge('g', 'f');
-    is($g->diameter, 5);
+    is($g->diameter, 6);
 
     $g->delete_edge('c', 'b');
-    is($g->diameter, 5);
+    is($g->diameter, 4);
 
     $g->delete_edge('b', 'c');
-    is($g->diameter, 3);
+    is($g->diameter, 4);
 }
 
+{
+    my $g = Graph->new(undirected => 1);
+
+    $g->add_edge(qw(a b));
+    $g->add_edge(qw(c d));
+
+    is($g->vertex_eccentricity('a'), Graph::Infinity);
+}

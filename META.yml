@@ -1,11 +1,10 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Graph
-version:      0.81
+version:      0.82
 version_from: lib/Graph.pm
 installdirs:  site
 requires:
-    Heap:                          0
     List::Util:                    0
     Math::Complex:                 0
     Scalar::Util:                  0

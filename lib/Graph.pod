@@ -1742,6 +1742,7 @@ the criterion from strict equality (handy for non-integer edge weights).
     my $ve = $g->vertex_eccentricity($v);
 
 The longest path to a vertex is known as the I<vertex eccentricity>.
+If the graph is unconnected, returns Inf.
 
 =back
 
@@ -2360,6 +2361,17 @@ graph is not as expected.
 =item expect_non_multivertexed
 
 =item expect_undirected
+
+=back
+
+In many algorithms it is useful to have a value representing the
+infinity.  The Graph provides (and itself uses):
+
+=over 4
+
+=item Infinity
+
+(Not exported, use Graph::Infinity explicitly)
 
 =back
 

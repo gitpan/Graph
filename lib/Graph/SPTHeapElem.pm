@@ -2,9 +2,9 @@ package Graph::SPTHeapElem;
 
 use strict;
 use vars qw($VERSION @ISA);
-use Heap::Elem;
+use Heap071::Elem;
 
-use base 'Heap::Elem';
+use base 'Heap071::Elem';
 
 $VERSION = 0.01;
 

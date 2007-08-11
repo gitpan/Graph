@@ -158,6 +158,7 @@ sub _set_path_attrs {
     my $id   = pop if ($f & _MULTI);
     $m->__attr( @_ );
     push @_, $id if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     my ($p, $k) = $m->__set_path( @_ );
     return unless defined $p && defined $k;
     my $l = defined $k->[-1] ? $k->[-1] : "";
@@ -198,8 +199,8 @@ sub _set_path_attr {
     my ($p, $k);
     $m->__attr( \@_ ); # _LIGHT maps need this to get upgraded when needed.
     push @_, $id if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     if ($m->[ _a ] == 2 && @_ == 2 && !($f & (_REF|_UNIQ|_HYPER|_UNIQ))) {
-	@_ = sort @_ if ($f & _UNORD);
 	$m->[ _s ]->{ $_[0] } ||= { };
 	$p = [ $m->[ _s ], $m->[ _s ]->{ $_[0] } ];
 	$k = [ $_[0], $_[1] ];

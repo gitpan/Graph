@@ -12,6 +12,8 @@ use strict;
 use Graph::AdjacencyMap qw(:flags :fields);
 use base 'Graph::AdjacencyMap';
 
+use Scalar::Util qw(weaken);
+
 sub _new {
     my ($class, $flags, $arity) = @_;
     bless [ 0, $flags, $arity ], $class;

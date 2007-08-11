@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.81';
+$VERSION = '0.82';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -28,8 +28,9 @@ use Graph::MSTHeapElem;
 use Graph::SPTHeapElem;
 use Graph::Undirected;
 
-use Heap::Fibonacci;
+use Heap071::Fibonacci;
 use List::Util qw(shuffle first);
+use Scalar::Util qw(weaken);
 
 sub _F () { 0 } # Flags.
 sub _G () { 1 } # Generation.
@@ -37,6 +38,17 @@ sub _V () { 2 } # Vertices.
 sub _E () { 3 } # Edges.
 sub _A () { 4 } # Attributes.
 sub _U () { 5 } # Union-Find.
+
+my $Inf;
+
+BEGIN {
+    local $SIG{FPE}; 
+    eval { $Inf = exp(999) } ||
+	eval { $Inf = 9**9**9 } ||
+	    eval { $Inf = 1e+999 }
+}
+
+sub Infinity () { $Inf }
 
 # Graphs are blessed array references.
 # - The first element contains the flags.
@@ -2253,7 +2265,7 @@ sub _heap_walk {
     my ($g, $h, $add, $etc) = splice @_, 0, 4; # Leave %opt in @_.
 
     my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) = $g->_root_opt(@_);
-    my $HF = Heap::Fibonacci->new;
+    my $HF = Heap071::Fibonacci->new;
 
     while (defined $r) {
 	# print "r = $r\n";
@@ -3609,19 +3621,25 @@ sub longest_path {
 
 sub vertex_eccentricity {
     my ($g, $u) = @_;
-    my $max;
-    for my $v ($g->vertices) {
-	next if $u eq $v;
-	my $l = $g->path_length($u, $v);
-	if (defined $l && (!defined $max || $l > $max)) {
-	    $max = $l;
+    $g->expect_undirected;
+    if ($g->is_connected) {
+	my $max;
+	for my $v ($g->vertices) {
+	    next if $u eq $v;
+	    my $l = $g->path_length($u, $v);
+	    if (defined $l && (!defined $max || $l > $max)) {
+		$max = $l;
+	    }
 	}
+	return $max;
+    } else {
+	return Infinity();
     }
-    return $max;
 }
 
 sub shortest_path {
     my ($g, $u, $v) = @_;
+    $g->expect_undirected;
     my $t = $g->transitive_closure_matrix;
     if (defined $u) {
 	if (defined $v) {
@@ -3662,12 +3680,18 @@ sub shortest_path {
 
 sub radius {
     my $g = shift;
-    my ($min, $max, $minp, $maxp) = $g->_minmax_path(@_);
-    return defined $minp ? (wantarray ? @$minp : $min) : undef;
+    $g->expect_undirected;
+    my ($center, $radius) = (undef, Infinity());
+    for my $v ($g->vertices) {
+	my $x = $g->vertex_eccentricity($v);
+	($center, $radius) = ($v, $x) if defined $x && $x < $radius;
+    }
+    return $radius;
 }
 
 sub center_vertices {
     my ($g, $delta) = @_;
+    $g->expect_undirected;
     $delta = 0 unless defined $delta;
     $delta = abs($delta);
     my @c;
