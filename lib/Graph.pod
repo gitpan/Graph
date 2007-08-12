@@ -1754,8 +1754,8 @@ You can walk through the matrix of the shortest paths by using
 
     $n = $g->for_shortest_paths($callback)
 
-The number of shortest paths is returned (this should be equal to
-V*V).  The $callback is a sub reference that receives four arguments:
+The number of shortest paths is returned (this should be equal to V*V).
+The $callback is a sub reference that receives four arguments:
 the transitive closure object from Graph::TransitiveClosure, the two
 vertices, and the index to the current shortest paths (0..V*V-1).
 
@@ -1776,7 +1776,9 @@ additional determinism (once a correct result has been computed, the
 same result will always be given).
 
 However, sometimes the exact opposite is desireable, and the possible
-alternative results are wanted.  To do this, the following methods are
+alternative results are wanted (within the limits of the pseudorandomness:
+not all the possible solutions are guaranteed to be returned, usually only
+a subset is retuned).  To undo the caching, the following methods are
 available:
 
 =over 4
@@ -2377,19 +2379,18 @@ infinity.  The Graph provides (and itself uses):
 
 =head2 Size Requirements
 
-A graph takes up at least 1160 bytes of memory.
+A graph takes up at least 1172 bytes of memory.
 
-A vertex takes up at least 110 bytes of memory.
+A vertex takes up at least 100 bytes of memory.
 
-An edge takes up at least 390 bytes of memory.
+An edge takes up at least 400 bytes of memory.
 
 (A Perl scalar value takes 16 bytes, or 12 bytes if it's a reference.)
 
-These size approximations are very approximate and optimistic
+These size approximations are B<very> approximate and optimistic
 (they are based on total_size() of Devel::Size).  In real life many
 factors affect these numbers, for example how Perl is configured.
-In practice you can expect at least about 200 bytes per vertex,
-and twice that for an edge.  The numbers are for a 32-bit platform.
+The numbers are for a 32-bit platform and for Perl 5.8.8.
 
 Roughly, the above numbers mean that in a megabyte of memory you can
 fit for example a graph of about 1000 vertices and about 2500 edges.

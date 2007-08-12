@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.82';
+$VERSION = '0.83';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -45,7 +45,8 @@ BEGIN {
     local $SIG{FPE}; 
     eval { $Inf = exp(999) } ||
 	eval { $Inf = 9**9**9 } ||
-	    eval { $Inf = 1e+999 }
+	    eval { $Inf = 1e+999 } ||
+		{ $Inf = 1e+99 };  # Close enough for most practical purposes.
 }
 
 sub Infinity () { $Inf }

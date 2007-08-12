@@ -1,3 +1,10 @@
+2007-08-12  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* One test in 73_diameter.t had too many possible answers,
+	  dependent on the hash ordering, removed the test.
+
+	* Release as 0.83.
+
 2007-08-11  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Since Heap 0.80 broke Graph, as a stop-gap measure
@@ -11,6 +18,8 @@
 
 	* Address rt.cpan.org #27959: "radius method incorrect",
 	  code and test case from ROSULEK.
+
+	* Release as 0.82.
 
 2007-01-21  Jarkko Hietaniemi  <jhi@iki.fi>
 

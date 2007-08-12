@@ -1,4 +1,4 @@
-use Test::More tests => 60;
+use Test::More tests => 59;
 
 use Graph;
 use Graph::Directed;
@@ -31,19 +31,11 @@ is($g->radius,   2);
     is("@c", "r");
 }
 
-my @p = $g->longest_path;
-my $min = 0;
-for my $i (0..$#p) {
-    $min = $i if $p[$i] lt $p[$min];
-}
-if ($min) {
-    push @p, splice @p, 0, $min;
-}
-print "# p = @p\n";
-is("@p", "h m o r t");
-
 is($g->average_path_length(),           19 / 9);
 
+# Note that the below are just some of the possible paths,
+# for example other possible paths of length four are
+# a-r-t-h-e, a-m-o-r-t, b-o-v-e-a, ...
 # a-b: a-b       : 1
 # a-e: a-r-o-v-e : 4
 # a-f: a-r-t-h-f : 4
