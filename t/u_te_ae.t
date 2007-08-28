@@ -1,6 +1,6 @@
 use Graph;
 
-use Test::More tests => 34;
+use Test::More tests => 37;
 
 print "# creating graph\n";
 my $gr = Graph->new( multiedged => 1 );
@@ -124,5 +124,20 @@ sub dumper2
     is($graph->get_edge_attribute("Bonn", "Berlin", "color"), "red");
     is($graph->get_edge_attribute("Berlin", "Bonn", "color"), "red");
     is ("$graph","Berlin=Bonn");
+}
+
+{
+    my $graph = Graph->new( multiedged => 1, undirected => 1 );
+
+    isnt ($graph->multiedged(), 0, 'is multiedged');
+
+    my $from = 'Berlin'; my $to = 'Bonn';
+
+    my $id = $graph->add_edge_get_id($from, $to);
+    is ("$graph", "Berlin=Bonn", 'only one edge');
+
+    $graph->set_edge_attributes_by_id($from, $to, $id, { color => 'silver' } );
+
+    is ("$graph", "Berlin=Bonn", 'only one edge');
 }
 

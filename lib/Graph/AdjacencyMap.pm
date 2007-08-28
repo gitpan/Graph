@@ -105,8 +105,8 @@ sub __get_path_node {
     my $m = shift;
     my ($p, $k);
     my $f = $m->[ _f ];
+    @_ = sort @_ if ($f & _UNORD);
     if ($m->[ _a ] == 2 && @_ == 2 && !($f & (_HYPER|_REF|_UNIQ))) { # Fast path.
-	@_ = sort @_ if ($f & _UNORD);
 	return unless exists $m->[ _s ]->{ $_[0] };
 	$p = [ $m->[ _s ], $m->[ _s ]->{ $_[0] } ];
 	$k = [ $_[0], $_[1] ];
@@ -138,6 +138,7 @@ sub _has_path_attrs {
     my $m = shift;
     my $f = $m->[ _f ];
     my $id = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -156,9 +157,9 @@ sub _set_path_attrs {
     my $f = $m->[ _f ];
     my $attr = pop;
     my $id   = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( @_ );
     push @_, $id if ($f & _MULTI);
-    @_ = sort @_ if ($f & _UNORD);
     my ($p, $k) = $m->__set_path( @_ );
     return unless defined $p && defined $k;
     my $l = defined $k->[-1] ? $k->[-1] : "";
@@ -177,6 +178,7 @@ sub _has_path_attr {
     my $f = $m->[ _f ];
     my $attr = pop;
     my $id   = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -196,6 +198,7 @@ sub _set_path_attr {
     my $val  = pop;
     my $attr = pop;
     my $id   = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     my ($p, $k);
     $m->__attr( \@_ ); # _LIGHT maps need this to get upgraded when needed.
     push @_, $id if ($f & _MULTI);
@@ -224,6 +227,7 @@ sub _get_path_attrs {
     my $m = shift;
     my $f = $m->[ _f ];
     my $id   = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -243,6 +247,7 @@ sub _get_path_attr {
     my $f = $m->[ _f ];
     my $attr = pop;
     my $id = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -260,6 +265,7 @@ sub _get_path_attr_names {
     my $m = shift;
     my $f = $m->[ _f ];
     my $id = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -278,6 +284,7 @@ sub _get_path_attr_values {
     my $m = shift;
     my $f = $m->[ _f ];
     my $id = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -296,6 +303,7 @@ sub _del_path_attrs {
     my $m = shift;
     my $f = $m->[ _f ];
     my $id = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );
@@ -325,6 +333,7 @@ sub _del_path_attr {
     my $f = $m->[ _f ];
     my $attr = pop;
     my $id = pop if ($f & _MULTI);
+    @_ = sort @_ if ($f & _UNORD);
     $m->__attr( \@_ );
     if (($f & _MULTI)) {
 	my ($p, $k) = $m->__has_path( @_ );

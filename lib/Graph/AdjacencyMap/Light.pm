@@ -219,7 +219,7 @@ sub __attr {
     my ($k, $v) = each %$i;
     my @V = @{ $g->[ _V ] };
     my @E = $g->edges; # TODO: Both these (ZZZ) lines are mysteriously needed!
-    # ZZZ: an example of failing tests is t/51_edge_attributes.t.
+    # ZZZ: an example of failing tests is t/52_edge_attributes.t.
     if (ref $v eq 'ARRAY') { # Edges, then.
 	# print "Reedging.\n";
 	@E = $g->edges; # TODO: Both these (ZZZ) lines are mysteriously needed!

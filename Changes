@@ -1,3 +1,9 @@
+2007-08-13  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Tels found one more attributed edge problem.
+
+	* Release as 0.84.
+
 2007-08-12  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* One test in 73_diameter.t had too many possible answers,
