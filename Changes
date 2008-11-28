@@ -1,3 +1,29 @@
+2008-11-27  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #31608 "Graph::Undirected, unionfind and
+	  connected_component"
+
+	* Address rt.cpan.org #34377 "recursive successors and predecessors"
+	  (added all_successors/all_predecessors/all_neighbours/all_reachable)
+
+	* Address rt.cpan.org #39444 "inconsistent return value"
+	  (make add_edges and add_vertices to always return the graph)
+
+	* Address rt.cpan.org #39614 "copy should retain more attributes"
+	  (now copies also refvertexed/hypervertexed/countvertexed/
+	   multivertexed/hyperedged/countedged/multiedged/omniedged)
+
+	* Address rt.cpan.org #39805 "UnionFind: Repeated adds clobbers
+	  graph component information"
+
+	* Address rt.cpan.org #41190 "add_edge_by_id on multigraph
+	  malfunctioning"
+
+	* Added betweenness(), clustering_coefficient(), and
+	  subgraph_by_radius(), contributed by Matt Spear.
+
+	* Release as 0.85.
+
 2007-08-13  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Tels found one more attributed edge problem.

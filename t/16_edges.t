@@ -1,4 +1,4 @@
-use Test::More tests => 8;
+use Test::More tests => 10;
 
 use Graph;
 my $g = Graph->new;
@@ -37,4 +37,9 @@ is( "@e", "[a b] [b c]" );
 
 eval '$g->add_edges("x")';
 like($@, qr/Graph::add_edges: missing end vertex/);
+
+is($g->add_edges("x", "y"), $g);
+
+is($g, "a-b,b-c,x-y");
+
 

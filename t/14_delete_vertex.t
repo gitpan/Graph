@@ -1,4 +1,4 @@
-use Test::More tests => 34;
+use Test::More tests => 36;
 
 use Graph;
 my $g = Graph->new;
@@ -42,6 +42,9 @@ ok( ! $g->has_vertex("a") );
 ok( ! $g->has_vertex("b") );
 ok( ! $g->has_vertex("c") );
 ok( ! $g->has_vertex("d") );
+
+is( $g->delete_vertex(), $g );
+is( $g->delete_vertices(), $g );
 
 my $h = Graph->new(countvertexed => 1);
 

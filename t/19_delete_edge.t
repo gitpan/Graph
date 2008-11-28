@@ -1,4 +1,4 @@
-use Test::More tests => 32;
+use Test::More tests => 34;
 
 use Graph;
 my $g = Graph->new;
@@ -41,6 +41,9 @@ ok( ! $g->has_edge("b", "x") );
 ok( ! $g->has_edge("c", "d") );
 ok( ! $g->has_edge("c", "y") );
 
+is( $g->delete_edge(), $g );
+is( $g->delete_edges(), $g );
+
 my $h = Graph->new(countedged => 1);
 
 $h->add_edges(qw(a x a x b y b y));
@@ -56,3 +59,4 @@ $h->delete_edges('b', 'y');
 ok(   $h->has_edges("b", "y") );
 $h->delete_edges('b', 'y');
 ok( ! $h->has_edges("b", "y") );
+

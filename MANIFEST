@@ -112,6 +112,8 @@ t/80_isomorphic.t
 t/81_dump.t
 t/82_cycle.t
 t/83_bitmatrix.t
+t/84_all_cessors.t
+t/99_misc.t
 t/MyDGraph.pm
 t/MyGraph.pm
 t/MyUGraph.pm
@@ -128,6 +130,7 @@ t/g02_09scc.t
 t/pod-coverage.t
 t/pod.t
 t/simple.pl
+t/u_an_uf.t
 t/u_at1.t
 t/u_at2.t
 t/u_at3.t
@@ -139,6 +142,7 @@ t/u_bo1.t
 t/u_bo_ap1.t
 t/u_bo_ap2.t
 t/u_bo_apx.t
+t/u_dl_uf.t
 t/u_jh_va.t
 t/u_mn_va.t
 t/u_ng_mst.t
@@ -147,6 +151,7 @@ t/u_ng_scc.t
 t/u_rb_cc.t
 t/u_re_sd.t
 t/u_ro_ra.t
+t/u_sc_me.t
 t/u_sn_sva.t
 t/u_te_ae.t
 t/u_te_ea.t

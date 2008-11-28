@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.84';
+$VERSION = '0.85';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -652,7 +652,7 @@ sub add_edge_by_id {
     $g->expect_multiedged;
     my $id = pop;
     my @e = $g->_add_edge( @_ );
-    $g->[ _E ]->set_path( @e, $id );
+    $g->[ _E ]->set_path_by_multi_id( @e, $id );
     $g->[ _G ]++;
     $g->_union_find_add_edge( @e ) if $g->has_union_find;
     return $g;
@@ -903,6 +903,58 @@ sub predecessors {
 	Graph::AdjacencyMap::_predecessors($E, $g, @_);
 }
 
+sub _all_successors {
+    my $g = shift;
+    my @init = @_;
+    my %todo;
+    @todo{@init} = @init;
+    my %seen;
+    while (keys %todo) {
+	my @todo = keys %todo;
+	for my $t (@todo) {
+	    delete $todo{$t};
+	    $seen{$t} = $t;
+	    for my $s ($g->successors($t)) {
+		$todo{$s}++ unless exists $seen{$s};
+	    }
+	}
+    }
+    delete @seen{@init};
+    return values %seen;
+}
+
+sub all_successors {
+    my $g = shift;
+    $g->expect_directed;
+    return $g->_all_successors(@_);
+}
+
+sub _all_predecessors {
+    my $g = shift;
+    my @init = @_;
+    my %todo;
+    @todo{@init} = @init;
+    my %seen;
+    while (keys %todo) {
+	my @todo = keys %todo;
+	for my $t (@todo) {
+	    delete $todo{$t};
+	    $seen{$t} = $t;
+	    for my $p ($g->predecessors($t)) {
+		$todo{$p}++ unless exists $seen{$p};
+	    }
+	}
+    }
+    delete @seen{@init};
+    return values %seen;
+}
+
+sub all_predecessors {
+    my $g = shift;
+    $g->expect_directed;
+    return $g->_all_predecessors(@_);
+}
+
 sub neighbours {
     my $g = shift;
     my $V  = $g->[ _V ];
@@ -915,6 +967,25 @@ sub neighbours {
 }
 
 *neighbors = \&neighbours;
+
+sub all_neighbours {
+    my $g = shift;
+    my @init = @_;
+    my %n;
+    my @p = $g->_all_predecessors(@init);
+    my @s = $g->_all_successors(@init);
+    @n{@p} = @p;
+    @n{@s} = @s;
+    delete @n{@init};
+    return values %n;
+}
+
+*all_neighbors = \&all_neighbours;
+
+sub all_reachable {
+    my $g = shift;
+    $g->directed ? $g->successors(@_) : $g->neighbors(@_);
+}
 
 sub delete_edge {
     my $g = shift;
@@ -1606,6 +1677,7 @@ sub in_edges {
 sub add_vertices {
     my $g = shift;
     $g->add_vertex( $_ ) for @_;
+    return $g;
 }
 
 sub add_edges {
@@ -1624,6 +1696,7 @@ sub add_edges {
 	    }
 	}
     }
+    return $g;
 }
 
 ###
@@ -1633,11 +1706,22 @@ sub add_edges {
 sub copy {
     my $g = shift;
     my %opt = _get_options( \@_ );
-    
-    my $c = (ref $g)->new(directed => $g->directed ? 1 : 0,
-			  compat02 => $g->compat02 ? 1 : 0);
+
+    my $c =
+	(ref $g)->new(map { $_ => $g->$_ ? 1 : 0 }
+		      qw(directed
+			 compat02
+			 refvertexed
+			 hypervertexed
+			 countvertexed
+			 multivertexed
+			 hyperedged
+			 countedged
+			 multiedged
+			 omniedged));
     for my $v ($g->isolated_vertices) { $c->add_vertex($v) }
     for my $e ($g->edges05)           { $c->add_edge(@$e)  }
+
     return $c;
 }
 
@@ -3836,6 +3920,129 @@ sub could_be_isomorphic {
 	}
     }
     return $f;
+}
+
+###
+# Analysis functions.
+
+sub subgraph_by_radius
+{
+    my ($g, $n, $rad) = @_;
+
+    return unless defined $n && defined $rad && $rad >= 0;
+
+    my $r = (ref $g)->new;
+
+    if ($rad == 0) {
+	return $r->add_vertex($n);
+    }
+
+    my %h;
+    $h{1} = [ [ $n, $g->successors($n) ] ];
+    for my $i (1..$rad) {
+	$h{$i+1} = [];
+	for my $arr (@{ $h{$i} }) {
+	    my ($p, @succ) = @{ $arr };
+	    for my $s (@succ) {
+		$r->add_edge($p, $s);
+		push(@{ $h{$i+1} }, [$s, $g->successors($s)]) if $i < $rad;
+	    }
+	}
+    }
+
+    return $r;
+}
+
+sub clustering_coefficient {
+    my ($g) = @_;
+    my %clustering;
+
+    my $gamma = 0;
+
+    for my $n ($g->vertices()) {
+	my $gamma_v = 0;
+	my @neigh = $g->successors($n);
+	my %c;
+	for my $u (@neigh) {
+	    for my $v (@neigh) {
+		if (!$c{"$u-$v"} && $g->has_edge($u, $v)) {
+		    $gamma_v++;
+		    $c{"$u-$v"} = 1;
+		    $c{"$v-$u"} = 1;
+		}
+	    }
+	}
+	if (@neigh > 1) {
+	    $clustering{$n} = $gamma_v/(@neigh * (@neigh - 1) / 2);
+	    $gamma += $gamma_v/(@neigh * (@neigh - 1) / 2);
+	} else {
+	    $clustering{$n} = 0;
+	}
+    }
+
+    $gamma /= $g->vertices();
+
+    return wantarray ? ($gamma, %clustering) : $gamma;
+}
+
+sub betweenness {
+    my $g = shift;
+
+    my @V = $g->vertices();
+
+    my %Cb; # C_b{w} = 0
+
+    $Cb{$_} = 0 for @V;
+
+    for my $s (@V) {
+	my @S; # stack (unshift, shift)
+
+	my %P; # P{w} = empty list
+	$P{$_} = [] for @V;
+
+	my %sigma; # \sigma{t} = 0
+	$sigma{$_} = 0 for @V;
+	$sigma{$s} = 1;
+
+	my %d; # d{t} = -1;
+	$d{$_} = -1 for @V;
+	$d{$s} = 0;
+
+	my @Q; # queue (push, shift)
+	push @Q, $s;
+
+	while (@Q) {
+	    my $v = shift @Q;
+	    unshift @S, $v;
+	    for my $w ($g->successors($v)) {
+		# w found for first time
+		if ($d{$w} < 0) {
+		    push @Q, $w;
+		    $d{$w} = $d{$v} + 1;
+		}
+		# Shortest path to w via v
+		if ($d{$w} == $d{$v} + 1) {
+		    $sigma{$w} += $sigma{$v};
+		    push @{ $P{$w} }, $v;
+		}
+	    }
+	}
+
+	my %delta;
+	$delta{$_} = 0 for @V;
+
+	while (@S) {
+	    my $w = shift @S;
+	    for my $v (@{ $P{$w} }) {
+		$delta{$v} += $sigma{$v}/$sigma{$w} * (1 + $delta{$w});
+	    }
+	    if ($w ne $s) {
+		$Cb{$w} += $delta{$w};
+	    }
+	}
+    }
+
+    return %Cb;
 }
 
 ###

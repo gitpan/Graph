@@ -2,6 +2,8 @@
 
 set -ex
 
+perl -MDevel::Cover -e 1 || exit 1
+
 cover -delete
 env HARNESS_PERL_SWITCHES=-MDevel::Cover make test
 cover

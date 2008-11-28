@@ -133,7 +133,7 @@ is( $g->get_vertex_weight("a"), undef);
     $g1b->add_edge(qw(a b));
     $g1b->add_edge(qw(b c));
     $g1b->add_edge(qw(b d));
-    
+
     $g1a->set_vertex_attribute('b', 'color', 'electric blue');
     $g1b->set_vertex_attribute('b', 'color', 'firetruck red');
 
@@ -155,3 +155,4 @@ is( $g->get_vertex_weight("a"), undef);
     is("@{[sort $g1b->predecessors('c')]}", "b");
     is("@{[sort $g1b->predecessors('d')]}", "b");
 }
+

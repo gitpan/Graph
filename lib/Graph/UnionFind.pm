@@ -12,7 +12,7 @@ sub new {
 
 sub add {
     my ($self, $elem) = @_;
-    $self->{ $elem } = [ $elem, 0 ];
+    $self->{ $elem } = [ $elem, 0 ] unless defined $self->{$elem};
 }
 
 sub has {

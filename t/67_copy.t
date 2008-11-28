@@ -1,4 +1,4 @@
-use Test::More tests => 85;
+use Test::More tests => 93;
 
 use Graph::Directed;
 use Graph::Undirected;
@@ -136,4 +136,16 @@ SKIP: {
     is($c->get_graph_attribute('color')->(7), 49);
 }
 
+for my $a (qw(refvertexed
+	      hypervertexed
+	      countvertexed
+	      multivertexed
+	      hyperedged
+	      countedged
+	      multiedged
+	      omniedged)) {
+    my $g = Graph->new($a => 1);
+    my $c = $g->copy;
+    ok($c->$a);
+}
 

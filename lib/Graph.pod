@@ -32,8 +32,8 @@ Graph - graph data structures and algorithms
 
 =head2 Non-Description
 
-This module is not for B<drawing> any sort of I<graphics>, business or
-otherwise.
+This module is not for B<drawing> or B<rendering> any sort of
+I<graphics> or I<images>, business, visualization, or otherwise.
 
 =head2 Description
 
@@ -137,9 +137,15 @@ An array reference of array references of edge vertices to add.
 
     my $c = $g->copy_graph;
 
-Create a shallow copy of the structure (vertices and edges) of the graph.
-If you want a deep copy that includes attributes, see L</deep_copy>.
-The copy will have the same directedness as the original.
+Create a shallow copy of the structure (vertices and edges) of the
+graph.  If you want a deep copy that includes attributes, see
+L</deep_copy>.  The copy will have the same directedness as the
+original, and if the original was a C<compat02> graph, the copy will be, too.
+
+Also the following vertex/edge attributes are copied:
+
+  refvertexed/hypervertexed/countvertexed/multivertexed
+  hyperedged/countedged/multiedged/omniedged
 
 =item deep_copy
 
@@ -530,7 +536,7 @@ L<Graph::TransitiveClosure::Matrix> for more information.
 
     $g->add_vertices('d', 'e', 'f')
 
-Add zero or more vertices to the graph.
+Add zero or more vertices to the graph.  Returns the graph.
 
 =item add_edges
 
@@ -541,6 +547,7 @@ Add zero or more edges to the graph.  The edges are specified as
 a list of array references, or as a list of vertices where the
 even (0th, 2nd, 4th, ...) items are start vertices and the odd
 (1st, 3rd, 5th, ...) are the corresponding end vertices.
+Returns the graph.
 
 =back
 
@@ -1059,11 +1066,51 @@ In scalar context return the number of successorless vertices.
 
 Return the immediate successor vertices of the vertex.
 
+See also L</all_successors>, L</all_neighbours>, and L</all_reachable>.
+
+=item all_successors
+
+    @s = $g->all_successors(@v)
+
+For a directed graph, returns all successor vertices of the argument
+vertices, recursively.
+
+For undirected graphs, see L</all_neighbours> and L</all_reachable>.
+
+See also L</successors>.
+
 =item neighbors
 
 =item neighbours
 
+    @n = $g->neighbours($v)
+
 Return the neighbo(u)ring vertices.  Also known as the I<adjacent vertices>.
+
+See also L</all_neighbours> and L</all_reachable>.
+
+=item all_neighbors
+
+=item all_neighbours
+
+   @n = $g->all_neighbours(@v)
+
+Return the neighbo(u)ring vertices of the argument vertices,
+recursively.  For a directed graph, recurses up predecessors and down
+successors.  For an undirected graph, returns all the vertices
+reachable from the argument vertices.
+
+See also L</neighbours> and L</all_reachable>.
+
+=item all_reachable
+
+    @r = $g->all_reachable(@v)
+
+Return all the vertices reachable from of the argument vertices,
+recursively.  For a directed graph, equivalent to C<all_successors>.
+For an undirected graph, equivalent to C<all_neighbours>.
+
+See also L</neighbours>, L</all_neighbours>, and L</all_successors>.
 
 =item predecessorful_vertices
 
@@ -1081,9 +1128,22 @@ In scalar context return the number of predecessorless vertices.
 
 =item predecessors
 
-    @s = $g->predecessors($v)
+    @p = $g->predecessors($v)
 
 Return the immediate predecessor vertices of the vertex.
+
+See also L</all_predecessors>, L</all_neighbours>, and L</all_reachable>.
+
+=item all_predecessors
+
+    @p = $g->all_predecessors(@v)
+
+For a directed graph, returns all predecessor vertices of the argument
+vertices, recursively.
+
+For undirected graphs, see L</all_neighbours> and L</all_reachable>.
+
+See also L</predecessors>.
 
 =item isolated_vertices
 
@@ -2343,6 +2403,46 @@ I<Infinity> as the result.
 
 =head2 Miscellaneous
 
+=over 4
+
+=item betweenness
+
+    %b = $g->betweenness
+  
+Returns a map of vertices to their Freeman's betweennesses:
+
+  C_b(v) = \sum_{s \neq v \neq t \in V} \frac{\sigma_{s,t}(v)}{\sigma_{s,t}}
+
+It is described in:
+
+    Freeman, A set of measures of centrality based on betweenness, http://links.jstor.org/sici?sici=0038-0431(197703)40%3A1%3C35%3AASOMOC%3E2.0.CO%3B2-H
+
+and based on the algorithm from:
+
+    "A Faster Algorithm for Betweenness Centrality"
+
+=item clustering_coefficient
+
+    $gamma = $g->clustering_coefficient()
+    ($gamma, %clustering) = $g->clustering_coefficient()
+
+Returns the clustering coefficient gamma as described in
+
+    Duncan J. Watts and Steven Strogatz, Collective dynamics of 'small-world' networks, http://tam.cornell.edu/SS_nature_smallworld.pdf
+
+In scalar context returns just the average gamma, in list context
+returns the average gamma and a hash of vertices to clustering
+coefficients.
+
+=item subgraph_by_radius
+
+    $s = $g->subgraph_by_radius($n, $radius);
+
+Returns a subgraph representing the ball of $radius around node $n
+(breadth-first search).
+
+=back
+
 The "expect" methods can be used to test a graph and croak if the
 graph is not as expected.
 
@@ -2756,6 +2856,11 @@ Introduction to Algorithms, First Edition, Cormen-Leiserson-Rivest, McGraw Hill
 Graphs, Networks and Algorithms, Dieter Jungnickel, Springer
 
 =back
+
+=head1 SEE ALSO
+
+Persistent/Serialized graphs?  You want to read/write Graphs?  See the
+Graph::Reader and Graph::Writer in CPAN.
 
 =head1 AUTHOR AND COPYRIGHT
 
