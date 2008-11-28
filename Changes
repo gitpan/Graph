@@ -1,5 +1,13 @@
 2008-11-27  Jarkko Hietaniemi  <jhi@iki.fi>
 
+	* Addressed a performance problem in connected_components()
+	  for 1000+ vertex graphs, reported by David Grobe.
+	  Should in general speed up graph traversal.
+
+	* Release as 0.86.
+
+2008-11-27  Jarkko Hietaniemi  <jhi@iki.fi>
+
 	* Address rt.cpan.org #31608 "Graph::Undirected, unionfind and
 	  connected_component"
 

@@ -285,12 +285,13 @@ sub next {
 	@next = $self->{ graph }->successors( $current );
 	print "next.0 - @next\n" if DEBUG;
 	my %next; @next{ @next } = @next;
-#	delete $next{ $current };
 	print "next.1 - @next\n" if DEBUG;
 	@next = keys %next;
 	my @all = @next;
 	print "all = @all\n" if DEBUG;
-	delete @next{ $self->seen };
+	for my $s (keys %next) {
+	    delete $next{$s} if exists $self->{seen}->{$s};
+	}
 	@next = keys %next;
 	print "next.2 - @next\n" if DEBUG;
 	if (@next) {
@@ -312,7 +313,6 @@ sub next {
 	}
 	return undef if $self->{ terminate };
 	$self->_callbacks($current, @all);
-#	delete $next{ $current };
     }
     print "next.4 - @next\n" if DEBUG;
     unless (@next) {
