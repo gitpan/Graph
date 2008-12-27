@@ -1,3 +1,17 @@
+2008-12-27  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Some PAUSE upload problem with 0.88, retrying.
+
+	* Release as 0.89.
+
+2008-12-26  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* The 0.87 forgot to specify the Storable (and Safe,
+	  used in the deserialization step of deep_copy)
+	  prerequirement(s) in Makefile.PL.
+
+	* Release as 0.88.
+
 2008-12-26  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Addressed a performance problem in successors()
