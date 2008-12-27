@@ -1,4 +1,4 @@
-use Test::More tests => 93;
+use Test::More tests => 94;
 
 use Graph::Directed;
 use Graph::Undirected;
@@ -124,8 +124,10 @@ for my $i ([$g1d, $g1],
 {
     my $g = Graph->new;
     $g->set_graph_attribute('color' => 'deep_purple');
+    $g->set_graph_attribute('hunky' => sub { "hunky $_[0]" });
     my $c = $g->deep_copy;
     is($c->get_graph_attribute('color'), 'deep_purple');
+    is($c->get_graph_attribute('hunky')->('dory'), 'hunky dory');
 }
 
 SKIP: {

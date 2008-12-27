@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.86';
+$VERSION = '0.87';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -32,12 +32,17 @@ use Heap071::Fibonacci;
 use List::Util qw(shuffle first);
 use Scalar::Util qw(weaken);
 
+use Storable qw(freeze thaw);  # For deep_copy().
+use Safe;  # For deep_copy().
+
 sub _F () { 0 } # Flags.
 sub _G () { 1 } # Generation.
 sub _V () { 2 } # Vertices.
 sub _E () { 3 } # Edges.
 sub _A () { 4 } # Attributes.
 sub _U () { 5 } # Union-Find.
+sub _S () { 6 } # Successors.
+sub _P () { 7 } # Predecessors.
 
 my $Inf;
 
@@ -78,8 +83,8 @@ sub _COMPAT02 () { 0x00000001 }
 
 sub stringify {
     my $g = shift;
-    my $o = $g->is_undirected;
-    my $e = $o ? '=' : '-';
+    my $u = $g->is_undirected;
+    my $e = $u ? '=' : '-';
     my @e =
 	map {
 	    my @v =
@@ -87,7 +92,7 @@ sub stringify {
 		    ref($_) eq 'ARRAY' ? "[" . join(" ", @$_) . "]" : "$_"
 		}
 	    @$_;
-	    join($e, $o ? sort { "$a" cmp "$b" } @v : @v) } $g->edges05;
+	    join($e, $u ? sort { "$a" cmp "$b" } @v : @v) } $g->edges05;
     my @s = sort { "$a" cmp "$b" } @e;
     push @s, sort { "$a" cmp "$b" } $g->isolated_vertices;
     join(",", @s);
@@ -760,108 +765,59 @@ sub _edges_at {
     return wantarray ? @e : $en;
 }
 
-sub _edges_from {
+sub _edges {
     my $g = shift;
+    my $n = pop;
+    my $i = $n == _S ? 0 : -1;  # _edges_from() or _edges_to()
     my $V = $g->[ _V ];
     my $E = $g->[ _E ];
-    my @e;
-    my $o = $E->[ _f ] & _UNORD;
-    my $en = 0;
-    my %ev;
-    my $h = $V->[_f ] & _HYPER;
-    for my $v ( $h ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( ref $v eq 'ARRAY' && $h ? @$v : $v );
-	next unless defined $vi;
+    my $N = $g->[ $n ];
+    my $h = $V->[ _f ] & _HYPER;
+    unless (defined $N && $N->[ 0 ] == $g->[ _G ]) {
+	$g->[ $n ]->[ 1 ] = { };
+	$N = $g->[ $n ];
+	my $u = $E->[ _f ] & _UNORD;
 	my $Ei = $E->_ids;
-	if (wantarray) {
-	    if ($o) {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    push @e, [ $ei, $ev ]
-			if ($ev->[0] == $vi || $ev->[-1] == $vi) && !$ev{$ei}++;
-		}
+	while (my ($ei, $ev) = each %{ $Ei }) {
+	    next unless @$ev;
+	    my $e = [ $ei, $ev ];
+	    if ($u) {
+		push @{ $N->[ 1 ]->{ $ev->[ 0] } }, $e;
+		push @{ $N->[ 1 ]->{ $ev->[-1] } }, $e;
 	    } else {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    push @e, [ $ei, $ev ]
-			if $ev->[0] == $vi && !$ev{$ei}++;
-		}
-	    }
-	} else {
-	    if ($o) {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    $en++ if ($ev->[0] == $vi || $ev->[-1] == $vi);
-		}
-	    } else {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    $en++ if $ev->[0] == $vi;
-		}
+		my $e = [ $ei, $ev ];
+		push @{ $N->[ 1 ]->{ $ev->[$i] } }, $e;
 	    }
 	}
+	$N->[ 0 ] = $g->[ _G ];
+    }
+    my @e;
+    my @at = $h ? $g->vertices_at( @_ ) : @_;
+    my %at; @at{@at} = ();
+    for my $v ( @at ) {
+	my $vi = $V->_get_path_id( ref $v eq 'ARRAY' && $h ? @$v : $v );
+	next unless defined $vi && exists $N->[ 1 ]->{ $vi };
+	push @e, @{ $N->[ 1 ]->{ $vi } };
     }
     if (wantarray && $g->is_undirected) {
 	my @i = map { $V->_get_path_id( $_ ) } @_;
 	for my $e ( @e ) {
-	    unless ( $e->[ 1 ]->[ 0 ] == $i[ 0 ] ) { # @todo
+	    unless ( $e->[ 1 ]->[ $i ] == $i[ $i ] ) {
 		$e = [ $e->[ 0 ], [ reverse @{ $e->[ 1 ] } ] ];
 	    }
 	}
     }
-    return wantarray ? @e : $en;
+    return @e;
+}
+
+sub _edges_from {
+    push @_, _S;
+    goto &_edges;
 }
 
 sub _edges_to {
-    my $g = shift;
-    my $V = $g->[ _V ];
-    my $E = $g->[ _E ];
-    my @e;
-    my $o = $E->[ _f ] & _UNORD;
-    my $en = 0;
-    my %ev;
-    my $h = $V->[_f ] & _HYPER;
-    for my $v ( $h ? $g->vertices_at( @_ ) : @_ ) {
-	my $vi = $V->_get_path_id( ref $v eq 'ARRAY' && $h ? @$v : $v );
-	next unless defined $vi;
-	my $Ei = $E->_ids;
-	if (wantarray) {
-	    if ($o) {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    push @e, [ $ei, $ev ]
-			if ($ev->[-1] == $vi || $ev->[0] == $vi) && !$ev{$ei}++;
-		}
-	    } else {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    push @e, [ $ei, $ev ]
-			if $ev->[-1] == $vi && !$ev{$ei}++;
-		}
-	    }
-	} else {
-	    if ($o) {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    $en++ if $ev->[-1] == $vi || $ev->[0] == $vi;
-		}
-	    } else {
-		while (my ($ei, $ev) = each %{ $Ei }) {
-		    next unless @$ev;
-		    $en++ if $ev->[-1] == $vi;
-		}
-	    }
-	}
-    }
-    if (wantarray && $g->is_undirected) {
-	my @i = map { $V->_get_path_id( $_ ) } @_;
-	for my $e ( @e ) {
-	    unless ( $e->[ 1 ]->[ -1 ] == $i[ -1 ] ) { # @todo
-		$e = [ $e->[ 0 ], [ reverse @{ $e->[ 1 ] } ] ];
-	    }
-	}
-    }
-    return wantarray ? @e : $en;
+    push @_, _P;
+    goto &_edges;
 }
 
 sub _edges_id_path {
@@ -1048,7 +1004,7 @@ sub delete_edges {
 sub _in_degree {
     my $g = shift;
     return undef unless @_ && $g->has_vertex( @_ );
-    my $in =  $g->is_undirected && $g->is_self_loop_vertex( @_ ) ? 1 : 0;
+    my $in = 0;
     $in += $g->get_edge_count( @$_ ) for $g->edges_to( @_ );
     return $in;
 }
@@ -1061,7 +1017,7 @@ sub in_degree {
 sub _out_degree {
     my $g = shift;
     return undef unless @_ && $g->has_vertex( @_ );
-    my $out =  $g->is_undirected && $g->is_self_loop_vertex( @_ ) ? 1 : 0;
+    my $out = 0;
     $out += $g->get_edge_count( @$_ ) for $g->edges_from( @_ );
     return $out;
 }
@@ -1083,14 +1039,12 @@ sub degree {
     my $g = shift;
     if (@_) {
 	$g->_total_degree( @_ );
+    } elsif ($g->is_undirected) {
+	my $total = 0;
+	$total += $g->_total_degree( $_ ) for $g->vertices05;
+	return $total;
     } else {
-	if ($g->is_undirected) {
-	    my $total = 0;
-	    $total += $g->_total_degree( $_ ) for $g->vertices05;
-	    return $total;
-	} else {
-	    return 0;
-	}
+	return 0;
     }
 }
 
@@ -1160,7 +1114,7 @@ sub is_self_loop_vertex {
     my $g = shift;
     return 0 unless @_;
     for my $s ( $g->successors( @_ ) ) {
-	return 1 if $s eq $_[0]; # @todo: hypervertices
+	return 1 if $s eq $_[0]; # @todo: multiedges, hypervertices
     }
     return 0;
 }
@@ -1728,13 +1682,12 @@ sub copy {
 *copy_graph = \&copy;
 
 sub deep_copy {
-    require Data::Dumper;
     my $g = shift;
-    my $d = Data::Dumper->new([$g]);
-    use vars qw($VAR1);
-    $d->Purity(1)->Terse(1)->Deepcopy(1);
-    $d->Deparse(1) if $] >= 5.008;
-    eval $d->Dump;
+    use strict;
+    my $safe = new Safe;
+    local $Storable::Deparse = 1;
+    local $Storable::Eval = sub { $safe->reval($_[0]) };
+    return thaw(freeze($g));
 }
 
 *deep_copy_graph = \&deep_copy;

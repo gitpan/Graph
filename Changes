@@ -1,3 +1,15 @@
+2008-12-26  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Addressed a performance problem in successors()
+	  and predecessors(), reported by Jonathan Moore.
+
+	* Reimplement deep_copy() by using Storable
+	  freeze() and thaw() instead of Data::Dumper,
+	  inspired by Jonathan Moore.  Probably now safer
+	  and faster, but Storable is now a prerequirement.
+
+	* Release as 0.87.
+
 2008-11-27  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Addressed a performance problem in connected_components()

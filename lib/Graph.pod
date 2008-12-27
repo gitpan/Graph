@@ -1223,25 +1223,34 @@ This really makes sense only for directed graphs.
     $d = $g->vertex_degree($v)
 
 For directed graphs: the in-degree minus the out-degree at the vertex.
-For undirected graphs: the number of edges at the vertex.
+
+For undirected graphs: the number of edges at the vertex  (identical to
+C<in_degree()>, C<out_degree()>).
 
 =item in_degree
 
     $d = $g->in_degree($v)
 
-The number of incoming edges at the vertex.
+For directed graphs: the number of incoming edges at the vertex.
+
+For undirected graphs: the number of edges at the vertex (identical to
+C<out_degree()>, C<degree()>, C<vertex_degree()>).
 
 =item out_degree
 
     $o = $g->out_degree($v)
 
-The number of outgoing edges at the vertex.
+For directed graphs: The number of outgoing edges at the vertex.
+
+For undirected graphs: the number of edges at the vertex (identical to
+C<in_degree()>, C<degree()>, C<vertex_degree()>).
 
 =item average_degree
 
    my $ad = $g->average_degree;
 
-Return the average degree taken over all vertices.
+Return the average degree (as in C<degree()> or C<vertex_degree()>)
+taken over all vertices.
 
 =back
 
