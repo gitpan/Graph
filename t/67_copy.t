@@ -1,4 +1,4 @@
-use Test::More tests => 94;
+use Test::More tests => 96;
 
 use Graph::Directed;
 use Graph::Undirected;
@@ -125,17 +125,39 @@ for my $i ([$g1d, $g1],
     my $g = Graph->new;
     $g->set_graph_attribute('color' => 'deep_purple');
     $g->set_graph_attribute('hunky' => sub { "hunky $_[0]" });
-    my $c = $g->deep_copy;
-    is($c->get_graph_attribute('color'), 'deep_purple');
-    is($c->get_graph_attribute('hunky')->('dory'), 'hunky dory');
+ SKIP: {
+	skip("no coderef Deparse", 2) unless $] >= 5.008;
+	my $c = $g->deep_copy;
+	is($c->get_graph_attribute('color'), 'deep_purple');
+	is($c->get_graph_attribute('hunky')->('dory'), 'hunky dory');
+    }
 }
 
 SKIP: {
-    skip("no Deparse", 1) unless $] >= 5.008;
+    skip("no coderef Deparse", 1) unless $] >= 5.008;
     my $g = Graph->new;
-    $g->set_graph_attribute('color' => sub { $_[0] * $_[0] });
+    $g->set_graph_attribute('color' => sub { $_[0] ** 2 });
     my $c = $g->deep_copy;
     is($c->get_graph_attribute('color')->(7), 49);
+}
+
+SKIP: {
+    skip("no coderef Deparse", 1) unless $] >= 5.008;
+    skip("no coderef Deparse with Storable", 1)
+	unless Graph::_can_deep_copy_Storable();
+    require Storable;
+    my $g = Graph->new;
+    $g->set_graph_attribute('color' => sub { $_[0] ** 3 });
+    my $c = $g->_deep_copy_Storable;
+    is($c->get_graph_attribute('color')->(2), 8);
+}
+
+SKIP: {
+    skip("no coderef Deparse", 1) unless $] >= 5.008;
+    my $g = Graph->new;
+    $g->set_graph_attribute('color' => sub { $_[0] ** 4 });
+    my $c = $g->_deep_copy_DataDumper;
+    is($c->get_graph_attribute('color')->(3), 81);
 }
 
 for my $a (qw(refvertexed

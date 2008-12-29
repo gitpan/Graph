@@ -1,3 +1,12 @@
+2008-12-29  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Storable deparse of coderefs for deep_copy() does not
+	  work at all with 5.6.2: if modern enough Storable
+	  and B::Deparse are not available, fall back to
+	  the previous version which used Data::Dumper.
+
+	* Release as 0.90.
+
 2008-12-27  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Some PAUSE upload problem with 0.88, retrying.

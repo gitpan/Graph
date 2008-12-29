@@ -10,18 +10,23 @@ GetOptions('renumber' => \$renum);
 
 do 'util/renum.pl' if $renum;
 
+my %PREREQ_PM =
+    (
+    'List::Util'	=> 0,
+    'Scalar::Util'	=> 0,
+    'Math::Complex'	=> 0,
+    'Test::More'	=> 0
+    );
+
+if ($] >= 5.008) {
+    $PREREQ_PM{'Storable'} = '2.05';
+    $PREREQ_PM{'Safe'	 } = 0,
+}
+
 WriteMakefile(
 	      NAME            => 'Graph',
 	      VERSION_FROM    => 'lib/Graph.pm',
-	      PREREQ_PM	      =>
-	      	{
-		    'List::Util'	=> 0,
-		    'Scalar::Util'	=> 0,
-		    'Math::Complex'	=> 0,
-		    'Safe'		=> 0,
-		    'Storable'		=> 0,
-		    'Test::More'	=> 0,
-		},
+	      PREREQ_PM	      => \%PREREQ_PM,
 	      );
 
 # Some Debian distributions have a broken List::Util (see rt.cpan.org #9568)

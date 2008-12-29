@@ -14,9 +14,16 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.89';
+$VERSION = '0.90';
 
 require 5.006; # Weak references are absolutely required.
+
+my $can_deep_copy_Storable =
+    eval 'require Storable; require B::Deparse; $Storable::VERSION >= 2.05 && $B::Deparse::VERSION >= 0.61' && !$@;
+
+sub _can_deep_copy_Storable () {
+    return $can_deep_copy_Storable;
+}
 
 use Graph::AdjacencyMap::Heavy;
 use Graph::AdjacencyMap::Light;
@@ -32,7 +39,6 @@ use Heap071::Fibonacci;
 use List::Util qw(shuffle first);
 use Scalar::Util qw(weaken);
 
-use Storable qw(freeze thaw);  # For deep_copy().
 use Safe;  # For deep_copy().
 
 sub _F () { 0 } # Flags.
@@ -1681,13 +1687,29 @@ sub copy {
 
 *copy_graph = \&copy;
 
-sub deep_copy {
+sub _deep_copy_Storable {
     my $g = shift;
-    use strict;
     my $safe = new Safe;
     local $Storable::Deparse = 1;
     local $Storable::Eval = sub { $safe->reval($_[0]) };
-    return thaw(freeze($g));
+    return Storable::thaw(Storable::freeze($g));
+}
+
+sub _deep_copy_DataDumper {
+    my $g = shift;
+    my $d = Data::Dumper->new([$g]);
+    use vars qw($VAR1);
+    $d->Purity(1)->Terse(1)->Deepcopy(1);
+    $d->Deparse(1) if $] >= 5.008;
+    eval $d->Dump;
+}
+
+sub deep_copy {
+    if (_can_deep_copy_Storable()) {
+	return _deep_copy_Storable(@_);
+    } else {
+	return _deep_copy_DataDumper(@_);
+    }
 }
 
 *deep_copy_graph = \&deep_copy;

@@ -154,10 +154,13 @@ Also the following vertex/edge attributes are copied:
     my $c = $g->deep_copy_graph;
 
 Create a deep copy of the graph (vertices, edges, and attributes) of
-the graph.  If you want a shallow copy that does not include attributes,
-see L</copy>.  (Uses Data::Dumper behind the scenes.  Note that copying
-code references only works with Perls 5.8 or later, and even then only
-if B::Deparse can reconstruct your code.)
+the graph.  If you want a shallow copy that does not include
+attributes, see L</copy>.
+
+Note that copying code references only works with Perls 5.8 or later,
+and even then only if B::Deparse can reconstruct your code.  This
+functionality uses either Storable or Data::Dumper behind the scenes,
+depending on which is available (Storable is preferred).
 
 =item undirected_copy
 
