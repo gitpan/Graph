@@ -1,5 +1,7 @@
 package Graph::TransitiveClosure;
 
+use strict;
+
 # COMMENT THESE OUT FOR TESTING AND PRODUCTION.
 # $SIG{__DIE__ } = sub { use Carp; confess };
 # $SIG{__WARN__} = sub { use Carp; confess };

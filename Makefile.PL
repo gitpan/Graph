@@ -27,6 +27,9 @@ WriteMakefile(
 	      NAME            => 'Graph',
 	      VERSION_FROM    => 'lib/Graph.pm',
 	      PREREQ_PM	      => \%PREREQ_PM,
+              AUTHOR => 'Jarkko Hietaniemi <jhi@iki.fi>',
+              ($ExtUtils::MakeMaker::VERSION >= 6.3002 ?
+	       ('LICENSE'=> 'perl', ) : ()),
 	      );
 
 # Some Debian distributions have a broken List::Util (see rt.cpan.org #9568)

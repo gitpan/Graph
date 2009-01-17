@@ -2420,7 +2420,7 @@ I<Infinity> as the result.
 =item betweenness
 
     %b = $g->betweenness
-  
+
 Returns a map of vertices to their Freeman's betweennesses:
 
   C_b(v) = \sum_{s \neq v \neq t \in V} \frac{\sigma_{s,t}(v)}{\sigma_{s,t}}

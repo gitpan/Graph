@@ -1,16 +1,25 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Graph
-version:      0.90
-version_from: lib/Graph.pm
-installdirs:  site
+--- #YAML:1.0
+name:               Graph
+version:            0.91
+abstract:           ~
+author:
+    - Jarkko Hietaniemi <jhi@iki.fi>
+license:            perl
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
 requires:
-    List::Util:                    0
-    Math::Complex:                 0
-    Safe:                          0
-    Scalar::Util:                  0
-    Storable:                      2.05
-    Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30
+    List::Util:     0
+    Math::Complex:  0
+    Safe:           0
+    Scalar::Util:   0
+    Storable:       2.05
+    Test::More:     0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.48
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4

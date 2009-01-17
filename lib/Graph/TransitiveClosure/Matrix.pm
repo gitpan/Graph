@@ -347,15 +347,17 @@ Graph::TransitiveClosure::Matrix - create and query transitive closure of graph
     $tcg->is_transitive($u, $v)
 
     my $tcm = Graph::TransitiveClosure::Matrix->new($g, path_length => 1);
-    $tcm->path_length($u, $v)
+    my $n = $tcm->path_length($u, $v)
 
     my $tcm = Graph::TransitiveClosure::Matrix->new($g, path_vertices => 1);
-    $tcm->path_vertices($u, $v)
+    my @v = $tcm->path_vertices($u, $v)
 
-    my $tcm = Graph::TransitiveClosure::Matrix->new($g, attribute_name => 'length');
-    $tcm->path_length($u, $v)
+    my $tcm =
+        Graph::TransitiveClosure::Matrix->new($g,
+                                              attribute_name => 'length');
+    my $n = $tcm->path_length($u, $v)
 
-    $tcm->vertices
+    my @v = $tcm->vertices
 
 =head1 DESCRIPTION
 
