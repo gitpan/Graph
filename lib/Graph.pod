@@ -482,7 +482,7 @@ Return true if the graph is acyclic (does not contain any cycles).
 
 =back
 
-To find a cycle, use L<find_a_cycle>.
+To find a cycle, use L</find_a_cycle>.
 
 =head2 Transitivity
 
@@ -1431,6 +1431,7 @@ the I<by_id> variants:
     $g->has_edge_by_id($u, $v, $id)
     $g->delete_edge_by_id($u, $v, $id)
 
+These interfaces only apply to multivertices and multiedges.
 When you delete the last vertex/edge in a multivertex/edge, the whole
 vertex/edge is deleted.  You can use add_vertex()/add_edge() on
 a multivertex/multiedge graph, in which case an id is generated
@@ -2427,7 +2428,7 @@ Returns a map of vertices to their Freeman's betweennesses:
 
 It is described in:
 
-    Freeman, A set of measures of centrality based on betweenness, http://links.jstor.org/sici?sici=0038-0431(197703)40%3A1%3C35%3AASOMOC%3E2.0.CO%3B2-H
+    Freeman, A set of measures of centrality based on betweenness, http://arxiv.org/pdf/cond-mat/0309045
 
 and based on the algorithm from:
 
@@ -2440,7 +2441,7 @@ and based on the algorithm from:
 
 Returns the clustering coefficient gamma as described in
 
-    Duncan J. Watts and Steven Strogatz, Collective dynamics of 'small-world' networks, http://tam.cornell.edu/SS_nature_smallworld.pdf
+    Duncan J. Watts and Steven Strogatz, Collective dynamics of 'small-world' networks, http://audiophile.tam.cornell.edu/SS_nature_smallworld.pdf
 
 In scalar context returns just the average gamma, in list context
 returns the average gamma and a hash of vertices to clustering
@@ -2878,8 +2879,13 @@ Graph::Reader and Graph::Writer in CPAN.
 
 Jarkko Hietaniemi F<jhi@iki.fi>
 
+=head1 COPYRIGHT
+
+Copyright (c) 1998-2010 Jarkko Hietaniemi.  All rights reserved.
+
 =head1 LICENSE
 
-This module is licensed under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl 5 itself.
 
 =cut

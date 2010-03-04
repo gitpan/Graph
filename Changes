@@ -1,3 +1,13 @@
+2010-03-03  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #55912 "Broken links in the documentation"
+
+	* Address rt.cpan.org #55196 "Heap 0.80 compatibility fix"
+
+	* Add copyright and clearer license statement.
+
+	* Release as 0.92.
+	
 2009-01-16  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Minor documentation cleanups.
