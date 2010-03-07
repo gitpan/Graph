@@ -1,3 +1,8 @@
+2010-03-07  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Revert the SPTHeapElem.pm change made in Graph 0.92,
+	  installing Heap 0.80 broke Graph.  Better be conservative.
+
 2010-03-03  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Address rt.cpan.org #55912 "Broken links in the documentation"

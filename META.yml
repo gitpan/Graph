@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Graph
-version:            0.92
+version:            0.93
 abstract:           ~
 author:
     - Jarkko Hietaniemi <jhi@iki.fi>
