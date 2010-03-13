@@ -1,7 +1,40 @@
+2010-03-13  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #43580:
+	  "Reversed logic on overload::StrVal() in AdjacencyMap::Vertex::__set_path"
+	  Had to add a new option, refvertexed_stringified.
+
+	* Address rt.cpan.org #50210:
+	  "Graph-0.91: bug in unionfind parameter"
+
+	  One cannot delete from a unionfind graph: now enforcing that.
+
+	* Address rt.cpan.org #48090:
+	  "all_reachable on directed $g->add_edges(['a','b'],['b','a'])"
+
+	  Now if there are loops, all_reachable() will include
+	  the initial vertices themselves.  Also all_neighbors()
+	  had some problems in certain cases, fixed those too.
+
+	* Address rt.cpan.org #50210:
+	  "Graph-0.91: bug in unionfind parameter"
+	  
+	  One cannot delete edges or vertices from a unionfind
+	  graph: now enforce that in code.
+
+	* Address rt.pcan.org #42549: "stron"
+
+	  Document that strongly connected components will include
+	  isolated and sink and source vertices.
+
+	* Release as 0.94.
+
 2010-03-07  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Revert the SPTHeapElem.pm change made in Graph 0.92,
 	  installing Heap 0.80 broke Graph.  Better be conservative.
+
+	* Release as 0.93.
 
 2010-03-03  Jarkko Hietaniemi  <jhi@iki.fi>
 
@@ -198,12 +231,12 @@
 	  did not change diameter, this was due to a deeper bug where
 	  the transitive closure matrix was being cached wrong:
 	  sometimes saved too long, sometimes recomputed too often.
-          Enhanced 73_diameter.t to detect this.
+	  Enhanced 73_diameter.t to detect this.
 
 	* Problem found by Andree Toonk and Ronald van der Pol:
 	  SP_Dijkstra() tried too hard to find a path between
 	  vertices even if there was none - and returned rubbish.
-          Added t/u_at3.t to detect this.
+	  Added t/u_at3.t to detect this.
 
 	* Address rt.cpan.org #20021: "bridges() sometimes returns
 	  empty list when isolated vertices present".  biconnectivity()
@@ -237,7 +270,7 @@
 
 	* Bug in SP_Dijkstra() found by Andree Toonk and Ronald van der Pol.
 	  The edge weights of the Dijkstra shortest paths graph were
-          not cumulative (if the whole graph is a-b = 1 and b-c = 2,
+	  not cumulative (if the whole graph is a-b = 1 and b-c = 2,
 	  a-c should be 3), which caused the SP_Dijsktra() results
 	  sometimes to be nonsense.  Two test cases, one of them rather
 	  large (about 5000 edges).
@@ -266,7 +299,7 @@
 2006-05-27  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Brian Osborne found a graph where articulation_points()
-	  ended up in an infinite loop.  Resolved and the graph
+	  ended up in an infinite loop.	 Resolved and the graph
 	  test case added as t/u_bo_ap.t.
 
 	* Release as 0.72.
@@ -435,7 +468,7 @@
 2005-05-15  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Tests added to 64_ref.t to verify that using different kinds
-	  of blessed references as vertices works okay.  Few bugs found
+	  of blessed references as vertices works okay.	 Few bugs found
 	  by these tests squashed.
 
 	* Release as 0.65.
@@ -510,7 +543,7 @@
 2005-03-03  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* deep_copy_graph() could not handle code references since
-	  Data::Dumper by default doesn't handle those.  Now uses
+	  Data::Dumper by default doesn't handle those.	 Now uses
 	  the Deparse option for 5.8.x and later.
 
 	* The removed interfaces add_graph() and delete_graph() still
@@ -553,7 +586,7 @@
 2005-02-12  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Rewrite edges finding code (like edges_at()) to avoid a
-	  quadratic algorithm.  Shame on me.  Luckily this extremely
+	  quadratic algorithm.	Shame on me.  Luckily this extremely
 	  slow path was not touched that often, but [rt.cpan.org #11465]
 	  shows one known bad case, source_vertices() for compat02
 	  graphs.  The removal of the slow path sped up 'make test'

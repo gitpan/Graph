@@ -1,4 +1,4 @@
-use Test::More tests => 17;
+use Test::More tests => 18;
 
 use Graph;
 
@@ -60,3 +60,8 @@ is($@, '');
 
 eval 'Graph::_get_options(12,34)';
 like($@, qr/internal error: should be called with only one array ref argument/);
+
+my $uf = Graph->new(undirected => 1, unionfind => 1);
+$uf->add_edge(qw(a b));
+eval '$uf->delete_edge("a")';
+like($@, qr/Graph::delete_edge: expected non-unionfind graph/);

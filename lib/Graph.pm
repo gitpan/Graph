@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.93';
+$VERSION = '0.94';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -178,7 +178,8 @@ sub new {
 	no strict 'refs';
         for my $c (qw(undirected refvertexed compat02
                       hypervertexed countvertexed multivertexed
-                      hyperedged countedged multiedged omniedged)) {
+                      hyperedged countedged multiedged omniedged
+		      __stringified)) {
 #            $opt{$c}++ if $class->$c; # 5.00504-incompatible
 	    if (&{"Graph::$c"}($class)) { $opt{$c}++ }
         }
@@ -208,6 +209,8 @@ sub new {
 	 omnivertexed	=> _UNORD,
 	 uniqvertexed	=> _UNIQ,
 	 refvertexed	=> _REF,
+	 refvertexed_stringified => _REFSTR ,
+	 __stringified => _STR,
 	);
 
     _opt(\%opt, \$eflags,
@@ -328,6 +331,8 @@ sub hypervertexed { $_[0]->[ _V ]->_is_HYPER }
 sub omnivertexed  { $_[0]->[ _V ]->_is_UNORD }
 sub uniqvertexed  { $_[0]->[ _V ]->_is_UNIQ  }
 sub refvertexed   { $_[0]->[ _V ]->_is_REF   }
+sub refvertexed_stringified { $_[0]->[ _V ]->_is_REFSTR }
+sub __stringified { $_[0]->[ _V ]->_is_STR   }
 
 sub countedged    { $_[0]->[ _E ]->_is_COUNT }
 sub multiedged    { $_[0]->[ _E ]->_is_MULTI }
@@ -348,6 +353,7 @@ sub directed { ! $_[0]->[ _E ]->_is_UNORD }
 *is_omnidirected  = \&omnidirected;
 *is_uniqvertexed  = \&uniqvertexed;
 *is_refvertexed   = \&refvertexed;
+*is_refvertexed_stringified = \&refvertexed_stringified;
 
 *is_countedged    = \&countedged;
 *is_multiedged    = \&multiedged;
@@ -643,6 +649,7 @@ sub has_vertex_by_id {
 sub delete_vertex_by_id {
     my $g = shift;
     $g->expect_multivertexed;
+    $g->expect_non_unionfind;
     my $V = $g->[ _V ];
     return unless $V->has_path_by_multi_id( @_ );
     # TODO: what to about the edges at this vertex?
@@ -691,6 +698,7 @@ sub has_edge_by_id {
 sub delete_edge_by_id {
     my $g = shift;
     $g->expect_multiedged;
+    $g->expect_non_unionfind;
     my $V = $g->[ _E ];
     my $id = pop;
     my @i = $g->_vertex_ids( @_ );
@@ -871,17 +879,21 @@ sub _all_successors {
     my %todo;
     @todo{@init} = @init;
     my %seen;
+    my %init = %todo;
+    my %self;
     while (keys %todo) {
-	my @todo = keys %todo;
-	for my $t (@todo) {
-	    delete $todo{$t};
-	    $seen{$t} = $t;
-	    for my $s ($g->successors($t)) {
-		$todo{$s}++ unless exists $seen{$s};
-	    }
+      my @todo = values %todo;
+      for my $t (@todo) {
+	$seen{$t} = delete $todo{$t};
+	for my $s ($g->successors($t)) {
+	  $self{$s} = $s if exists $init{$s};
+	  $todo{$s} = $s unless exists $seen{$s};
 	}
+      }
     }
-    delete @seen{@init};
+    for my $v (@init) {
+      delete $seen{$v} unless $g->has_edge($v, $v) || $self{$v};
+    }
     return values %seen;
 }
 
@@ -897,17 +909,21 @@ sub _all_predecessors {
     my %todo;
     @todo{@init} = @init;
     my %seen;
+    my %init = %todo;
+    my %self;
     while (keys %todo) {
-	my @todo = keys %todo;
-	for my $t (@todo) {
-	    delete $todo{$t};
-	    $seen{$t} = $t;
-	    for my $p ($g->predecessors($t)) {
-		$todo{$p}++ unless exists $seen{$p};
-	    }
+      my @todo = values %todo;
+      for my $t (@todo) {
+	$seen{$t} = delete $todo{$t};
+	for my $p ($g->predecessors($t)) {
+	  $self{$p} = $p if exists $init{$p};
+	  $todo{$p} = $p unless exists $seen{$p};
 	}
+      }
     }
-    delete @seen{@init};
+    for my $v (@init) {
+      delete $seen{$v} unless $g->has_edge($v, $v) || $self{$v};
+    }
     return values %seen;
 }
 
@@ -933,12 +949,21 @@ sub neighbours {
 sub all_neighbours {
     my $g = shift;
     my @init = @_;
+    my @v = @init;
     my %n;
-    my @p = $g->_all_predecessors(@init);
-    my @s = $g->_all_successors(@init);
-    @n{@p} = @p;
-    @n{@s} = @s;
-    delete @n{@init};
+    my $o = 0;
+    while (1) {
+      my @p = $g->_all_predecessors(@v);
+      my @s = $g->_all_successors(@v);
+      @n{@p} = @p;
+      @n{@s} = @s;
+      @v = values %n;
+      last if @v == $o;  # Leave if no growth.
+      $o = @v;
+    }
+    for my $v (@init) {
+      delete $n{$v} unless $g->has_edge($v, $v);
+    }
     return values %n;
 }
 
@@ -946,11 +971,12 @@ sub all_neighbours {
 
 sub all_reachable {
     my $g = shift;
-    $g->directed ? $g->successors(@_) : $g->neighbors(@_);
+    $g->directed ? $g->all_successors(@_) : $g->all_neighbors(@_);
 }
 
 sub delete_edge {
     my $g = shift;
+    $g->expect_non_unionfind;
     my @i = $g->_vertex_ids( @_ );
     return $g unless @i;
     my $i = $g->[ _E ]->_get_path_id( @i );
@@ -962,6 +988,7 @@ sub delete_edge {
 
 sub delete_vertex {
     my $g = shift;
+    $g->expect_non_unionfind;
     my $V = $g->[ _V ];
     return $g unless $V->has_path( @_ );
     my $E = $g->[ _E ];
@@ -987,6 +1014,7 @@ sub get_edge_count {
 
 sub delete_vertices {
     my $g = shift;
+    $g->expect_non_unionfind;
     while (@_) {
 	my $v = shift @_;
 	$g->delete_vertex($v);
@@ -996,6 +1024,7 @@ sub delete_vertices {
 
 sub delete_edges {
     my $g = shift;
+    $g->expect_non_unionfind;
     while (@_) {
 	my ($u, $v) = splice @_, 0, 2;
 	$g->delete_edge($u, $v);
@@ -1192,6 +1221,7 @@ sub add_path {
 
 sub delete_path {
     my $g = shift;
+    $g->expect_non_unionfind;
     my $u = shift;
     while (@_) {
 	my $v = shift;
@@ -1219,6 +1249,7 @@ sub add_cycle {
 
 sub delete_cycle {
     my $g = shift;
+    $g->expect_non_unionfind;
     $g->delete_path(@_, $_[0]);
 }
 
@@ -1678,7 +1709,8 @@ sub copy {
 			 hyperedged
 			 countedged
 			 multiedged
-			 omniedged));
+			 omniedged
+		         __stringified));
     for my $v ($g->isolated_vertices) { $c->add_vertex($v) }
     for my $e ($g->edges05)           { $c->add_edge(@$e)  }
 
@@ -2086,6 +2118,11 @@ sub expect_non_multiedged {
 sub expect_multiedged {
     my $g = shift;
     _expected('multiedged') unless $g->is_multiedged;
+}
+
+sub expect_non_unionfind {
+    my $g = shift;
+    _expected('non-unionfind') if $g->has_union_find;
 }
 
 sub _get_options {
@@ -2867,7 +2904,8 @@ sub _strongly_connected_components_compute {
 
 sub _strongly_connected_components {
     my $g = shift;
-    my $scc = _check_cache($g, 'strong_connectivity',
+    my $type = 'strong_connectivity';
+    my $scc = _check_cache($g, $type,
 			   \&_strongly_connected_components_compute, @_);
     return defined $scc ? @$scc : ( );
 }

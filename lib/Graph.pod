@@ -62,9 +62,7 @@ The following options are available:
 
 =over 8
 
-=item *
-
-directed
+=item directed
 
 A boolean option telling that a directed graph should be created.
 Often somewhat redundant because a directed graph is the default
@@ -74,9 +72,7 @@ of the Graph::Directed class.
 You can test the directness of a graph with $g->is_directed() and
 $g->is_undirected().
 
-=item *
-
-undirected
+=item undirected
 
 A boolean option telling that an undirected graph should be created.
 One could also use the C<new()> constructor the Graph::Undirected class
@@ -90,15 +86,26 @@ things that often behave differently.
 You can test the directness of a graph with $g->is_directed() and
 $g->is_undirected().
 
-=item *
+=item refvertexed
 
-refvertexed
+=item refvertexed_stringified
 
-If you want to use references (including Perl objects) as vertices.
+If you want to use references (including Perl objects) as vertices,
+use C<refvertexed>.
 
-=item *
+Note that using C<refvertexed> means that internally the memory
+address of the reference (for example, a Perl object) is used as the
+"identifier" of the vertex, not the stringified form of the reference,
+even if you have defined your own stringification using C<overload>.
 
-unionfind
+This avoids the problem of the stringified references potentially
+being identical (because they are identical in value, for example)
+even if the references are different.  If you really want to use
+references B<and> their stringified forms as the identities, use the
+C<refvertexed_stringified>.  But please do B<not> stringify different
+objects to the same stringified value.
+
+=item unionfind
 
 If the graph is undirected, you can specify the C<unionfind> parameter
 to use the so-called union-find scheme to speed up the computation of
@@ -106,26 +113,19 @@ I<connected components> of the graph (see L</is_connected>,
 L</connected_components>, L</connected_component_by_vertex>,
 L</connected_component_by_index>, and L</same_connected_components>).
 If C<unionfind> is used, adding edges (and vertices) becomes slower,
-but connectedness queries become faster.  You can test a graph for
+but connectedness queries become faster.  You B<must not> delete egdes or
+vertices of an unionfind graph, only add them.  You can test a graph for
 "union-findness" with
-
-=over 8
 
 =item has_union_find
 
-    has_union_find
+Returns true if the graph was created with a true C<unionfind> parameter.
 
-=back
-
-=item *
-
-vertices
+=item vertices
 
 An array reference of vertices to add.
 
-=item *
-
-edges
+=item edges
 
 An array reference of array references of edge vertices to add.
 
@@ -578,7 +578,11 @@ Return true if the graph is undirected, false otherwise.
 
 =item is_refvertexed
 
+=item is_refvertexed_stringified
+
 =item refvertexed
+
+=item refvertexed_stringified
 
 Return true if the graph can handle references (including Perl objects)
 as vertices.
@@ -938,6 +942,10 @@ list of anonymous arrays.  The elements in the anonymous arrays are
 the vertices belonging to the strongly connected component; both the
 elements and the components are in no particular order.
 
+Note that strongly connected components can have single-element
+components even without self-loops: if a vertex is any of I<isolated>,
+I<sink>, or a I<source>, the vertex is alone in its own strong component.
+
 See also L</weakly_connected_components>.
 
 For undirected graphs, see L</connected_components>,
@@ -1088,7 +1096,8 @@ See also L</successors>.
 
     @n = $g->neighbours($v)
 
-Return the neighbo(u)ring vertices.  Also known as the I<adjacent vertices>.
+Return the neighboring/neighbouring vertices.  Also known as the
+I<adjacent vertices>.
 
 See also L</all_neighbours> and L</all_reachable>.
 
@@ -1098,10 +1107,10 @@ See also L</all_neighbours> and L</all_reachable>.
 
    @n = $g->all_neighbours(@v)
 
-Return the neighbo(u)ring vertices of the argument vertices,
+Return the neighboring/neighbouring vertices of the argument vertices,
 recursively.  For a directed graph, recurses up predecessors and down
 successors.  For an undirected graph, returns all the vertices
-reachable from the argument vertices.
+reachable from the argument vertices: equivalent to C<all_reachable>.
 
 See also L</neighbours> and L</all_reachable>.
 
@@ -1111,7 +1120,9 @@ See also L</neighbours> and L</all_reachable>.
 
 Return all the vertices reachable from of the argument vertices,
 recursively.  For a directed graph, equivalent to C<all_successors>.
-For an undirected graph, equivalent to C<all_neighbours>.
+For an undirected graph, equivalent to C<all_neighbours>.  The argument
+vertices are not included in the results unless there are explicit
+self-loops.
 
 See also L</neighbours>, L</all_neighbours>, and L</all_successors>.
 
@@ -2474,6 +2485,8 @@ graph is not as expected.
 =item expect_non_multiedged
 
 =item expect_non_multivertexed
+
+=item expect_non_unionfind
 
 =item expect_undirected
 

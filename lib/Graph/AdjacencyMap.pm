@@ -7,22 +7,26 @@ use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(Exporter);
 @EXPORT_OK   = qw(_COUNT _MULTI _COUNTMULTI _GEN_ID
 		  _HYPER _UNORD _UNIQ _REF _UNORDUNIQ _UNIONFIND _LIGHT
+		  _STR _REFSTR
 		  _n _f _a _i _s _p _g _u _ni _nc _na _nm);
 %EXPORT_TAGS =
     (flags =>  [qw(_COUNT _MULTI _COUNTMULTI _GEN_ID
-		   _HYPER _UNORD _UNIQ _REF _UNORDUNIQ _UNIONFIND _LIGHT)],
+		   _HYPER _UNORD _UNIQ _REF _UNORDUNIQ _UNIONFIND _LIGHT
+		   _STR _REFSTR)],
      fields => [qw(_n _f _a _i _s _p _g _u _ni _nc _na _nm)]);
 
-sub _COUNT      () {  0x00000001   }
-sub _MULTI      () {  0x00000002   }
-sub _COUNTMULTI () { _COUNT|_MULTI }
-sub _HYPER      () {  0x00000004   }
-sub _UNORD      () {  0x00000008   }
-sub _UNIQ       () {  0x00000010   }
-sub _REF        () {  0x00000020   }
-sub _UNORDUNIQ  () { _UNORD|_UNIQ  }
-sub _UNIONFIND  () {  0x00000040   }
-sub _LIGHT      () {  0x00000080   }
+sub _COUNT       () {  0x00000001   }
+sub _MULTI       () {  0x00000002   }
+sub _COUNTMULTI  () { _COUNT|_MULTI }
+sub _HYPER       () {  0x00000004   }
+sub _UNORD       () {  0x00000008   }
+sub _UNIQ        () {  0x00000010   }
+sub _REF         () {  0x00000020   }
+sub _UNORDUNIQ   () { _UNORD|_UNIQ  }
+sub _UNIONFIND   () {  0x00000040   }
+sub _LIGHT       () {  0x00000080   }
+sub _STR         () {  0x00000100   }
+sub _REFSTR      () { _REF|_STR     }
 
 my $_GEN_ID = 0;
 
@@ -360,6 +364,7 @@ sub _is_HYPER { $_[0]->[ _f ] & _HYPER }
 sub _is_UNORD { $_[0]->[ _f ] & _UNORD }
 sub _is_UNIQ  { $_[0]->[ _f ] & _UNIQ  }
 sub _is_REF   { $_[0]->[ _f ] & _REF   }
+sub _is_STR   { $_[0]->[ _f ] & _STR   }
 
 sub __arg {
     my $m = shift;

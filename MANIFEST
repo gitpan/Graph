@@ -142,9 +142,11 @@ t/u_bo1.t
 t/u_bo_ap1.t
 t/u_bo_ap2.t
 t/u_bo_apx.t
+t/u_cd_rv.t
 t/u_dl_uf.t
 t/u_jh_va.t
 t/u_mn_va.t
+t/u_mo_rv.t
 t/u_ng_mst.t
 t/u_ng_path.t
 t/u_ng_scc.t
