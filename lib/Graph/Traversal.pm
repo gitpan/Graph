@@ -471,7 +471,7 @@ or Graph::Traversal::BFS instead.
     my $g = Graph->new;
     $g->add_edge(...);
     use Graph::Traversal::...;
-    my $t = Graph::Traversal::...->new(%opt);
+    my $t = Graph::Traversal::...->new($g, %opt);
     $t->...
 
 =head1 DESCRIPTION

@@ -31,7 +31,7 @@ Graph::Traversal::DFS - depth-first traversal of graphs
     my $g = Graph->new;
     $g->add_edge(...);
     use Graph::Traversal::DFS;
-    my $d = Graph::Traversal::DFS->new(%opt);
+    my $d = Graph::Traversal::DFS->new($g, %opt);
     $d->dfs; # Do the traversal.
 
 =head1 DESCRIPTION
@@ -48,7 +48,8 @@ The following methods are available:
 
 =item dfs
 
-Traverse the graph in depth-first order.
+Traverse the graph in depth-first order.  Returns all vertices
+traversed in post-order.
 
 =back
 

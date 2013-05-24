@@ -31,7 +31,7 @@ Graph::Traversal::BFS - breadth-first traversal of graphs
     my $g = Graph->new;
     $g->add_edge(...);
     use Graph::Traversal::BFS;
-    my $b = Graph::Traversal::BFS->new(%opt);
+    my $b = Graph::Traversal::BFS->new($g, %opt);
     $b->bfs; # Do the traversal.
 
 =head1 DESCRIPTION
@@ -46,9 +46,10 @@ The following methods are available:
 
 =over 4
 
-=item dfs
+=item bfs
 
-Traverse the graph in depth-first order.
+Traverse the graph in breadth-first order.  Returns all vertices
+traversed in post-order.
 
 =back
 

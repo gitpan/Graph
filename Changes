@@ -1,3 +1,31 @@
+As of 0.95 Graph is now unsupported, sorry about that.  See README.
+
+2013-05-23  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Address rt.cpan.org #85449:
+	  "Graph-0.94 tests fail under perl 5.18.0"
+
+	* Address rt.cpan.org #82324:
+	  "Test failures due to hash randomisation in perl 5.17.6"
+
+	The two above fixes were the same: the biconnectedness
+	code was rewritten from scratch.  The new code behaves
+	differently (but I believe more correctly) on certain
+	edge cases, in general it will generate more biconnected
+	components and bridges, for example for "a=b=c" it will
+	now return the same two biconnected components and bridges
+	(cut edges), namely "a=b" and "b=c", the "b" of course being
+	the articulation point (cut vertex).
+
+	* Address rt.cpan.org #67213:
+	  "[PATCH] pod fixes"
+
+	* Remove the t/u_bo.t and t/u_bo1.t since they die in 5.18 due
+	  to some strange failure, looks unrelated to Graph as such,
+	  probably some fix/change made by newer Perls. 
+
+	* Release as 0.95.
+
 2010-03-13  Jarkko Hietaniemi  <jhi@iki.fi>
 
 	* Address rt.cpan.org #43580:

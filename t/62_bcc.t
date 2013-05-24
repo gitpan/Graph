@@ -1,6 +1,6 @@
 use Graph;
 
-use Test::More tests => 385;
+use Test::More tests => 395;
 
 my $N = 5;
 
@@ -34,31 +34,31 @@ my $g0a = Graph->new(undirected => 1);
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0a->biconnectivity;
-    is("@{[sort { $a <=> $b } defined @$ap ? @$ap : ()]}", "");
+    is("@{[sort { $a <=> $b } @$ap? @$ap : ()]}", "");
     is("@{[prettyn($bc)]}", "");
     is("@{[prettyn($br)]}", "");
 }
 
 ok(!$g0a->is_biconnected);
-ok(!$g0a->is_edge_connected);
-ok(!$g0a->is_edge_separable);
+is( $g0a->is_edge_connected, undef);
+is( $g0a->is_edge_separable, undef);
 is("@{[sort { $a <=> $b } $g0a->articulation_points]}", "");
 is("@{[prettyn([$g0a->biconnected_components])]}", "");
 is("@{[prettyn([$g0a->bridges])]}", "");
 
 my $g0b = Graph->new(undirected => 1);
-$g0b->add_vertex(0);
+$g0b->add_vertex("a");
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0b->biconnectivity;
-    is("@{[sort { $a <=> $b } defined @$ap ? @$ap : ()]}", "");
+    is("@{[sort { $a <=> $b } @$ap? @$ap : ()]}", "");
     is("@{[prettyn($bc)]}", "");
     is("@{[prettyn($br)]}", "");
 }
 
 ok(!$g0b->is_biconnected);
-ok(!$g0b->is_edge_connected);
-ok(!$g0b->is_edge_separable);
+is( $g0b->is_edge_connected, undef);
+is( $g0b->is_edge_separable, undef);
 is("@{[sort { $a <=> $b } $g0b->articulation_points]}", "");
 is("@{[prettyn([$g0b->biconnected_components])]}", "");
 is("@{[prettyn([$g0b->bridges])]}", "");
@@ -68,16 +68,17 @@ $g0c->add_edge(qw(a b));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0c->biconnectivity;
-    is("@{[sort { $a <=> $b } defined @$ap ? @$ap : ()]}", "");
-    is("@{[prettya($bc)]}", "");
+    is(@$ap, 0);
+    is("@{[sort { $a <=> $b } @$ap? @$ap : ()]}", "");
+    is("@{[prettya($bc)]}", "a b");
     is("@{[prettya($br)]}", "a b");
 }
 
 ok(!$g0c->is_biconnected);
-ok(!$g0c->is_edge_connected);
-ok( $g0c->is_edge_separable);
-is("@{[sort $g0c->articulation_points]}", "");
-is("@{[prettya([$g0c->biconnected_components])]}", "");
+is( $g0c->is_edge_connected, undef);
+is( $g0c->is_edge_separable, undef);
+is("@{[sort { $a <=> $b } $g0c->articulation_points]}", "");
+is("@{[prettya([$g0c->biconnected_components])]}", "a b");
 is("@{[prettya([$g0c->bridges])]}", "a b");
 
 my $g0d = Graph->new(undirected => 1);
@@ -86,8 +87,8 @@ $g0d->add_edge(qw(b c));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0d->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b");
-    is("@{[prettya($bc)]}", "");
+    is("@{[sort @$ap? @$ap : ()]}", "b");
+    is("@{[prettya($bc)]}", "a b; b c");
     is("@{[prettya($br)]}", "a b; b c");
 }
 
@@ -95,7 +96,7 @@ ok(!$g0d->is_biconnected);
 ok(!$g0d->is_edge_connected);
 ok( $g0d->is_edge_separable);
 is("@{[sort $g0d->articulation_points]}", "b");
-is("@{[prettya([$g0d->biconnected_components])]}", "");
+is("@{[prettya([$g0d->biconnected_components])]}", "a b; b c");
 is("@{[prettya([$g0d->bridges])]}", "a b; b c");
 
 my $g0e = Graph->new(undirected => 1);
@@ -105,8 +106,8 @@ $g0e->add_edge(qw(c d));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0e->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b c");
-    is("@{[prettya($bc)]}", "");
+    is("@{[sort @$ap? @$ap : ()]}", "b c");
+    is("@{[prettya($bc)]}", "a b; b c; c d");
     is("@{[prettya($br)]}", "a b; b c; c d");
 }
 
@@ -114,7 +115,7 @@ ok(!$g0e->is_biconnected);
 ok(!$g0e->is_edge_connected);
 ok( $g0e->is_edge_separable);
 is("@{[sort $g0e->articulation_points]}", "b c");
-is("@{[prettya([$g0e->biconnected_components])]}", "");
+is("@{[prettya([$g0e->biconnected_components])]}", "a b; b c; c d");
 is("@{[prettya([$g0e->bridges])]}", "a b; b c; c d");
 
 my $g0f = Graph->new(undirected => 1);
@@ -123,7 +124,7 @@ $g0f->add_cycle(qw(a b c));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0f->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "");
+    is("@{[sort @$ap? @$ap : ()]}", "");
     is("@{[prettya($bc)]}", "a b c");
     is("@{[prettya($br)]}", "");
 }
@@ -141,7 +142,7 @@ $g0g->add_cycle(qw(a b c d));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0g->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "");
+    is("@{[sort @$ap? @$ap : ()]}", "");
     is("@{[prettya($bc)]}", "a b c d");
     is("@{[prettya($br)]}", "");
 }
@@ -160,8 +161,8 @@ $g0h->add_edge(qw(b d));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0h->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b");
-    is("@{[prettya($bc)]}", "a b c");
+    is("@{[sort @$ap? @$ap : ()]}", "b");
+    is("@{[prettya($bc)]}", "a b c; b d");
     is("@{[prettya($br)]}", "b d");
 }
 
@@ -169,7 +170,7 @@ ok(!$g0h->is_biconnected);
 ok(!$g0h->is_edge_connected);
 ok( $g0h->is_edge_separable);
 is("@{[sort $g0h->articulation_points]}", "b");
-is("@{[prettya([$g0h->biconnected_components])]}", "a b c");
+is("@{[prettya([$g0h->biconnected_components])]}", "a b c; b d");
 is("@{[prettya([$g0h->bridges])]}", "b d");
 
 my $g0i = Graph->new(undirected => 1);
@@ -180,8 +181,8 @@ $g0i->add_edge(qw(d e));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0i->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b d");
-    is("@{[prettya($bc)]}", "a b c");
+    is("@{[sort @$ap? @$ap : ()]}", "b d");
+    is("@{[prettya($bc)]}", "a b c; b d; d e");
     is("@{[prettya($br)]}", "b d; d e");
 }
 
@@ -189,7 +190,7 @@ ok(!$g0i->is_biconnected);
 ok(!$g0i->is_edge_connected);
 ok( $g0i->is_edge_separable);
 is("@{[sort $g0i->articulation_points]}", "b d");
-is("@{[prettya([$g0i->biconnected_components])]}", "a b c");
+is("@{[prettya([$g0i->biconnected_components])]}", "a b c; b d; d e");
 is("@{[prettya([$g0i->bridges])]}", "b d; d e");
 
 my $g0j = Graph->new(undirected => 1);
@@ -199,7 +200,7 @@ $g0j->add_cycle(qw(b d e));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0j->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b");
+    is("@{[sort @$ap? @$ap : ()]}", "b");
     is("@{[prettya($bc)]}", "a b c; b d e");
     is("@{[prettya($br)]}", "");
 }
@@ -219,8 +220,8 @@ $g0k->add_edge(qw(b d));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0k->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b d");
-    is("@{[prettya($bc)]}", "a b c; d e f");
+    is("@{[sort @$ap? @$ap : ()]}", "b d");
+    is("@{[prettya($bc)]}", "a b c; d e f; b d");
     is("@{[prettya($br)]}", "b d");
 }
 
@@ -228,7 +229,7 @@ ok(!$g0k->is_biconnected);
 ok(!$g0k->is_edge_connected);
 ok( $g0k->is_edge_separable);
 is("@{[sort $g0k->articulation_points]}", "b d");
-is("@{[prettya([$g0k->biconnected_components])]}", "a b c; d e f");
+is("@{[prettya([$g0k->biconnected_components])]}", "a b c; d e f; b d");
 is("@{[prettya([$g0k->bridges])]}", "b d");
 
 my $g0l = Graph->new(undirected => 1);
@@ -241,8 +242,8 @@ $g0l->add_edge(qw(d g));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0l->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b d g");
-    is("@{[prettya($bc)]}", "a b c; d e f; g h i");
+    is("@{[sort @$ap? @$ap : ()]}", "b d g");
+    is("@{[prettya($bc)]}", "a b c; d e f; g h i; b d; d g");
     is("@{[prettya($br)]}", "b d; d g");
 }
 
@@ -250,7 +251,8 @@ ok(!$g0l->is_biconnected);
 ok(!$g0l->is_edge_connected);
 ok( $g0l->is_edge_separable);
 is("@{[sort $g0l->articulation_points]}", "b d g");
-is("@{[prettya([$g0l->biconnected_components])]}", "a b c; d e f; g h i");
+is("@{[prettya([$g0l->biconnected_components])]}",
+   "a b c; d e f; g h i; b d; d g");
 is("@{[prettya([$g0l->bridges])]}", "b d; d g");
 
 my $g0m = Graph->new(undirected => 1);
@@ -261,7 +263,7 @@ $g0m->add_cycle(qw(b h i));
 
 for (0..$N-1) {
     my ($ap, $bc, $br) = $g0m->biconnectivity;
-    is("@{[sort defined @$ap ? @$ap : ()]}", "b");
+    is("@{[sort @$ap? @$ap : ()]}", "b");
     is("@{[prettya($bc)]}", "a b c; b d e; b h i");
     is("@{[prettya($br)]}", "");
 }
@@ -288,7 +290,7 @@ $g1->add_edge(qw(6 7));
 for (0..2*$N-1) {
     my ($ap, $bc, $br) = $g1->biconnectivity;
     is("@{[sort { $a <=> $b } @$ap]}", "0 4 5 6 7 11");
-    is("@{[prettyn($bc)]}", "0 1 2 6; 3 4 5; 4 9 11; 7 8 10");
+    is("@{[prettyn($bc)]}", "0 1 2 6; 3 4 5; 4 9 11; 7 8 10; 0 5; 6 7; 11 12");
     is("@{[prettyn($br)]}", "0 5; 6 7; 11 12");
 }
 
@@ -305,7 +307,7 @@ $g2->add_edge(qw(j k));
 for (0..2*$N-1) {
     my ($ap, $bc, $br) = $g2->biconnectivity;
     is("@{[sort @$ap]}", "c d f h i j");
-    is("@{[prettya($bc)]}", "a b c; d e f; f g h");
+    is("@{[prettya($bc)]}", "a b c; d e f; f g h; c d; h i; i j; j k");
     is("@{[prettya($br)]}", "c d; h i; i j; j k");
 }
 
@@ -321,50 +323,54 @@ $g3->add_path(qw(c h));
 for (0..2*$N-1) {
     my ($ap, $bc, $br) = $g3->biconnectivity;
     is("@{[sort @$ap]}", "e h i s");
-    is("@{[prettya($bc)]}", "a b e f s; c d g h s; i j k");
+    is("@{[prettya($bc)]}", "a b e f s; c d g h s; i j k; e i; h l");
     is("@{[prettya($br)]}", "e i; h l");
 }
 
-is( $g3->biconnected_components, 3 );
+is( $g3->biconnected_components, 5 );
 
 my $c0a = $g3->biconnected_component_by_index(0);
 my $c0b = $g3->biconnected_component_by_index(0);
 my $c0c = $g3->biconnected_component_by_index(0);
+my $c0d = $g3->biconnected_component_by_index(0);
+my $c0e = $g3->biconnected_component_by_index(0);
 
 my $c1a = $g3->biconnected_component_by_index(1);
 my $c1b = $g3->biconnected_component_by_index(1);
 my $c1c = $g3->biconnected_component_by_index(1);
+my $c1d = $g3->biconnected_component_by_index(1);
+my $c1e = $g3->biconnected_component_by_index(1);
 
 my $c2a = $g3->biconnected_component_by_index(2);
 my $c2b = $g3->biconnected_component_by_index(2);
 my $c2c = $g3->biconnected_component_by_index(2);
+my $c2d = $g3->biconnected_component_by_index(2);
+my $c2e = $g3->biconnected_component_by_index(2);
 
 is( "@$c0a", "@$c0b" );
 is( "@$c0a", "@$c0c" );
+is( "@$c0a", "@$c0d" );
+is( "@$c0a", "@$c0e" );
 
 is( "@$c1a", "@$c1b" );
 is( "@$c1a", "@$c1c" );
+is( "@$c1a", "@$c1d" );
+is( "@$c1a", "@$c1e" );
 
 is( "@$c2a", "@$c2b" );
 is( "@$c2a", "@$c2c" );
+is( "@$c2a", "@$c2d" );
+is( "@$c2a", "@$c2e" );
 
 isnt( "@$c0a", "@$c1a" );
 isnt( "@$c0a", "@$c2a" );
-isnt( "@$c1a", "@$c2a" );
+isnt( "@$c0a", "@$c3a" );
 
-my @c0a = sort @$c0a;
-my @c1a = sort @$c1a;
-my @c2a = sort @$c2a;
-
-ok( (grep { $_ eq 'i' } @c0a) ||
-    (grep { $_ eq 'i' } @c1a) ||
-    (grep { $_ eq 'i' } @c2a) );
-
-is( $g3->biconnected_component_by_index(3), undef );
+is( $g3->biconnected_component_by_index(5), undef );
 
 my $g3c = $g3->biconnected_graph();
 
-is( $g3c, "a+b+e+f+s=c+d+g+h+s,i+j+k" );
+is( $g3c, "a+b+e+f+s=c+d+g+h+s,a+b+e+f+s=e+i,c+d+g+h+s=h+l,e+i=i+j+k");
 
 ok( $g3->same_biconnected_components('a', 'b') );
 ok( $g3->same_biconnected_components('a', 'b', 'e') );

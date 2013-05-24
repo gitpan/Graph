@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.94';
+$VERSION = '0.95';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -2595,19 +2595,22 @@ sub topological_sort {
 
 *toposort = \&topological_sort;
 
+sub _undirected_copy_compute {
+  my $g = shift;
+  my $c = Graph::Undirected->new;
+  for my $v ($g->isolated_vertices) { # TODO: if iv ...
+    $c->add_vertex($v);
+  }
+  for my $e ($g->edges05) {
+    $c->add_edge(@$e);
+  }
+  return $c;
+}
+
 sub undirected_copy {
     my $g = shift;
-
     $g->expect_directed;
-
-    my $c = Graph::Undirected->new;
-    for my $v ($g->isolated_vertices) { # TODO: if iv ...
-	$c->add_vertex($v);
-    }
-    for my $e ($g->edges05) {
-	$c->add_edge(@$e);
-    }
-    return $c;
+    return _check_cache($g, 'undirected', \&_undirected_copy_compute);
 }
 
 *undirected_copy_graph = \&undirected_copy;
@@ -2640,6 +2643,7 @@ my %_cache_type =
      'biconnectivity'      => '_bcc',
      'SPT_Dijkstra'        => '_spt_di',
      'SPT_Bellman_Ford'    => '_spt_bf',
+     'undirected'          => '_undirected',
     );
 
 sub _check_cache {
@@ -2692,6 +2696,11 @@ sub SPT_Dijkstra_clear_cache {
 sub SPT_Bellman_Ford_clear_cache {
     my $g = shift;
     _clear_cache($g, 'SPT_Bellman_Ford');
+}
+
+sub undirected_copy_clear_cache {
+    my $g = shift;
+    _clear_cache($g, 'undirected_copy');
 }
 
 ###
@@ -2796,7 +2805,7 @@ sub same_connected_components {
 	my ($CCE, $CCI) = $g->_connected_components();
 	my $u = shift;
 	my $c = $CCE->{ $u };
-	for my $v ( @_) {
+	for my $v ( @_ ) {
 	    return 0
 		unless defined $CCE->{ $v } &&
 		       $CCE->{ $v } eq $c;
@@ -3082,175 +3091,120 @@ sub strongly_connected_graph {
 # Biconnectivity.
 #
 
-sub _make_bcc {
-    my ($S, $v, $c) = @_;
-    my %b;
-    while (@$S) {
-	my $t = pop @$S;
-	$b{ $t } = $t;
-	last if $t eq $v;
+sub _biconnectivity_out {
+  my ($state, $u, $v) = @_;
+  if (exists $state->{stack}) {
+    my @BC;
+    while (@{$state->{stack}}) {
+      my $e = pop @{$state->{stack}};
+      push @BC, $e;
+      last if defined $u && $e->[0] eq $u && $e->[1] eq $v;
     }
-    return [ values %b, $c ];
+    if (@BC) {
+      push @{$state->{BC}}, \@BC;
+    }
+  }
+}
+
+sub _biconnectivity_dfs {
+  my ($g, $u, $state) = @_;
+  $state->{num}->{$u} = $state->{dfs}++;
+  $state->{low}->{$u} = $state->{num}->{$u};
+  for my $v ($g->successors($u)) {
+    unless (exists $state->{num}->{$v}) {
+      push @{$state->{stack}}, [$u, $v];
+      $state->{pred}->{$v} = $u;
+      $state->{succ}->{$u}->{$v}++;
+      _biconnectivity_dfs($g, $v, $state);
+      if ($state->{low}->{$v} < $state->{low}->{$u}) {
+	$state->{low}->{$u} = $state->{low}->{$v};
+      }
+      if ($state->{low}->{$v} >= $state->{num}->{$u}) {
+	_biconnectivity_out($state, $u, $v);
+      }
+    } elsif ($state->{pred}->{$u} ne $v &&
+	     $state->{num}->{$v} < $state->{num}->{$u}) {
+      push @{$state->{stack}}, [$u, $v];
+      if ($state->{num}->{$v} < $state->{low}->{$u}) {
+	$state->{low}->{$u} = $state->{num}->{$v};
+      }
+    }
+  }
 }
 
 sub _biconnectivity_compute {
-    my $g = shift;
-    my ($opt, $unseenh, $unseena, $r, $next, $code, $attr) =
-	$g->_root_opt(@_);
-    return () unless defined $r;
-    my %P;
-    my %I;
+    my ($g) = @_;
+    my %state;
+    @{$state{BC}} = ();
+    @{$state{BR}} = ();
+    %{$state{V2BC}} = ();
+    %{$state{BC2V}} = ();
+    @{$state{AP}} = ();
+    $state{dfs} = 0;
+    my @u = _shuffle $g->vertices;
+    for my $u (@u) {
+      unless (exists $state{num}->{$u}) {
+	_biconnectivity_dfs($g, $u, \%state);
+	_biconnectivity_out(\%state);
+	delete $state{stack};
+      }
+    }
+
+    # Mark the components each vertex belongs to.
+    my $bci = 0;
+    for my $bc (@{$state{BC}}) {
+      for my $e (@$bc) {
+	for my $v (@$e) {
+	  $state{V2BC}->{$v}->{$bci}++;
+	}
+      }
+      $bci++;
+    }
+
+    # Any isolated vertices get each their own component.
     for my $v ($g->vertices) {
-	$I{ $v } = 0;
+      unless (exists $state{V2BC}->{$v}) {
+	$state{V2BC}->{$v}->{$bci++}++;
+      }
     }
-    $I{ $r } = 1;
-    my %U;
-    my %S; # Self-loops.
-    for my $e ($g->edges) {
+
+    for my $v ($g->vertices) {
+      for my $bc (keys %{$state{V2BC}->{$v}}) {
+	$state{BC2V}->{$bc}->{$v}->{$bc}++;
+      }
+    }
+
+    # Articulation points / cut vertices are the vertices
+    # which belong to more than one component.
+    for my $v (keys %{$state{V2BC}}) {
+      if (keys %{$state{V2BC}->{$v}} > 1) {
+	push @{$state{AP}}, $v;
+      }
+    }
+
+    # Bridges / cut edges are the components of two vertices.
+    for my $v (keys %{$state{BC2V}}) {
+      my @v = keys %{$state{BC2V}->{$v}};
+      if (@v == 2) {
+	push @{$state{BR}}, \@v;
+      }
+    }
+
+    # Create the subgraph components.
+    my @sg;
+    for my $bc (@{$state{BC}}) {
+      my %v;
+      my $w = Graph::Undirected->new();
+      for my $e (@$bc) {
 	my ($u, $v) = @$e;
-	$U{ $u }{ $v } = 0;
-	$U{ $v }{ $u } = 0;
-	$S{ $u } = 1 if $u eq $v;
-    }
-    my $i = 1;
-    my $v = $r;
-    my %AP;
-    my %L = ( $r => 1 );
-    my @S = ( $r );
-    my %A;
-    my @V = $g->vertices;
-
-    # print "V : @V\n";
-    # print "r : $r\n";
-
-    my %T; @T{ @V } = @V;
-
-    for my $w (@V) {
-	my @s = $g->successors( $w );
-	if (@s) {
-	    @s = grep { $_ eq $w ? ( delete $T{ $w }, 0 ) : 1 } @s;
-	    @{ $A{ $w } }{ @s } = @s;
-	} elsif ($g->predecessors( $w ) == 0) {
-	    delete $T{ $w };
-	    if ($w eq $r) {
-		delete $I { $r };
-		$r = $v = each %T;
-		if (defined $r) {
-		    %L = ( $r => 1 );
-		    @S = ( $r );
-		    $I{ $r } = 1;
-		    # print "r : $r\n";
-		}
-	    }
-	}
+	$v{$u}++;
+	$v{$v}++;
+	$w->add_edge($u, $v);
+      }
+      push @sg, [ keys %v ];
     }
 
-    # use Data::Dumper;
-    # print "T : ", Dumper(\%T);
-    # print "A : ", Dumper(\%A);
-
-    my %V2BC;
-    my @BR;
-    my @BC;
-
-    my @C;
-    my $Avok;
-
-    while (keys %T) {
-	# print "T = ", Dumper(\%T);
-	do {
-	    my $w;
-	    do {
-		my @w = _shuffle values %{ $A{ $v } };
-		# print "w = @w\n";
-		$w = first { !$U{ $v }{ $_ } } @w;
-		if (defined $w) {
-		    # print "w = $w\n";
-		    $U{ $v }{ $w }++;
-		    $U{ $w }{ $v }++;
-		    if ($I{ $w } == 0) {
-			$P{ $w } = $v;
-			$i++;
-			$I{ $w } = $i;
-			$L{ $w } = $i;
-			push @S, $w;
-			$v = $w;
-		    } else {
-			$L{ $v } = $I{ $w } if $I{ $w } < $L{ $v };
-		    }
-		}
-	    } while (defined $w);
-	    # print "U = ", Dumper(\%U);
-	    # print "P = ", Dumper(\%P);
-	    # print "L = ", Dumper(\%L);
-	    if (!defined $P{ $v }) {
-		# Do nothing.
-	    } elsif ($P{ $v } ne $r) {
-		if ($L{ $v } < $I{ $P{ $v } }) {
-		    $L{ $P{ $v } } = $L{ $v } if $L{ $v } < $L{ $P{ $v } };
-		} else {
-		    $AP{ $P{ $v } } = $P{ $v };
-		    push @C, _make_bcc(\@S, $v, $P{ $v } );
-		}
-	    } else {
-		my $e;
-		for my $w (_shuffle keys %{ $A{ $r } }) {
-		    # print "w = $w\n";
-		    unless ($U{ $r }{ $w }) {
-			$e = $r;
-			# print "e = $e\n";
-			last;
-		    }
-		}
-		$AP{ $e } = $e if defined $e;
-		push @C, _make_bcc(\@S, $v, $r);
-	    }
-	    # print "AP = ", Dumper(\%AP);
-	    # print "C  = ", Dumper(\@C);
-	    # print "L  = ", Dumper(\%L);
-	    $v = defined $P{ $v } ? $P{ $v } : $r;
-	    # print "v = $v\n";
-	    $Avok = 0;
-	    if (defined $v) {
-		if (keys %{ $A{ $v } }) {
-		    if (!exists $P{ $v }) {
-			for my $w (keys %{ $A{ $v } }) {
-			    $Avok++ if $U{ $v }{ $w };
-			}
-			# print "Avok/1 = $Avok\n";
-			$Avok = 0 unless $Avok == keys %{ $A{ $v } };
-			# print "Avok/2 = $Avok\n";
-		    }
-		} else {
-		    $Avok = 1;
-		    # print "Avok/3 = $Avok\n";
-		}
-	    }
-	} until ($Avok);
-
-	last if @C == 0 && !exists $S{$v};
-
-	for (my $i = 0; $i < @C; $i++) {
-	    for my $v (@{ $C[ $i ]}) {
-		$V2BC{ $v }{ $i }++;
-		delete $T{ $v };
-	    }
-	}
-
-	for (my $i = 0; $i < @C; $i++) {
-	    if (@{ $C[ $i ] } == 2) {
-		push @BR, $C[ $i ];
-	    } else {
-		push @BC, $C[ $i ];
-	    }
-	}
-
-	if (keys %T) {
-	    $r = $v = each %T;
-	}
-    }
-    
-    return [ [values %AP], \@BC, \@BR, \%V2BC ];
+    return [ $state{AP}, \@sg, $state{BR}, $state{V2BC}, ];
 }
 
 sub biconnectivity {
@@ -3263,26 +3217,26 @@ sub biconnectivity {
 
 sub is_biconnected {
     my $g = shift;
-    my ($ap, $bc) = ($g->biconnectivity(@_))[0, 1];
-    return defined $ap ? @$ap == 0 && $g->vertices >= 3 : undef;
+    my ($ap) = ($g->biconnectivity(@_))[0];
+    return $g->edges >= 2 ? @$ap == 0 : undef ;
 }
 
 sub is_edge_connected {
     my $g = shift;
     my ($br) = ($g->biconnectivity(@_))[2];
-    return defined $br ? @$br == 0 && $g->edges : undef;
+    return $g->edges >= 2 ? @$br == 0 : undef;
 }
 
 sub is_edge_separable {
     my $g = shift;
-    my $c = $g->is_edge_connected;
-    defined $c ? !$c && $g->edges : undef;
+    my ($br) = ($g->biconnectivity(@_))[2];
+    return $g->edges >= 2 ? @$br > 0 : undef;
 }
 
 sub articulation_points {
     my $g = shift;
     my ($ap) = ($g->biconnectivity(@_))[0];
-    return defined $ap ? @$ap : ();
+    return @$ap;
 }
 
 *cut_vertices = \&articulation_points;
@@ -3290,14 +3244,14 @@ sub articulation_points {
 sub biconnected_components {
     my $g = shift;
     my ($bc) = ($g->biconnectivity(@_))[1];
-    return defined $bc ? @$bc : ();
+    return @$bc;
 }
 
 sub biconnected_component_by_index {
     my $g = shift;
     my $i = shift;
     my ($bc) = ($g->biconnectivity(@_))[1];
-    return defined $bc ? $bc->[ $i ] : undef;
+    return $bc->[ $i ];
 }
 
 sub biconnected_component_by_vertex {

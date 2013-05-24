@@ -728,12 +728,18 @@ For an undirected graph, return true if the graph is biconnected
 For an undirected graph, return true if the graph is edge-connected
 (if it has no bridges).
 
+Note: more precisely, this would be called is_edge_biconnected,
+since there is a more general concept of being k-connected. 
+
 =item is_edge_separable
 
    $g->is_edge_separable
 
 For an undirected graph, return true if the graph is edge-separable
 (if it has bridges).
+
+Note: more precisely, this would be called is_edge_biseparable,
+since there is a more general concept of being k-connected. 
 
 =item articulation_points
 
@@ -758,8 +764,9 @@ that one vertex can belong to more than one biconnected component.
 
    $i = $g->biconnected_component_by_index($v)
 
-For an undirected graph, return an index identifying the biconnected
-component the vertex belongs to, the indexing starting from zero.
+For an undirected graph, return the indices identifying the biconnected
+components the vertex belongs to, the indexing starting from zero.
+The order of of the components is undefined.
 
 For the inverse, see L</connected_component_by_index>.
 
@@ -2847,14 +2854,10 @@ references) as graph vertices, but forgot to use C<refvertexed>
 
 =back
 
-=head2 POSSIBLE FUTURES
+=head2 UNSUPPORTED
 
-A possible future direction is a new graph module written for speed:
-this may very possibly mean breaking or limiting some of the APIs or
-behaviour as compared with this release of the module.
-
-What definitely won't happen in future releases is carrying over
-the Graph 0.2xxxx backward compatibility API.
+Unfortunately, as of release 0.95, this module is unsupported,
+and will no more be maintained.  Sorry about that.
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -2894,7 +2897,7 @@ Jarkko Hietaniemi F<jhi@iki.fi>
 
 =head1 COPYRIGHT
 
-Copyright (c) 1998-2010 Jarkko Hietaniemi.  All rights reserved.
+Copyright (c) 1998-2013 Jarkko Hietaniemi.  All rights reserved.
 
 =head1 LICENSE
 
