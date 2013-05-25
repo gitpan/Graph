@@ -24,4 +24,4 @@ requires:
   Scalar::Util: 0
   Storable: 2.05
   Test::More: 0
-version: 0.95
+version: 0.96

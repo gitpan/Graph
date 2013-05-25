@@ -28,6 +28,11 @@ Graph - graph data structures and algorithms
 
         # And many, many more, see below.
 
+=head1 UNSUPPORTED
+
+Unfortunately, as of release 0.95, this module is unsupported,
+and will no more be maintained.  Sorry about that.
+
 =head1 DESCRIPTION
 
 =head2 Non-Description
@@ -170,6 +175,12 @@ depending on which is available (Storable is preferred).
 
 Create an undirected shallow copy (vertices and edges) of the directed graph
 so that for any directed edge (u, v) there is an undirected edge (u, v).
+
+=item undirected_copy_clear_cache
+
+    @path = $g->undirected_copy_clear_cache;
+
+See L</"Clearing cached results">.
 
 =item directed_copy
 
@@ -2853,11 +2864,6 @@ references) as graph vertices, but forgot to use C<refvertexed>
 (see L</refvertexed>) when creating the graph.
 
 =back
-
-=head2 UNSUPPORTED
-
-Unfortunately, as of release 0.95, this module is unsupported,
-and will no more be maintained.  Sorry about that.
 
 =head1 ACKNOWLEDGEMENTS
 

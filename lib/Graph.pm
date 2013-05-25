@@ -14,7 +14,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.95';
+$VERSION = '0.96';
 
 require 5.006; # Weak references are absolutely required.
 
@@ -3122,7 +3122,8 @@ sub _biconnectivity_dfs {
       if ($state->{low}->{$v} >= $state->{num}->{$u}) {
 	_biconnectivity_out($state, $u, $v);
       }
-    } elsif ($state->{pred}->{$u} ne $v &&
+    } elsif (defined $state->{pred}->{$u} &&
+	     $state->{pred}->{$u} ne $v &&
 	     $state->{num}->{$v} < $state->{num}->{$u}) {
       push @{$state->{stack}}, [$u, $v];
       if ($state->{num}->{$v} < $state->{low}->{$u}) {

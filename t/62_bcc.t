@@ -1,6 +1,6 @@
 use Graph;
 
-use Test::More tests => 395;
+use Test::More tests => 394;
 
 my $N = 5;
 
@@ -364,7 +364,6 @@ is( "@$c2a", "@$c2e" );
 
 isnt( "@$c0a", "@$c1a" );
 isnt( "@$c0a", "@$c2a" );
-isnt( "@$c0a", "@$c3a" );
 
 is( $g3->biconnected_component_by_index(5), undef );
 

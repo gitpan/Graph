@@ -1,4 +1,10 @@
-As of 0.95 Graph is now unsupported, sorry about that.  See README.
+As of 0.95 Graph is unsupported, sorry about that.  See README.
+
+2013-05-24  Jarkko Hietaniemi  <jhi@iki.fi>
+
+	* Mop-up release for 0.95.  Still is and will be unsupported.
+
+	* Release as 0.96.
 
 2013-05-23  Jarkko Hietaniemi  <jhi@iki.fi>
 
