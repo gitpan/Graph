@@ -4,7 +4,7 @@
       "Jarkko Hietaniemi <jhi@iki.fi>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.9, CPAN::Meta::Converter version 2.133380",
    "license" : [
       "perl_5"
    ],
@@ -37,10 +37,18 @@
             "Safe" : "0",
             "Scalar::Util" : "0",
             "Storable" : "2.05",
-            "Test::More" : "0"
+            "Test::More" : "0",
+            "perl" : "5.006"
          }
       }
    },
-   "release_status" : "stable",
-   "version" : "0.96"
+   "release_status" : "testing",
+   "resources" : {
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/neilbowers/Graph.git",
+         "web" : "https://github.com/neilbowers/Graph"
+      }
+   },
+   "version" : "0.96_01"
 }

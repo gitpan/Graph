@@ -1,6 +1,10 @@
 package Graph;
 
 use strict;
+use warnings;
+
+# Need to get my head around all those redefines! -NEILB
+no warnings 'redefine';
 
 BEGIN {
     if (0) { # SET THIS TO ZERO FOR TESTING AND RELEASES!
@@ -14,7 +18,7 @@ use Graph::AdjacencyMap qw(:flags :fields);
 
 use vars qw($VERSION);
 
-$VERSION = '0.96';
+$VERSION = '0.96_01';
 
 require 5.006; # Weak references are absolutely required.
 

@@ -1,7 +1,6 @@
 Changes
 DESIGN
 MANIFEST
-META.yml
 Makefile.PL
 README
 RELEASE
@@ -161,4 +160,5 @@ util/grand.pl
 util/renum.pl
 util/size.pl
 util/srand.pl
+META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

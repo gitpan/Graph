@@ -28,11 +28,6 @@ Graph - graph data structures and algorithms
 
         # And many, many more, see below.
 
-=head1 UNSUPPORTED
-
-Unfortunately, as of release 0.95, this module is unsupported,
-and will no more be maintained.  Sorry about that.
-
 =head1 DESCRIPTION
 
 =head2 Non-Description
@@ -2897,17 +2892,21 @@ Graphs, Networks and Algorithms, Dieter Jungnickel, Springer
 Persistent/Serialized graphs?  You want to read/write Graphs?  See the
 Graph::Reader and Graph::Writer in CPAN.
 
-=head1 AUTHOR AND COPYRIGHT
+=head1 REPOSITORY
+
+L<https://github.com/neilbowers/Graph>
+
+=head1 AUTHOR
 
 Jarkko Hietaniemi F<jhi@iki.fi>
 
-=head1 COPYRIGHT
+Now being maintained by Neil Bowers E<lt>neilb@cpan.orgE<gt>
 
-Copyright (c) 1998-2013 Jarkko Hietaniemi.  All rights reserved.
+=head1 COPYRIGHT AND LICENSE
 
-=head1 LICENSE
+Copyright (c) 1998-2014 Jarkko Hietaniemi.  All rights reserved.
 
-This program is free software; you can redistribute it and/or modify
-it under the same terms as Perl 5 itself.
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
